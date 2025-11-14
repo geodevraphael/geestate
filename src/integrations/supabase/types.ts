@@ -139,6 +139,57 @@ export type Database = {
           },
         ]
       }
+      crm_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          lead_id: string | null
+          seller_id: string
+          status: Database["public"]["Enums"]["crm_task_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          seller_id: string
+          status?: Database["public"]["Enums"]["crm_task_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          seller_id?: string
+          status?: Database["public"]["Enums"]["crm_task_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_closures: {
         Row: {
           admin_notes: string | null
@@ -487,6 +538,64 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          id: string
+          listing_id: string
+          notes: string | null
+          seller_id: string
+          source: Database["public"]["Enums"]["lead_source"]
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          listing_id: string
+          notes?: string | null
+          seller_id: string
+          source: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          listing_id?: string
+          notes?: string | null
+          seller_id?: string
+          source?: Database["public"]["Enums"]["lead_source"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_media: {
         Row: {
           caption: string | null
@@ -568,6 +677,7 @@ export type Database = {
           created_at: string
           currency: string | null
           description: string | null
+          description_sw: string | null
           district: string | null
           district_id: string | null
           id: string
@@ -582,6 +692,7 @@ export type Database = {
           status: Database["public"]["Enums"]["listing_status"] | null
           street_village_id: string | null
           title: string
+          title_sw: string | null
           updated_at: string
           verification_notes: string | null
           verification_status:
@@ -594,6 +705,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           description?: string | null
+          description_sw?: string | null
           district?: string | null
           district_id?: string | null
           id?: string
@@ -608,6 +720,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["listing_status"] | null
           street_village_id?: string | null
           title: string
+          title_sw?: string | null
           updated_at?: string
           verification_notes?: string | null
           verification_status?:
@@ -620,6 +733,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           description?: string | null
+          description_sw?: string | null
           district?: string | null
           district_id?: string | null
           id?: string
@@ -634,6 +748,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["listing_status"] | null
           street_village_id?: string | null
           title?: string
+          title_sw?: string | null
           updated_at?: string
           verification_notes?: string | null
           verification_status?:
@@ -876,6 +991,7 @@ export type Database = {
           national_id_number: string | null
           organization_name: string | null
           phone: string | null
+          preferred_locale: string | null
           profile_photo_url: string | null
           region_id: string | null
           role: Database["public"]["Enums"]["app_role"] | null
@@ -893,6 +1009,7 @@ export type Database = {
           national_id_number?: string | null
           organization_name?: string | null
           phone?: string | null
+          preferred_locale?: string | null
           profile_photo_url?: string | null
           region_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
@@ -910,6 +1027,7 @@ export type Database = {
           national_id_number?: string | null
           organization_name?: string | null
           phone?: string | null
+          preferred_locale?: string | null
           profile_photo_url?: string | null
           region_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
@@ -1139,6 +1257,33 @@ export type Database = {
           },
         ]
       }
+      system_errors: {
+        Row: {
+          context: string
+          created_at: string
+          details: Json | null
+          id: string
+          message: string
+          stack_trace: string | null
+        }
+        Insert: {
+          context: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          message: string
+          stack_trace?: string | null
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          message?: string
+          stack_trace?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -1306,6 +1451,94 @@ export type Database = {
           },
         ]
       }
+      webhook_deliveries: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: Database["public"]["Enums"]["webhook_event_type"]
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          subscription_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: Database["public"]["Enums"]["webhook_event_type"]
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          subscription_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: Database["public"]["Enums"]["webhook_event_type"]
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_subscriptions: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["webhook_event_type"]
+          id: string
+          is_active: boolean
+          last_delivery_at: string | null
+          last_delivery_status: string | null
+          owner_id: string
+          secret_token: string
+          target_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: Database["public"]["Enums"]["webhook_event_type"]
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_delivery_status?: string | null
+          owner_id: string
+          secret_token: string
+          target_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["webhook_event_type"]
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_delivery_status?: string | null
+          owner_id?: string
+          secret_token?: string
+          target_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_subscriptions_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1332,6 +1565,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_overdue_tasks: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:
@@ -1350,6 +1584,7 @@ export type Database = {
         | "suspicious_listing"
         | "buyer_seller_conflict"
         | "other"
+      crm_task_status: "pending" | "done" | "overdue"
       deal_closure_status:
         | "pending_admin_validation"
         | "closed"
@@ -1374,6 +1609,15 @@ export type Database = {
         | "multiple_accounts_same_phone"
         | "immediate_closure_attempt"
       institution_type: "government" | "municipal" | "authority" | "company"
+      lead_source: "message" | "visit_request" | "direct_contact" | "import"
+      lead_status:
+        | "new"
+        | "contacted"
+        | "interested"
+        | "not_interested"
+        | "under_offer"
+        | "closed"
+        | "lost"
       listing_status: "draft" | "published" | "archived" | "closed"
       listing_type: "sale" | "rent"
       media_type: "image" | "document"
@@ -1401,6 +1645,13 @@ export type Database = {
         | "rejected"
         | "completed"
         | "cancelled"
+      webhook_event_type:
+        | "listing_created"
+        | "listing_closed"
+        | "payment_proof_submitted"
+        | "deal_closed"
+        | "dispute_opened"
+        | "visit_requested"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1546,6 +1797,7 @@ export const Constants = {
         "buyer_seller_conflict",
         "other",
       ],
+      crm_task_status: ["pending", "done", "overdue"],
       deal_closure_status: [
         "pending_admin_validation",
         "closed",
@@ -1573,6 +1825,16 @@ export const Constants = {
         "immediate_closure_attempt",
       ],
       institution_type: ["government", "municipal", "authority", "company"],
+      lead_source: ["message", "visit_request", "direct_contact", "import"],
+      lead_status: [
+        "new",
+        "contacted",
+        "interested",
+        "not_interested",
+        "under_offer",
+        "closed",
+        "lost",
+      ],
       listing_status: ["draft", "published", "archived", "closed"],
       listing_type: ["sale", "rent"],
       media_type: ["image", "document"],
@@ -1602,6 +1864,14 @@ export const Constants = {
         "rejected",
         "completed",
         "cancelled",
+      ],
+      webhook_event_type: [
+        "listing_created",
+        "listing_closed",
+        "payment_proof_submitted",
+        "deal_closed",
+        "dispute_opened",
+        "visit_requested",
       ],
     },
   },

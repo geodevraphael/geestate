@@ -23,3 +23,15 @@ verify_jwt = false
 
 [functions.setup-staff-accounts]
 verify_jwt = false
+
+[functions.ai-generate-description]
+verify_jwt = true
+
+[functions.ai-suggest-reply]
+verify_jwt = true
+
+[functions.deliver-webhook]
+verify_jwt = false
+
+[functions.health-check]
+verify_jwt = false
