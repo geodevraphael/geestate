@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navbar } from '@/components/Navbar';
+import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -145,8 +145,7 @@ export default function PaymentProofs() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <MainLayout>
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -155,14 +154,12 @@ export default function PaymentProofs() {
             </div>
           </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <MainLayout>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Payment Proofs</h1>
 
@@ -326,11 +323,10 @@ export default function PaymentProofs() {
             )}
           </TabsContent>
         </Tabs>
-      </div>
 
-      {/* Confirm Payment Dialog */}
-      <Dialog open={actionDialog === 'confirm'} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent>
+        {/* Confirm Payment Dialog */}
+        <Dialog open={actionDialog === 'confirm'} onOpenChange={() => setActionDialog(null)}>
+          <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Payment Received</DialogTitle>
           </DialogHeader>
@@ -398,5 +394,6 @@ export default function PaymentProofs() {
         </DialogContent>
       </Dialog>
     </div>
+    </MainLayout>
   );
 }

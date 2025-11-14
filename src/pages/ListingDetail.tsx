@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navbar } from '@/components/Navbar';
+import { MainLayout } from '@/components/layouts/MainLayout';
 import { PaymentProofDialog } from '@/components/PaymentProofDialog';
 import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { Button } from '@/components/ui/button';
@@ -197,22 +197,20 @@ export default function ListingDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <MainLayout>
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading...</p>
           </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   if (!listing) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <MainLayout>
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <Card>
             <CardContent className="p-8 text-center">
@@ -224,14 +222,12 @@ export default function ListingDetail() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <MainLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <Link to="/listings">
@@ -572,6 +568,6 @@ export default function ListingDetail() {
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }

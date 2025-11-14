@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navbar } from '@/components/Navbar';
+import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -663,9 +663,7 @@ export default function CreateListing() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <MainLayout>
       <div className="container mx-auto p-6 max-w-5xl">
         <Button
           variant="ghost"
@@ -963,6 +961,6 @@ export default function CreateListing() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 }

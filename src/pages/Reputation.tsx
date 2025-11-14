@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navbar } from '@/components/Navbar';
+import { MainLayout } from '@/components/layouts/MainLayout';
 import { ReputationCard } from '@/components/ReputationCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -59,13 +59,12 @@ export default function Reputation() {
   };
 
   if (loading) {
-    return <div className="container mx-auto p-6">Loading...</div>;
+    return <MainLayout><div className="container mx-auto p-6">Loading...</div></MainLayout>;
   }
 
   if (!reputation) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <MainLayout>
         <div className="container mx-auto p-6">
           <Card>
             <CardHeader>
@@ -74,13 +73,12 @@ export default function Reputation() {
             </CardHeader>
           </Card>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center gap-2">
           <Trophy className="h-8 w-8 text-primary" />
@@ -164,6 +162,6 @@ export default function Reputation() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 }
