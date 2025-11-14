@@ -100,6 +100,8 @@ Deno.serve(async (req) => {
         slope_percent: Math.round(slope_percent * 10) / 10,
         environmental_notes,
         calculated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'listing_id'
       })
       .select()
       .single();

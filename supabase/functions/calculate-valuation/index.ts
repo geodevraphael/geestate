@@ -120,6 +120,8 @@ Deno.serve(async (req) => {
         estimation_method: 'rule_based_v1',
         confidence_score: Math.min(100, confidence_score),
         notes,
+      }, {
+        onConflict: 'listing_id'
       })
       .select()
       .single();
