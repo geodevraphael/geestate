@@ -54,12 +54,19 @@ export default function ListingDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (!mapRef.current || !polygon?.geojson) return;
+    if (!mapRef.current || !polygon?.geojson) {
+      console.log('Map not ready:', { hasMapRef: !!mapRef.current, hasPolygon: !!polygon, hasGeojson: !!polygon?.geojson });
+      return;
+    }
+
+    console.log('Initializing map with polygon:', polygon);
 
     try {
       const geojson = typeof polygon.geojson === 'string' 
         ? JSON.parse(polygon.geojson) 
         : polygon.geojson;
+
+      console.log('Parsed geojson:', geojson);
 
       const coordinates = geojson.coordinates[0].map((coord: [number, number]) => 
         fromLonLat([coord[0], coord[1]])
@@ -95,6 +102,8 @@ export default function ListingDetail() {
         ? fromLonLat([polygon.centroid_lng, polygon.centroid_lat])
         : fromLonLat([34.888822, -6.369028]);
 
+      console.log('Creating map with center:', center);
+
       const map = new Map({
         target: mapRef.current,
         layers: [
@@ -108,6 +117,8 @@ export default function ListingDetail() {
           zoom: 15,
         }),
       });
+
+      console.log('Map initialized successfully');
 
       return () => {
         map.setTarget(undefined);
