@@ -210,6 +210,128 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          admin_notes: string | null
+          buyer_id: string | null
+          created_at: string
+          description: string
+          dispute_type: Database["public"]["Enums"]["dispute_type"]
+          id: string
+          listing_id: string
+          opened_by: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          seller_id: string | null
+          status: Database["public"]["Enums"]["dispute_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          buyer_id?: string | null
+          created_at?: string
+          description: string
+          dispute_type: Database["public"]["Enums"]["dispute_type"]
+          id?: string
+          listing_id: string
+          opened_by: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          seller_id?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          buyer_id?: string | null
+          created_at?: string
+          description?: string
+          dispute_type?: Database["public"]["Enums"]["dispute_type"]
+          id?: string
+          listing_id?: string
+          opened_by?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          seller_id?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      districts: {
+        Row: {
+          code: string | null
+          created_at: string
+          geometry: Json | null
+          id: string
+          name: string
+          region_id: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          geometry?: Json | null
+          id?: string
+          name: string
+          region_id: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          geometry?: Json | null
+          id?: string
+          name?: string
+          region_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "districts_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fraud_signals: {
         Row: {
           created_at: string
@@ -447,6 +569,7 @@ export type Database = {
           currency: string | null
           description: string | null
           district: string | null
+          district_id: string | null
           id: string
           is_polygon_verified: boolean | null
           listing_type: Database["public"]["Enums"]["listing_type"]
@@ -455,7 +578,9 @@ export type Database = {
           price: number | null
           property_type: Database["public"]["Enums"]["property_type"]
           region: string | null
+          region_id: string | null
           status: Database["public"]["Enums"]["listing_status"] | null
+          street_village_id: string | null
           title: string
           updated_at: string
           verification_notes: string | null
@@ -463,12 +588,14 @@ export type Database = {
             | Database["public"]["Enums"]["verification_status"]
             | null
           ward: string | null
+          ward_id: string | null
         }
         Insert: {
           created_at?: string
           currency?: string | null
           description?: string | null
           district?: string | null
+          district_id?: string | null
           id?: string
           is_polygon_verified?: boolean | null
           listing_type: Database["public"]["Enums"]["listing_type"]
@@ -477,7 +604,9 @@ export type Database = {
           price?: number | null
           property_type: Database["public"]["Enums"]["property_type"]
           region?: string | null
+          region_id?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
+          street_village_id?: string | null
           title: string
           updated_at?: string
           verification_notes?: string | null
@@ -485,12 +614,14 @@ export type Database = {
             | Database["public"]["Enums"]["verification_status"]
             | null
           ward?: string | null
+          ward_id?: string | null
         }
         Update: {
           created_at?: string
           currency?: string | null
           description?: string | null
           district?: string | null
+          district_id?: string | null
           id?: string
           is_polygon_verified?: boolean | null
           listing_type?: Database["public"]["Enums"]["listing_type"]
@@ -499,7 +630,9 @@ export type Database = {
           price?: number | null
           property_type?: Database["public"]["Enums"]["property_type"]
           region?: string | null
+          region_id?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
+          street_village_id?: string | null
           title?: string
           updated_at?: string
           verification_notes?: string | null
@@ -507,13 +640,42 @@ export type Database = {
             | Database["public"]["Enums"]["verification_status"]
             | null
           ward?: string | null
+          ward_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "listings_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listings_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_street_village_id_fkey"
+            columns: ["street_village_id"]
+            isOneToOne: false
+            referencedRelation: "streets_villages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_ward_id_fkey"
+            columns: ["ward_id"]
+            isOneToOne: false
+            referencedRelation: "wards"
             referencedColumns: ["id"]
           },
         ]
@@ -704,37 +866,94 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          bio: string | null
           created_at: string
+          district_id: string | null
           email: string
           full_name: string
           id: string
           national_id_number: string | null
           organization_name: string | null
           phone: string | null
+          profile_photo_url: string | null
+          region_id: string | null
           role: Database["public"]["Enums"]["app_role"] | null
+          social_links: Json | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
+          bio?: string | null
           created_at?: string
+          district_id?: string | null
           email: string
           full_name: string
           id: string
           national_id_number?: string | null
           organization_name?: string | null
           phone?: string | null
+          profile_photo_url?: string | null
+          region_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
+          social_links?: Json | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
+          bio?: string | null
           created_at?: string
+          district_id?: string | null
           email?: string
           full_name?: string
           id?: string
           national_id_number?: string | null
           organization_name?: string | null
           phone?: string | null
+          profile_photo_url?: string | null
+          region_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
+          social_links?: Json | null
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regions: {
+        Row: {
+          code: string | null
+          created_at: string
+          geometry: Json | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          geometry?: Json | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          geometry?: Json | null
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -834,6 +1053,41 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: true
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      streets_villages: {
+        Row: {
+          code: string | null
+          created_at: string
+          geometry: Json | null
+          id: string
+          name: string
+          ward_id: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          geometry?: Json | null
+          id?: string
+          name: string
+          ward_id: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          geometry?: Json | null
+          id?: string
+          name?: string
+          ward_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streets_villages_ward_id_fkey"
+            columns: ["ward_id"]
+            isOneToOne: false
+            referencedRelation: "wards"
             referencedColumns: ["id"]
           },
         ]
@@ -993,6 +1247,41 @@ export type Database = {
           },
         ]
       }
+      wards: {
+        Row: {
+          code: string | null
+          created_at: string
+          district_id: string
+          geometry: Json | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          district_id: string
+          geometry?: Json | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          district_id?: string
+          geometry?: Json | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wards_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1028,6 +1317,14 @@ export type Database = {
         | "closed"
         | "disputed"
         | "cancelled"
+      dispute_status: "open" | "in_review" | "resolved" | "rejected"
+      dispute_type:
+        | "payment_issue"
+        | "fraud_suspicion"
+        | "misrepresentation"
+        | "unverified_documents"
+        | "visit_issue"
+        | "other"
       estimation_method: "rule_based_v1" | "ml_model_v1" | "external_api"
       fraud_signal_type:
         | "duplicate_polygon"
@@ -1213,6 +1510,15 @@ export const Constants = {
         "closed",
         "disputed",
         "cancelled",
+      ],
+      dispute_status: ["open", "in_review", "resolved", "rejected"],
+      dispute_type: [
+        "payment_issue",
+        "fraud_suspicion",
+        "misrepresentation",
+        "unverified_documents",
+        "visit_issue",
+        "other",
       ],
       estimation_method: ["rule_based_v1", "ml_model_v1", "external_api"],
       fraud_signal_type: [

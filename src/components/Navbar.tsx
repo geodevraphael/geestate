@@ -29,6 +29,15 @@ export function Navbar() {
             <Link to="/listings" className="text-sm font-medium hover:text-primary transition-colors">
               All Listings
             </Link>
+            <Link to="/about-us" className="text-sm font-medium hover:text-primary transition-colors">
+              About
+            </Link>
+            <Link to="/how-it-works" className="text-sm font-medium hover:text-primary transition-colors">
+              How It Works
+            </Link>
+            <Link to="/contact" className="text-sm font-medium hover:text-primary transition-colors">
+              Contact
+            </Link>
             
             {user ? (
               <>
@@ -40,6 +49,9 @@ export function Navbar() {
                 </Link>
                 <Link to="/reputation" className="text-sm font-medium hover:text-primary transition-colors">
                   Reputation
+                </Link>
+                <Link to="/disputes" className="text-sm font-medium hover:text-primary transition-colors">
+                  Disputes
                 </Link>
                 
                 {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
@@ -66,6 +78,9 @@ export function Navbar() {
                     </Link>
                     <Link to="/admin/verification" className="text-sm font-medium hover:text-primary transition-colors">
                       Verify Listings
+                    </Link>
+                    <Link to="/admin/analytics" className="text-sm font-medium hover:text-primary transition-colors">
+                      Analytics
                     </Link>
                     <Link to="/audit-logs" className="text-sm font-medium hover:text-primary transition-colors">
                       Audit Logs
