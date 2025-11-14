@@ -36,6 +36,9 @@ import SetupStaff from './pages/SetupStaff';
 import UserProfile from './pages/UserProfile';
 import ManageUserRoles from './pages/ManageUserRoles';
 import ManageUsers from './pages/ManageUsers';
+import CRMDashboard from './pages/CRMDashboard';
+import Integrations from './pages/Integrations';
+import SystemStatus from './pages/SystemStatus';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +83,9 @@ const App = () => (
             <Route path="/profile/:userId" element={<UserProfile />} />
             <Route path="/admin/users" element={<ManageUsers />} />
             <Route path="/admin/users/:userId/roles" element={<ManageUserRoles />} />
+            <Route path="/crm" element={<CRMDashboard />} />
+            <Route path="/integrations" element={<Integrations />} />
+            <Route path="/admin/system-status" element={<SystemStatus />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

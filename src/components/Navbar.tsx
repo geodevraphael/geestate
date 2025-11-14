@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
   const { user, profile, signOut, hasRole } = useAuth();
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -114,6 +117,7 @@ export function Navbar() {
                   </Link>
                 )}
                 <NotificationBell />
+                <LanguageSwitcher />
                 <Link to={`/profile/${user.id}`}>
                   <Button variant="ghost" size="sm">
                     My Profile
