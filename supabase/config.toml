@@ -1,1 +1,10 @@
 project_id = "msziurxcplegxqwooawk"
+
+[functions.detect-polygon-fraud]
+verify_jwt = true
+
+[functions.detect-multi-account]
+verify_jwt = true
+
+[functions.detect-price-anomaly]
+verify_jwt = true
