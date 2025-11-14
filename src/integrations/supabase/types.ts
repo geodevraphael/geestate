@@ -1306,6 +1306,9 @@ export type Database = {
         | "admin"
         | "verification_officer"
         | "compliance_officer"
+        | "spatial_analyst"
+        | "customer_success"
+        | "staff"
       compliance_flag_type:
         | "payment_mismatch"
         | "duplicate_polygon"
@@ -1497,6 +1500,9 @@ export const Constants = {
         "admin",
         "verification_officer",
         "compliance_officer",
+        "spatial_analyst",
+        "customer_success",
+        "staff",
       ],
       compliance_flag_type: [
         "payment_mismatch",

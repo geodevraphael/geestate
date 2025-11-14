@@ -522,6 +522,55 @@ export default function CreateListing() {
       const area = turf.area(turfPolygon);
       const centroid = turf.centroid(turfPolygon);
 
+      // Auto-detect administrative boundaries
+      toast({
+        title: 'Detecting Location',
+        description: 'Determining region, district, and ward...',
+      });
+
+      let adminBoundaries = {
+        region_id: null,
+        district_id: null,
+        ward_id: null,
+        street_village_id: null,
+      };
+
+      try {
+        const { data: boundariesData, error: boundariesError } = await supabase.functions.invoke(
+          'detect-admin-boundaries',
+          {
+            body: { polygon: { type: 'Feature', geometry: primaryPolygon } },
+          }
+        );
+
+        if (boundariesError) {
+          console.error('Error detecting boundaries:', boundariesError);
+          toast({
+            title: 'Location Detection Warning',
+            description: 'Could not auto-detect administrative boundaries. You can continue without them.',
+            variant: 'default',
+          });
+        } else if (boundariesData?.success) {
+          adminBoundaries = boundariesData.boundaries;
+          
+          const detectedAreas: string[] = [];
+          if (adminBoundaries.region_id) detectedAreas.push('region');
+          if (adminBoundaries.district_id) detectedAreas.push('district');
+          if (adminBoundaries.ward_id) detectedAreas.push('ward');
+          if (adminBoundaries.street_village_id) detectedAreas.push('street/village');
+          
+          if (detectedAreas.length > 0) {
+            toast({
+              title: 'Location Detected',
+              description: `Auto-detected: ${detectedAreas.join(', ')}`,
+            });
+          }
+        }
+      } catch (detectionError) {
+        console.error('Error in boundary detection:', detectionError);
+        // Continue without boundaries - non-blocking
+      }
+
       // Create or update listing
       const listingData = {
         title: formData.title,
@@ -534,6 +583,10 @@ export default function CreateListing() {
         region: formData.region,
         district: formData.district,
         ward: formData.ward,
+        region_id: adminBoundaries.region_id,
+        district_id: adminBoundaries.district_id,
+        ward_id: adminBoundaries.ward_id,
+        street_village_id: adminBoundaries.street_village_id,
         owner_id: user!.id,
         status: 'draft' as 'draft',
         verification_status: 'unverified' as 'unverified',
