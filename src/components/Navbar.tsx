@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { MapPin, Menu, X } from 'lucide-react';
+import { MapPin, Menu, X, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { UserMenu } from './navbar/UserMenu';
+import { AdminMenu } from './navbar/AdminMenu';
 import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
-  const { user, profile, signOut, hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -20,121 +22,57 @@ export function Navbar() {
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
             <MapPin className="h-6 w-6 text-primary" />
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              GeoEstate Tanzania
+              {t('app.name')}
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/map" className="text-sm font-medium hover:text-primary transition-colors">
-              Browse Map
+              {t('nav.browseMap')}
             </Link>
             <Link to="/listings" className="text-sm font-medium hover:text-primary transition-colors">
-              All Listings
+              {t('nav.allListings')}
             </Link>
             <Link to="/about-us" className="text-sm font-medium hover:text-primary transition-colors">
-              About
+              {t('nav.about')}
             </Link>
             <Link to="/how-it-works" className="text-sm font-medium hover:text-primary transition-colors">
-              How It Works
+              {t('nav.howItWorks')}
             </Link>
             <Link to="/contact" className="text-sm font-medium hover:text-primary transition-colors">
-              Contact
+              {t('nav.contact')}
             </Link>
             
             {user ? (
               <>
                 <Link to="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
-                  Dashboard
-                </Link>
-                <Link to="/messages" className="text-sm font-medium hover:text-primary transition-colors">
-                  Messages
-                </Link>
-                <Link to="/reputation" className="text-sm font-medium hover:text-primary transition-colors">
-                  Reputation
-                </Link>
-                <Link to="/disputes" className="text-sm font-medium hover:text-primary transition-colors">
-                  Disputes
+                  {t('nav.dashboard')}
                 </Link>
                 
                 {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
-                  <>
-                    <Link to="/payment-proofs" className="text-sm font-medium hover:text-primary transition-colors">
-                      Payments
-                    </Link>
-                    <Link to="/subscriptions" className="text-sm font-medium hover:text-primary transition-colors">
-                      Subscriptions
-                    </Link>
-                  </>
-                )}
-
-                {(hasRole('seller') || hasRole('broker')) && (
-                  <Link to="/apply-institutional-seller" className="text-sm font-medium hover:text-primary transition-colors">
-                    Apply as Institution
-                  </Link>
-                )}
-
-                {(hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer')) && (
-                  <>
-                    <Link to="/admin-dashboard" className="text-sm font-medium hover:text-primary transition-colors">
-                      Dashboard
-                    </Link>
-                    <Link to="/admin/verification" className="text-sm font-medium hover:text-primary transition-colors">
-                      Verify Listings
-                    </Link>
-                    <Link to="/admin/analytics" className="text-sm font-medium hover:text-primary transition-colors">
-                      Analytics
-                    </Link>
-                    <Link to="/audit-logs" className="text-sm font-medium hover:text-primary transition-colors">
-                      Audit Logs
-                    </Link>
-                    <Link to="/data-export" className="text-sm font-medium hover:text-primary transition-colors">
-                      Export
-                    </Link>
-                  </>
-                )}
-
-                {hasRole('admin') && (
-                  <>
-                    <Link to="/admin/users" className="text-sm font-medium hover:text-primary transition-colors">
-                      User Management
-                    </Link>
-                    <Link to="/institutional-sellers" className="text-sm font-medium hover:text-primary transition-colors">
-                      Institutions
-                    </Link>
-                  </>
-                )}
-
-                <Link to="/visit-requests" className="text-sm font-medium hover:text-primary transition-colors">
-                  Visits
-                </Link>
-
-                {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <Link to="/listings/new">
-                    <Button size="sm" className="bg-primary hover:bg-primary/90">
-                      List Property
+                    <Button size="sm" className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      {t('nav.listProperty')}
                     </Button>
                   </Link>
                 )}
+                
+                <AdminMenu />
                 <NotificationBell />
                 <LanguageSwitcher />
-                <Link to={`/profile/${user.id}`}>
-                  <Button variant="ghost" size="sm">
-                    My Profile
-                  </Button>
-                </Link>
-                <Button variant="outline" size="sm" onClick={signOut}>
-                  Sign Out
-                </Button>
+                <UserMenu />
               </>
             ) : (
               <>
+                <LanguageSwitcher />
                 <Link to="/auth">
-                  <Button variant="outline" size="sm">Sign In</Button>
+                  <Button variant="outline" size="sm">{t('auth.signIn')}</Button>
                 </Link>
                 <Link to="/auth?tab=signup">
-                  <Button size="sm" className="bg-primary hover:bg-primary/90">
-                    Get Started
+                  <Button size="sm">
+                    {t('nav.getStarted')}
                   </Button>
                 </Link>
               </>
@@ -158,15 +96,37 @@ export function Navbar() {
               className="block py-2 text-sm font-medium hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Browse Map
+              {t('nav.browseMap')}
             </Link>
             <Link
               to="/listings"
               className="block py-2 text-sm font-medium hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              All Listings
+              {t('nav.allListings')}
             </Link>
+            <Link
+              to="/about-us"
+              className="block py-2 text-sm font-medium hover:text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t('nav.about')}
+            </Link>
+            <Link
+              to="/how-it-works"
+              className="block py-2 text-sm font-medium hover:text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t('nav.howItWorks')}
+            </Link>
+            <Link
+              to="/contact"
+              className="block py-2 text-sm font-medium hover:text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t('nav.contact')}
+            </Link>
+            
             {user ? (
               <>
                 <Link
@@ -174,47 +134,8 @@ export function Navbar() {
                   className="block py-2 text-sm font-medium hover:text-primary"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
-
-                {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
-                  <Link
-                    to="/payment-proofs"
-                    className="block py-2 text-sm font-medium hover:text-primary"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Payments
-                  </Link>
-                )}
-
-                {(hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer')) && (
-                  <>
-                    <Link
-                      to="/admin/payments"
-                      className="block py-2 text-sm font-medium hover:text-primary"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Admin Payments
-                    </Link>
-                    <Link
-                      to="/admin/compliance"
-                      className="block py-2 text-sm font-medium hover:text-primary"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Compliance
-                    </Link>
-                  </>
-                )}
-
-                {hasRole('admin') && (
-                  <Link
-                    to="/admin/users"
-                    className="block py-2 text-sm font-medium hover:text-primary"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    User Management
-                  </Link>
-                )}
 
                 {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <Link
@@ -222,42 +143,30 @@ export function Navbar() {
                     className="block py-2"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
-                      List Property
+                    <Button size="sm" className="w-full">
+                      {t('nav.listProperty')}
                     </Button>
                   </Link>
                 )}
+
                 <Link
                   to={`/profile/${user.id}`}
-                  className="block py-2"
+                  className="block py-2 text-sm font-medium hover:text-primary"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <Button variant="ghost" size="sm" className="w-full justify-start">
-                    My Profile
-                  </Button>
+                  {t('nav.myProfile')}
                 </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    signOut();
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Sign Out
-                </Button>
               </>
             ) : (
               <>
                 <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full">
-                    Sign In
+                    {t('auth.signIn')}
                   </Button>
                 </Link>
                 <Link to="/auth?tab=signup" onClick={() => setMobileMenuOpen(false)}>
-                  <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
-                    Get Started
+                  <Button size="sm" className="w-full">
+                    {t('nav.getStarted')}
                   </Button>
                 </Link>
               </>

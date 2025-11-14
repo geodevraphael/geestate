@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/Navbar';
+import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { BuyerDashboard } from './dashboards/BuyerDashboard';
@@ -72,8 +73,11 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <DashboardComponent />
+      <div className="flex w-full">
+        <DashboardSidebar />
+        <main className="flex-1 p-8">
+          <DashboardComponent />
+        </main>
       </div>
     </div>
   );
