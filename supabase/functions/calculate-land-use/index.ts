@@ -98,6 +98,8 @@ Deno.serve(async (req) => {
         land_use_conflict,
         notes,
         calculated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'listing_id'
       })
       .select()
       .single();
