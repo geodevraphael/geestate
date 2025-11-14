@@ -4,12 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { PaymentProofDialog } from '@/components/PaymentProofDialog';
+import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft } from 'lucide-react';
-import { ListingWithDetails, ListingPolygon, ListingMedia, Profile } from '@/types/database';
+import { Progress } from '@/components/ui/progress';
+import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp } from 'lucide-react';
+import { ListingWithDetails, ListingPolygon, ListingMedia, Profile, SpatialRiskProfile, LandUseProfile, ValuationEstimate } from '@/types/database';
+import { useListingCalculations } from '@/hooks/useListingCalculations';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
@@ -29,8 +32,20 @@ export default function ListingDetail() {
   const [polygon, setPolygon] = useState<ListingPolygon | null>(null);
   const [media, setMedia] = useState<ListingMedia[]>([]);
   const [owner, setOwner] = useState<Profile | null>(null);
+  const [spatialRisk, setSpatialRisk] = useState<SpatialRiskProfile | null>(null);
+  const [landUse, setLandUse] = useState<LandUseProfile | null>(null);
+  const [valuation, setValuation] = useState<ValuationEstimate | null>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
+
+  // Trigger automatic calculations for STEP 4 data
+  useListingCalculations({
+    listingId: id || '',
+    propertyType: listing?.property_type || '',
+    region: listing?.region,
+    district: listing?.district,
+    geojson: polygon?.geojson,
+  });
 
   useEffect(() => {
     if (id) {
@@ -132,16 +147,24 @@ export default function ListingDetail() {
 
       setMedia(mediaData || []);
 
-      // Fetch owner
-      if (listingData) {
-        const { data: ownerData } = await (supabase as any)
-          .from('profiles')
-          .select('*')
-          .eq('id', listingData.owner_id)
-          .single();
+      // Fetch owner profile
+      const { data: ownerData } = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('id', listingData.owner_id)
+        .maybeSingle();
+      setOwner(ownerData);
 
-        setOwner(ownerData);
-      }
+      // Fetch STEP 4 data
+      const [spatialRiskData, landUseData, valuationData] = await Promise.all([
+        supabase.from('spatial_risk_profiles').select('*').eq('listing_id', id).maybeSingle(),
+        supabase.from('land_use_profiles').select('*').eq('listing_id', id).maybeSingle(),
+        supabase.from('valuation_estimates').select('*').eq('listing_id', id).maybeSingle(),
+      ]);
+
+      setSpatialRisk(spatialRiskData.data as SpatialRiskProfile | null);
+      setLandUse(landUseData.data as LandUseProfile | null);
+      setValuation(valuationData.data as ValuationEstimate | null);
     } catch (error) {
       console.error('Error fetching listing:', error);
     } finally {
@@ -339,12 +362,165 @@ export default function ListingDetail() {
 
                 {/* Payment Proof Button for Buyers */}
                 {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-2">
+                    <VisitRequestDialog listingId={id!} sellerId={listing.owner_id} />
                     <PaymentProofDialog listing={listing} />
                   </div>
                 )}
+
+                {/* Edit Button for Owner */}
+                {canEdit && (
+                  <Link to={`/listings/${id}/edit`} className="mt-4 block">
+                    <Button variant="outline" className="w-full flex items-center gap-2">
+                      <Edit className="h-4 w-4" />
+                      Edit Listing
+                    </Button>
+                  </Link>
+                )}
               </CardContent>
             </Card>
+
+            {/* STEP 4: Flood Risk & Environmental */}
+            {spatialRisk && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Droplets className="h-5 w-5 text-primary" />
+                    Flood Risk & Environmental Profile
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Flood Risk Level</span>
+                    <Badge variant={
+                      spatialRisk.flood_risk_level === 'low' ? 'default' :
+                      spatialRisk.flood_risk_level === 'medium' ? 'secondary' : 'destructive'
+                    }>
+                      {spatialRisk.flood_risk_level.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Risk Score</span>
+                      <span className="font-medium">{spatialRisk.flood_risk_score}/100</span>
+                    </div>
+                    <Progress value={spatialRisk.flood_risk_score} className="h-2" />
+                  </div>
+                  {spatialRisk.near_river && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Distance to River: </span>
+                      <span className="font-medium">{spatialRisk.distance_to_river_m?.toFixed(0)}m</span>
+                    </div>
+                  )}
+                  {spatialRisk.elevation_m && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Elevation: </span>
+                      <span className="font-medium">{spatialRisk.elevation_m.toFixed(0)}m</span>
+                    </div>
+                  )}
+                  {spatialRisk.environmental_notes && (
+                    <p className="text-sm text-muted-foreground pt-2 border-t">
+                      {spatialRisk.environmental_notes}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* STEP 4: Land Use & Zoning */}
+            {landUse && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TreePine className="h-5 w-5 text-primary" />
+                    Land Use & Zoning
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Dominant Land Use</p>
+                      <p className="font-medium capitalize">{landUse.dominant_land_use}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Zoning Code</p>
+                      <p className="font-medium">{landUse.zoning_code || 'N/A'}</p>
+                    </div>
+                  </div>
+                  {landUse.allowed_uses && landUse.allowed_uses.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Allowed Uses</p>
+                      <div className="flex flex-wrap gap-2">
+                        {landUse.allowed_uses.map((use) => (
+                          <Badge key={use} variant="outline" className="capitalize">
+                            {use}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {landUse.land_use_conflict && (
+                    <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-destructive">Land Use Conflict Detected</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          The property type may not align with the designated land use. Verify with local authorities.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {landUse.notes && (
+                    <p className="text-sm text-muted-foreground pt-2 border-t">
+                      {landUse.notes}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* STEP 4: Valuation Estimate */}
+            {valuation && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Estimated Market Value
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-primary">
+                      {valuation.estimated_value.toLocaleString()}
+                    </span>
+                    <span className="text-lg text-muted-foreground">{valuation.estimation_currency}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Confidence Score</span>
+                      <span className="font-medium">{valuation.confidence_score}/100</span>
+                    </div>
+                    <Progress value={valuation.confidence_score || 0} className="h-2" />
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Badge variant="outline" className="capitalize">
+                      {valuation.estimation_method.replace(/_/g, ' ')}
+                    </Badge>
+                  </div>
+                  {valuation.notes && (
+                    <p className="text-sm text-muted-foreground pt-2 border-t">
+                      {valuation.notes}
+                    </p>
+                  )}
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      This is an automated estimate for reference only, not an official valuation.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Property Details */}
             <Card>
