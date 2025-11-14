@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft } from 'lucide-react';
 import { ListingWithDetails, ListingPolygon, ListingMedia, Profile } from '@/types/database';
-import 'leaflet/dist/leaflet.css';
 
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();

@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, CheckCircle2 } from 'lucide-react';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
-import 'leaflet/dist/leaflet.css';
 
 interface ListingWithPolygon extends ListingWithDetails {
   polygon?: ListingPolygon;
@@ -138,57 +137,57 @@ export default function MapBrowse() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {filteredListings.map((listing) => {
-              if (!listing.polygon?.geojson) return null;
+            {filteredListings
+              .filter(listing => listing.polygon?.geojson)
+              .map((listing) => {
+                try {
+                  const geojson = typeof listing.polygon!.geojson === 'string' 
+                    ? JSON.parse(listing.polygon!.geojson) 
+                    : listing.polygon!.geojson;
 
-              try {
-                const geojson = typeof listing.polygon.geojson === 'string' 
-                  ? JSON.parse(listing.polygon.geojson) 
-                  : listing.polygon.geojson;
+                  const coordinates = geojson.coordinates[0].map((coord: [number, number]) => [coord[1], coord[0]]);
 
-                const coordinates = geojson.coordinates[0].map((coord: [number, number]) => [coord[1], coord[0]]);
-
-                return (
-                  <Polygon
-                    key={listing.id}
-                    positions={coordinates}
-                    pathOptions={{
-                      color: getPolygonColor(listing),
-                      fillColor: getPolygonColor(listing),
-                      fillOpacity: 0.4,
-                      weight: 2,
-                    }}
-                  >
-                    <Popup>
-                      <div className="p-2">
-                        <h3 className="font-semibold mb-2">{listing.title}</h3>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                          <MapPin className="h-3 w-3" />
-                          {listing.location_label}
+                  return (
+                    <Polygon
+                      key={listing.id}
+                      positions={coordinates}
+                      pathOptions={{
+                        color: getPolygonColor(listing),
+                        fillColor: getPolygonColor(listing),
+                        fillOpacity: 0.4,
+                        weight: 2,
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-2">
+                          <h3 className="font-semibold mb-2">{listing.title}</h3>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                            <MapPin className="h-3 w-3" />
+                            {listing.location_label}
+                          </div>
+                          {listing.verification_status === 'verified' && (
+                            <Badge className="bg-success text-success-foreground mb-2">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Verified
+                            </Badge>
+                          )}
+                          <div className="text-lg font-bold text-primary mb-3">
+                            {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
+                          </div>
+                          <Link to={`/listings/${listing.id}`}>
+                            <Button size="sm" className="w-full">
+                              View Details
+                            </Button>
+                          </Link>
                         </div>
-                        {listing.verification_status === 'verified' && (
-                          <Badge className="bg-success text-success-foreground mb-2">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Verified
-                          </Badge>
-                        )}
-                        <div className="text-lg font-bold text-primary mb-3">
-                          {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
-                        </div>
-                        <Link to={`/listings/${listing.id}`}>
-                          <Button size="sm" className="w-full">
-                            View Details
-                          </Button>
-                        </Link>
-                      </div>
-                    </Popup>
-                  </Polygon>
-                );
-              } catch (error) {
-                console.error('Error rendering polygon:', error);
-                return null;
-              }
-            })}
+                      </Popup>
+                    </Polygon>
+                  );
+                } catch (error) {
+                  console.error('Error rendering polygon:', error);
+                  return null;
+                }
+              }).filter(Boolean)}
           </MapContainer>
 
           {filteredListings.length === 0 && !loading && (
