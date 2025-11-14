@@ -91,10 +91,15 @@ export function Navbar() {
                   </>
                 )}
 
-                {profile?.role === 'admin' && (
-                  <Link to="/institutional-sellers" className="text-sm font-medium hover:text-primary transition-colors">
-                    Institutions
-                  </Link>
+                {hasRole('admin') && (
+                  <>
+                    <Link to="/admin/users" className="text-sm font-medium hover:text-primary transition-colors">
+                      User Management
+                    </Link>
+                    <Link to="/institutional-sellers" className="text-sm font-medium hover:text-primary transition-colors">
+                      Institutions
+                    </Link>
+                  </>
                 )}
 
                 <Link to="/visit-requests" className="text-sm font-medium hover:text-primary transition-colors">
@@ -195,6 +200,16 @@ export function Navbar() {
                       Compliance
                     </Link>
                   </>
+                )}
+
+                {hasRole('admin') && (
+                  <Link
+                    to="/admin/users"
+                    className="block py-2 text-sm font-medium hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    User Management
+                  </Link>
                 )}
 
                 {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
