@@ -3,12 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Droplets, Target, TrendingUp, Users, Building } from 'lucide-react';
+import { ServiceProviderSelector } from '@/components/ServiceProviderSelector';
 
 interface GeoInsightServicesProps {
   listingId: string;
@@ -54,13 +55,14 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [serviceType, setServiceType] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('');
   const [notes, setNotes] = useState('');
 
   const handleSubmit = async () => {
-    if (!user || !serviceType) {
+    if (!user || !serviceType || !selectedProvider) {
       toast({
         title: 'Error',
-        description: 'Please select a service type',
+        description: 'Please select a service type and provider',
         variant: 'destructive',
       });
       return;
@@ -68,15 +70,14 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
 
     setLoading(true);
     try {
-      const selectedService = GEOINSIGHT_SERVICES.find(s => s.value === serviceType);
-      
-      const { error } = await supabase.from('leads').insert({
-        buyer_id: user.id,
-        seller_id: sellerId,
+      const { error } = await supabase.from('service_requests').insert({
         listing_id: listingId,
-        source: 'direct_contact',
-        status: 'new',
-        notes: `GeoInsight Service Request: ${selectedService?.label}\n\n${notes}`,
+        requester_id: user.id,
+        service_provider_id: selectedProvider,
+        service_type: serviceType,
+        service_category: 'geoinsight',
+        status: 'pending',
+        request_notes: notes,
       });
 
       if (error) throw error;
@@ -88,6 +89,7 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
       
       setOpen(false);
       setServiceType('');
+      setSelectedProvider('');
       setNotes('');
     } catch (error) {
       console.error('Error submitting service request:', error);
@@ -138,11 +140,14 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
           <DialogTrigger asChild>
             <Button className="w-full" size="lg">Request GeoInsight Analysis</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Request GeoInsight Service</DialogTitle>
+              <DialogDescription>
+                Select an analysis service and choose from our expert providers
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <div className="space-y-6 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="geoinsight-service-type">Select Service</Label>
                 <Select value={serviceType} onValueChange={setServiceType}>
@@ -158,6 +163,18 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
                   </SelectContent>
                 </Select>
               </div>
+
+              {serviceType && (
+                <div className="space-y-2">
+                  <Label>Select Service Provider</Label>
+                  <ServiceProviderSelector
+                    serviceType={serviceType}
+                    selectedProvider={selectedProvider}
+                    onProviderChange={setSelectedProvider}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="geoinsight-notes">Additional Requirements</Label>
                 <Textarea
@@ -170,10 +187,10 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
               </div>
               <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">
-                  Our GeoInsight team will review your request and provide a detailed quote within 24-48 hours.
+                  The selected provider will review your request and provide a detailed quote within 24-48 hours.
                 </p>
               </div>
-              <Button onClick={handleSubmit} disabled={loading || !serviceType} className="w-full" size="lg">
+              <Button onClick={handleSubmit} disabled={loading || !serviceType || !selectedProvider} className="w-full" size="lg">
                 {loading ? 'Submitting...' : 'Submit Request'}
               </Button>
             </div>
