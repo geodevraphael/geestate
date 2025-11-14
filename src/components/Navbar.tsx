@@ -109,6 +109,11 @@ export function Navbar() {
                   </Link>
                 )}
                 <NotificationBell />
+                <Link to={`/profile/${user.id}`}>
+                  <Button variant="ghost" size="sm">
+                    My Profile
+                  </Button>
+                </Link>
                 <Button variant="outline" size="sm" onClick={signOut}>
                   Sign Out
                 </Button>
@@ -203,6 +208,15 @@ export function Navbar() {
                     </Button>
                   </Link>
                 )}
+                <Link
+                  to={`/profile/${user.id}`}
+                  className="block py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Button variant="ghost" size="sm" className="w-full justify-start">
+                    My Profile
+                  </Button>
+                </Link>
                 <Button
                   variant="outline"
                   size="sm"
