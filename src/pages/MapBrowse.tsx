@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
+import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -206,9 +206,7 @@ export default function MapBrowse() {
   }, [filteredListings]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <MainLayout>
       <div className="h-[calc(100vh-4rem)] flex">
         {/* Filters Sidebar */}
         <div className="w-80 border-r border-border bg-card p-4 overflow-y-auto">
@@ -322,6 +320,6 @@ export default function MapBrowse() {
           )}
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }

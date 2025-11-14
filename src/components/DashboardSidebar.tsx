@@ -73,7 +73,19 @@ const navItems: NavItem[] = [
     title: 'Payments',
     href: '/payment-proofs',
     icon: CreditCard,
-    roles: ['seller', 'broker', 'admin'],
+    roles: ['seller', 'broker'],
+  },
+  {
+    title: 'Admin Payments',
+    href: '/admin/payments',
+    icon: CreditCard,
+    roles: ['admin', 'verification_officer', 'compliance_officer'],
+  },
+  {
+    title: 'Compliance',
+    href: '/admin/compliance',
+    icon: Shield,
+    roles: ['admin', 'verification_officer', 'compliance_officer'],
   },
   {
     title: 'Verify Listings',
@@ -135,7 +147,7 @@ export function DashboardSidebar() {
   });
 
   return (
-    <aside className="w-64 border-r border-border bg-card min-h-screen p-4">
+    <aside className="w-64 border-r border-border bg-card h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto p-4">
       <nav className="space-y-1">
         {visibleItems.map((item) => {
           const Icon = item.icon;
