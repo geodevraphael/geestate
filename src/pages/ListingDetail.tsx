@@ -6,6 +6,7 @@ import { MainLayout } from '@/components/layouts/MainLayout';
 import { PaymentProofDialog } from '@/components/PaymentProofDialog';
 import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { GeospatialServiceRequest } from '@/components/GeospatialServiceRequest';
+import { GeoInsightServices } from '@/components/GeoInsightServices';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -580,6 +581,11 @@ export default function ListingDetail() {
             {/* Geospatial Services */}
             {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
               <GeospatialServiceRequest listingId={id!} sellerId={listing.owner_id} />
+            )}
+
+            {/* GeoInsight Professional Services */}
+            {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
+              <GeoInsightServices listingId={id!} sellerId={listing.owner_id} />
             )}
           </div>
         </div>
