@@ -29,6 +29,7 @@ import { Style, Fill, Stroke, Text } from 'ol/style';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import * as turf from '@turf/turf';
 import { z } from 'zod';
+import * as topojson from 'topojson-client';
 import 'ol/ol.css';
 
 // GeoJSON Schema supporting both single features and feature collections
@@ -263,10 +264,10 @@ export default function CreateListing() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.match(/\.(json|geojson)$/i)) {
+    if (!file.name.match(/\.(json|geojson|topojson)$/i)) {
       toast({
         title: 'Invalid file',
-        description: 'Please upload a GeoJSON or JSON file',
+        description: 'Please upload a GeoJSON or TopoJSON file',
         variant: 'destructive',
       });
       return;
@@ -274,7 +275,37 @@ export default function CreateListing() {
 
     try {
       const text = await file.text();
-      const jsonData = JSON.parse(text);
+      let jsonData = JSON.parse(text);
+      
+      // Check if it's TopoJSON and convert to GeoJSON
+      if (jsonData.type === 'Topology') {
+        toast({
+          title: 'Converting TopoJSON',
+          description: 'Converting TopoJSON to GeoJSON...',
+        });
+        
+        // Convert TopoJSON to GeoJSON FeatureCollection
+        const objectKeys = Object.keys(jsonData.objects);
+        if (objectKeys.length === 0) {
+          throw new Error('TopoJSON has no objects to convert');
+        }
+        
+        // Convert first object (or all objects if multiple)
+        const features: any[] = [];
+        for (const key of objectKeys) {
+          const geojson = topojson.feature(jsonData, jsonData.objects[key]);
+          if (geojson.type === 'FeatureCollection') {
+            features.push(...geojson.features);
+          } else if (geojson.type === 'Feature') {
+            features.push(geojson);
+          }
+        }
+        
+        jsonData = {
+          type: 'FeatureCollection',
+          features: features,
+        };
+      }
       
       // Validate GeoJSON structure
       const validated = geoJsonSchema.parse(jsonData);
@@ -285,22 +316,22 @@ export default function CreateListing() {
         // Multiple parcels
         extractedPolygons = validated.features.map(f => f.geometry);
         toast({
-          title: 'GeoJSON loaded',
-          description: `${extractedPolygons.length} parcel(s) imported successfully`,
+          title: 'File loaded successfully',
+          description: `${extractedPolygons.length} parcel(s) imported`,
         });
       } else if (validated.type === 'Feature') {
         // Single feature
         extractedPolygons = [validated.geometry];
         toast({
-          title: 'GeoJSON loaded',
-          description: '1 parcel imported successfully',
+          title: 'File loaded successfully',
+          description: '1 parcel imported',
         });
       } else if (validated.type === 'Polygon') {
         // Direct polygon
         extractedPolygons = [validated];
         toast({
-          title: 'GeoJSON loaded',
-          description: '1 parcel imported successfully',
+          title: 'File loaded successfully',
+          description: '1 parcel imported',
         });
       }
 
@@ -309,17 +340,17 @@ export default function CreateListing() {
       setJsonFileName(file.name);
       
     } catch (error) {
-      console.error('GeoJSON parsing error:', error);
-      let errorMessage = 'Failed to parse GeoJSON file';
+      console.error('File parsing error:', error);
+      let errorMessage = 'Failed to parse file';
       
       if (error instanceof z.ZodError) {
-        errorMessage = 'Invalid GeoJSON format. Must contain Polygon geometries.';
+        errorMessage = 'Invalid format. Must contain Polygon geometries.';
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
       
       toast({
-        title: 'Invalid GeoJSON',
+        title: 'Invalid File',
         description: errorMessage,
         variant: 'destructive',
       });
@@ -452,8 +483,8 @@ export default function CreateListing() {
     // Validation: Land must have JSON upload
     if (isLandProperty && jsonFileName === '') {
       toast({
-        title: 'GeoJSON Required',
-        description: 'Land parcels must be uploaded via GeoJSON file',
+        title: 'File Required',
+        description: 'Land parcels must be uploaded via GeoJSON or TopoJSON file',
         variant: 'destructive',
       });
       return;
@@ -463,7 +494,7 @@ export default function CreateListing() {
       toast({
         title: 'Boundary Required',
         description: isLandProperty 
-          ? 'Please upload a GeoJSON file with parcel boundaries'
+          ? 'Please upload a GeoJSON or TopoJSON file with parcel boundaries'
           : 'Please draw the property boundary on the map',
         variant: 'destructive',
       });
@@ -597,7 +628,7 @@ export default function CreateListing() {
             <CardTitle>{id ? 'Edit Listing' : 'Create New Listing'}</CardTitle>
             <CardDescription>
               {isLandProperty 
-                ? 'Upload GeoJSON file for land parcels (can contain multiple parcels)'
+                ? 'Upload GeoJSON or TopoJSON file for land parcels (can contain multiple parcels)'
                 : 'Draw property boundary on the map'
               }
             </CardDescription>
@@ -650,7 +681,7 @@ export default function CreateListing() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Land parcels must be uploaded as GeoJSON.</strong> This file can contain multiple parcels in a FeatureCollection. Property boundaries are sensitive information in Tanzania.
+                    <strong>Land parcels must be uploaded as GeoJSON or TopoJSON.</strong> These files can contain multiple parcels. Property boundaries are sensitive information in Tanzania.
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -662,15 +693,15 @@ export default function CreateListing() {
                 </Alert>
               )}
 
-              {/* GeoJSON Upload Section (Land Only) */}
+              {/* GeoJSON/TopoJSON Upload Section (Land Only) */}
               {isLandProperty && (
                 <div className="space-y-2">
-                  <Label htmlFor="geojson-upload">Upload GeoJSON File *</Label>
+                  <Label htmlFor="geojson-upload">Upload GeoJSON or TopoJSON File *</Label>
                   <div className="flex items-center gap-4">
                     <Input
                       id="geojson-upload"
                       type="file"
-                      accept=".json,.geojson"
+                      accept=".json,.geojson,.topojson"
                       onChange={handleGeoJsonUpload}
                       className="flex-1"
                     />
@@ -682,7 +713,7 @@ export default function CreateListing() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Supports single Polygon or FeatureCollection with multiple parcels
+                    Supports GeoJSON or TopoJSON format with single or multiple parcels
                   </p>
                 </div>
               )}
