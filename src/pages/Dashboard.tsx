@@ -1,4 +1,4 @@
-import { Navbar } from '@/components/Navbar';
+import { MainLayout } from '@/components/layouts/MainLayout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { BuyerDashboard } from './dashboards/BuyerDashboard';
@@ -23,12 +23,11 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <MainLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
@@ -70,11 +69,10 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="w-full px-8 py-8">
+    <MainLayout>
+      <div className="p-8">
         <DashboardComponent />
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
