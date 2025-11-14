@@ -64,6 +64,9 @@ export function Navbar() {
                     <Link to="/admin-dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                       Dashboard
                     </Link>
+                    <Link to="/admin/verification" className="text-sm font-medium hover:text-primary transition-colors">
+                      Verify Listings
+                    </Link>
                     <Link to="/audit-logs" className="text-sm font-medium hover:text-primary transition-colors">
                       Audit Logs
                     </Link>

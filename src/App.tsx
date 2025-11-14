@@ -10,6 +10,8 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
+import CreateListing from "./pages/CreateListing";
+import AdminVerification from "./pages/AdminVerification";
 import MapBrowse from "./pages/MapBrowse";
 import PaymentProofs from "./pages/PaymentProofs";
 import AdminPayments from "./pages/AdminPayments";
@@ -42,6 +44,9 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/listings" element={<Listings />} />
             <Route path="/listings/:id" element={<ListingDetail />} />
+            <Route path="/listings/new" element={<CreateListing />} />
+            <Route path="/listings/:id/edit" element={<CreateListing />} />
+            <Route path="/admin/verification" element={<AdminVerification />} />
             <Route path="/map" element={<MapBrowse />} />
             <Route path="/payment-proofs" element={<PaymentProofs />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
