@@ -28,17 +28,19 @@ export default function MapBrowse() {
 
   const fetchListingsWithPolygons = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('listings')
         .select(`
           *,
           polygon:listing_polygons(*)
         `)
-        .eq('status', 'published')
-        .not('listing_polygons', 'is', null);
+        .eq('status', 'published');
 
       if (error) throw error;
-      setListings(data || []);
+      
+      // Filter to only listings that have polygons
+      const listingsWithPolygons = (data || []).filter((listing: any) => listing.polygon);
+      setListings(listingsWithPolygons);
     } catch (error) {
       console.error('Error fetching listings:', error);
     } finally {
@@ -131,11 +133,9 @@ export default function MapBrowse() {
             zoom={6}
             className="h-full w-full"
             style={{ background: '#f8f9fa' }}
-            {...({} as any)}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              {...({} as any)}
             />
 
             {filteredListings.map((listing) => {
@@ -159,7 +159,7 @@ export default function MapBrowse() {
                       weight: 2,
                     }}
                   >
-                    <Popup {...({ maxWidth: 300 } as any)}>
+                    <Popup>
                       <div className="p-2">
                         <h3 className="font-semibold mb-2">{listing.title}</h3>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">

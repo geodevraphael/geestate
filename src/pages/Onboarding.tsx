@@ -41,7 +41,7 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('profiles')
         .update({ role: selectedRole })
         .eq('id', user.id);
