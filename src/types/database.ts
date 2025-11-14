@@ -168,3 +168,90 @@ export interface ListingWithDetails extends Listing {
   media?: ListingMedia[];
   owner?: Partial<Profile>;
 }
+
+// STEP 4 Types
+export type FloodRiskLevel = 'low' | 'medium' | 'high' | 'unknown';
+export type InstitutionType = 'government' | 'municipal' | 'authority' | 'company';
+export type EstimationMethod = 'rule_based_v1' | 'ml_model_v1' | 'external_api';
+export type VisitStatus = 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
+
+export interface SpatialRiskProfile {
+  id: string;
+  listing_id: string;
+  flood_risk_level: FloodRiskLevel;
+  flood_risk_score: number;
+  near_river: boolean;
+  distance_to_river_m?: number;
+  elevation_m?: number;
+  slope_percent?: number;
+  environmental_notes?: string;
+  calculated_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LandUseProfile {
+  id: string;
+  listing_id: string;
+  dominant_land_use: string;
+  allowed_uses: string[];
+  zoning_code?: string;
+  land_use_conflict: boolean;
+  notes?: string;
+  calculated_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InstitutionalSeller {
+  id: string;
+  profile_id: string;
+  institution_type: InstitutionType;
+  institution_name: string;
+  contact_person: string;
+  contact_email: string;
+  contact_phone?: string;
+  is_approved: boolean;
+  approved_by_admin_id?: string;
+  approved_at?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ValuationEstimate {
+  id: string;
+  listing_id: string;
+  estimated_value: number;
+  estimation_currency: string;
+  estimation_method: EstimationMethod;
+  confidence_score?: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VisitRequest {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  seller_id: string;
+  requested_date: string;
+  requested_time_slot: string;
+  status: VisitStatus;
+  buyer_notes?: string;
+  seller_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuditLog {
+  id: string;
+  actor_id?: string;
+  listing_id?: string;
+  action_type: string;
+  action_details?: any;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}

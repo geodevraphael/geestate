@@ -19,6 +19,10 @@ import Reputation from "./pages/Reputation";
 import FraudDetection from "./pages/FraudDetection";
 import Subscriptions from "./pages/Subscriptions";
 import AdminDashboard from "./pages/AdminDashboard";
+import AuditLogs from "./pages/AuditLogs";
+import InstitutionalSellers from "./pages/InstitutionalSellers";
+import VisitRequests from "./pages/VisitRequests";
+import DataExport from "./pages/DataExport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +50,10 @@ const App = () => (
             <Route path="/fraud-detection" element={<FraudDetection />} />
             <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/institutional-sellers" element={<InstitutionalSellers />} />
+            <Route path="/visit-requests" element={<VisitRequests />} />
+            <Route path="/data-export" element={<DataExport />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
