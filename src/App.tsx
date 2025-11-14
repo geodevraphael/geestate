@@ -14,6 +14,11 @@ import MapBrowse from "./pages/MapBrowse";
 import PaymentProofs from "./pages/PaymentProofs";
 import AdminPayments from "./pages/AdminPayments";
 import ComplianceFlags from "./pages/ComplianceFlags";
+import Messages from "./pages/Messages";
+import Reputation from "./pages/Reputation";
+import FraudDetection from "./pages/FraudDetection";
+import Subscriptions from "./pages/Subscriptions";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +41,11 @@ const App = () => (
             <Route path="/payment-proofs" element={<PaymentProofs />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/compliance" element={<ComplianceFlags />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/reputation" element={<Reputation />} />
+            <Route path="/fraud-detection" element={<FraudDetection />} />
+            <Route path="/subscriptions" element={<Subscriptions />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

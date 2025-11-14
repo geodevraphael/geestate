@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { MapPin, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { NotificationBell } from './NotificationBell';
 
 export function Navbar() {
   const { user, profile, signOut } = useAuth();
@@ -34,20 +35,31 @@ export function Navbar() {
                 <Link to="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                   Dashboard
                 </Link>
+                <Link to="/messages" className="text-sm font-medium hover:text-primary transition-colors">
+                  Messages
+                </Link>
+                <Link to="/reputation" className="text-sm font-medium hover:text-primary transition-colors">
+                  Reputation
+                </Link>
                 
                 {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
-                  <Link to="/payment-proofs" className="text-sm font-medium hover:text-primary transition-colors">
-                    Payments
-                  </Link>
+                  <>
+                    <Link to="/payment-proofs" className="text-sm font-medium hover:text-primary transition-colors">
+                      Payments
+                    </Link>
+                    <Link to="/subscriptions" className="text-sm font-medium hover:text-primary transition-colors">
+                      Subscriptions
+                    </Link>
+                  </>
                 )}
 
                 {profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role) && (
                   <>
-                    <Link to="/admin/payments" className="text-sm font-medium hover:text-primary transition-colors">
-                      Admin Payments
+                    <Link to="/admin-dashboard" className="text-sm font-medium hover:text-primary transition-colors">
+                      Admin
                     </Link>
-                    <Link to="/admin/compliance" className="text-sm font-medium hover:text-primary transition-colors">
-                      Compliance
+                    <Link to="/fraud-detection" className="text-sm font-medium hover:text-primary transition-colors">
+                      Fraud
                     </Link>
                   </>
                 )}
@@ -59,6 +71,7 @@ export function Navbar() {
                     </Button>
                   </Link>
                 )}
+                <NotificationBell />
                 <Button variant="outline" size="sm" onClick={signOut}>
                   Sign Out
                 </Button>
