@@ -71,7 +71,7 @@ export default function AdminVerification() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setListings(data || []);
+      setListings((data as any) || []);
     } catch (error) {
       console.error('Error fetching listings:', error);
       toast({
