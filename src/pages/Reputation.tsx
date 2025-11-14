@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Navbar } from '@/components/Navbar';
+import { ReputationCard } from '@/components/ReputationCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Award, TrendingUp, Shield, MessageSquare } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Trophy, History } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface ReputationScore {
   id: string;
@@ -16,6 +18,7 @@ interface ReputationScore {
   deals_closed_count: number;
   fraud_flags_count: number;
   last_updated: string;
+  created_at: string;
 }
 
 export default function Reputation() {
@@ -61,127 +64,106 @@ export default function Reputation() {
 
   if (!reputation) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>No Reputation Data</CardTitle>
-            <CardDescription>Complete deals to build your reputation score.</CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>No Reputation Data</CardTitle>
+              <CardDescription>Complete deals to build your reputation score.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Your Reputation</h1>
-          <p className="text-muted-foreground">Track your performance and trustworthiness</p>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Your Reputation</h1>
+            <p className="text-muted-foreground">Track your performance and trustworthiness</p>
+          </div>
         </div>
-        <Badge variant="outline" className="text-lg px-4 py-2">
-          Total Score: {reputation.total_score}
-        </Badge>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Main Reputation Card */}
+          <div className="lg:col-span-2">
+            <ReputationCard reputation={reputation} />
+          </div>
+
+          {/* Activity Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Activity Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Member Since</p>
+                <p className="font-semibold">{format(new Date(reputation.created_at), 'MMM dd, yyyy')}</p>
+              </div>
+              <Separator />
+              <div>
+                <p className="text-sm text-muted-foreground">Last Updated</p>
+                <p className="font-semibold">{format(new Date(reputation.last_updated), 'MMM dd, yyyy')}</p>
+              </div>
+              <Separator />
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Score Breakdown</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Reliability:</span>
+                    <span className="font-medium">{reputation.reliability_score}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Honesty:</span>
+                    <span className="font-medium">{reputation.honesty_score}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Communication:</span>
+                    <span className="font-medium">{reputation.communication_score}%</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* How to Improve */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reliability</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${getScoreColor(reputation.reliability_score)}`}>
-              {reputation.reliability_score}/100
-            </div>
-            <Progress value={reputation.reliability_score} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {getScoreLabel(reputation.reliability_score)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Honesty</CardTitle>
-            <Award className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${getScoreColor(reputation.honesty_score)}`}>
-              {reputation.honesty_score}/100
-            </div>
-            <Progress value={reputation.honesty_score} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {getScoreLabel(reputation.honesty_score)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Communication</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${getScoreColor(reputation.communication_score)}`}>
-              {reputation.communication_score}/100
-            </div>
-            <Progress value={reputation.communication_score} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {getScoreLabel(reputation.communication_score)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Deals Closed</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{reputation.deals_closed_count}</div>
-            <p className="text-xs text-muted-foreground mt-2">Total successful deals</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {reputation.fraud_flags_count > 0 && (
-        <Card className="border-red-200">
           <CardHeader>
-            <CardTitle className="text-red-600">Fraud Flags</CardTitle>
-            <CardDescription>
-              You have {reputation.fraud_flags_count} fraud flag(s) on your account.
-              Please ensure all transactions are legitimate.
-            </CardDescription>
+            <CardTitle>How to Improve Your Reputation</CardTitle>
+            <CardDescription>Follow these tips to build trust with other users</CardDescription>
           </CardHeader>
+          <CardContent>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span><strong>Complete deals:</strong> Successfully close transactions to boost your reliability score</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span><strong>Respond promptly:</strong> Quick responses improve your communication score</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span><strong>Provide accurate information:</strong> Honest listings increase your honesty score</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span><strong>Avoid flags:</strong> Ensure all your listings and transactions comply with platform rules</span>
+              </li>
+            </ul>
+          </CardContent>
         </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>How Reputation Works</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="font-semibold mb-2">Building Your Score</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Complete deals successfully to increase reliability and honesty scores</li>
-              <li>Respond quickly to messages to improve communication score</li>
-              <li>Verify payment proofs promptly as a seller</li>
-              <li>Upload legitimate payment proofs as a buyer</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">What Hurts Your Score</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Compliance flags and fraud signals</li>
-              <li>Rejecting legitimate payment proofs</li>
-              <li>Uploading fake payment documents</li>
-              <li>Suspicious activity or policy violations</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
