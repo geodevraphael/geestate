@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { Navigate } from 'react-router-dom';
 
 export default function AdminPayments() {
-  const { profile } = useAuth();
+  const { profile, hasRole } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [paymentProofs, setPaymentProofs] = useState<any[]>([]);
@@ -25,7 +25,7 @@ export default function AdminPayments() {
   const [notes, setNotes] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  const isAdmin = profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role);
+  const isAdmin = hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer');
 
   useEffect(() => {
     if (isAdmin) {

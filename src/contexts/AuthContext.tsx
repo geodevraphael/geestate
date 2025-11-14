@@ -7,6 +7,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  roles: string[];
+  primaryRole: string | null;
+  hasRole: (role: string) => boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
@@ -20,21 +23,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [primaryRole, setPrimaryRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await (supabase as any)
+      // Fetch profile
+      const { data: profileData, error: profileError } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) throw error;
-      setProfile(data);
+      if (profileError) throw profileError;
+      setProfile(profileData);
+
+      // Fetch roles from user_roles table
+      const { data: rolesData, error: rolesError } = await (supabase as any)
+        .from('user_roles')
+        .select('role, assigned_at')
+        .eq('user_id', userId)
+        .order('assigned_at', { ascending: true });
+
+      if (rolesError) throw rolesError;
+      
+      const userRoles = rolesData?.map((r: any) => r.role) || [];
+      setRoles(userRoles);
+      setPrimaryRole(userRoles[0] || null);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
+  };
+
+  const hasRole = (role: string) => {
+    return roles.includes(role);
   };
 
   const refreshProfile = async () => {
@@ -103,6 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setRoles([]);
+    setPrimaryRole(null);
   };
 
   return (
@@ -111,6 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         profile,
+        roles,
+        primaryRole,
+        hasRole,
         loading,
         signIn,
         signUp,

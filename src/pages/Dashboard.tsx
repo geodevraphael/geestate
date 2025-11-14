@@ -19,21 +19,21 @@ export default function Dashboard() {
 }
 
 function DashboardContent() {
-  const { profile } = useAuth();
+  const { profile, roles, hasRole } = useAuth();
   const [listings, setListings] = useState<Listing[]>([]);
   const [stats, setStats] = useState({ total: 0, published: 0, pending: 0, draft: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [profile]);
+  }, [profile, roles]);
 
   const fetchDashboardData = async () => {
-    if (!profile) return;
+    if (!profile || !roles || roles.length === 0) return;
 
     try {
-      const isSeller = ['seller', 'broker', 'admin'].includes(profile.role!);
-      const isAdmin = ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role!);
+      const isSeller = hasRole('seller') || hasRole('broker') || hasRole('admin');
+      const isAdmin = hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer');
 
       if (isSeller) {
         // Fetch user's own listings
@@ -122,8 +122,8 @@ function DashboardContent() {
     );
   };
 
-  const isSeller = profile?.role && ['seller', 'broker', 'admin'].includes(profile.role);
-  const isAdmin = profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role);
+  const isSeller = hasRole('seller') || hasRole('broker') || hasRole('admin');
+  const isAdmin = hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer');
 
   return (
     <div className="min-h-screen bg-background">

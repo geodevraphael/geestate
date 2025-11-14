@@ -27,7 +27,7 @@ import 'ol/ol.css';
 
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
-  const { profile, user } = useAuth();
+  const { profile, user, hasRole } = useAuth();
   const [listing, setListing] = useState<ListingWithDetails | null>(null);
   const [polygon, setPolygon] = useState<ListingPolygon | null>(null);
   const [media, setMedia] = useState<ListingMedia[]>([]);
@@ -173,7 +173,7 @@ export default function ListingDetail() {
   };
 
   const canEdit = profile?.id === listing?.owner_id || 
-    profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role);
+    hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer');
 
   const getVerificationBadge = () => {
     if (!listing) return null;

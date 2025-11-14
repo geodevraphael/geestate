@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,8 +32,15 @@ const roles: { value: AppRole; label: string; description: string; icon: React.R
 export default function Onboarding() {
   const [selectedRole, setSelectedRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(false);
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, roles: userRoles } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if user already has a role
+  useEffect(() => {
+    if (userRoles && userRoles.length > 0) {
+      navigate('/dashboard');
+    }
+  }, [userRoles, navigate]);
 
   const handleRoleSelection = async () => {
     if (!selectedRole || !user) return;
@@ -41,10 +48,14 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
+      // Insert role into user_roles table
       const { error } = await (supabase as any)
-        .from('profiles')
-        .update({ role: selectedRole })
-        .eq('id', user.id);
+        .from('user_roles')
+        .insert({
+          user_id: user.id,
+          role: selectedRole,
+          assigned_by: user.id, // Self-assigned during onboarding
+        });
 
       if (error) throw error;
 
