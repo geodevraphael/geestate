@@ -12,6 +12,7 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
+import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Polygon } from 'ol/geom';
@@ -30,11 +31,13 @@ export default function MapBrowse() {
   const [loading, setLoading] = useState(true);
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
+  const [basemap, setBasemap] = useState<'street' | 'satellite'>('street');
   const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<Map | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<Overlay | null>(null);
+  const baseTileLayerRef = useRef<TileLayer<OSM> | null>(null);
 
   useEffect(() => {
     fetchListingsWithPolygons();
@@ -76,13 +79,14 @@ export default function MapBrowse() {
   useEffect(() => {
     if (!mapRef.current) return;
 
+    const baseLayer = new TileLayer({
+      source: new OSM(),
+    });
+    baseTileLayerRef.current = baseLayer;
+
     const map = new Map({
       target: mapRef.current,
-      layers: [
-        new TileLayer({
-          source: new OSM(),
-        }),
-      ],
+      layers: [baseLayer],
       view: new View({
         center: fromLonLat([34.888822, -6.369028]),
         zoom: 6,
@@ -108,6 +112,19 @@ export default function MapBrowse() {
       map.setTarget(undefined);
     };
   }, []);
+
+  useEffect(() => {
+    if (!mapInstance.current || !baseTileLayerRef.current) return;
+
+    const source = basemap === 'satellite'
+      ? new XYZ({
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attributions: 'Tiles © Esri',
+        })
+      : new OSM();
+
+    baseTileLayerRef.current.setSource(source);
+  }, [basemap]);
 
   useEffect(() => {
     if (!mapInstance.current) return;
@@ -225,6 +242,19 @@ export default function MapBrowse() {
                   <SelectItem value="apartment">Apartment</SelectItem>
                   <SelectItem value="commercial">Commercial</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="pt-4 border-t border-border">
+              <label className="text-sm font-medium mb-2 block">Basemap</label>
+              <Select value={basemap} onValueChange={(value: 'street' | 'satellite') => setBasemap(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Basemap" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="street">Street Map</SelectItem>
+                  <SelectItem value="satellite">Satellite Imagery</SelectItem>
                 </SelectContent>
               </Select>
             </div>
