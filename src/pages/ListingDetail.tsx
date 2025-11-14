@@ -31,7 +31,7 @@ export default function ListingDetail() {
   const fetchListing = async () => {
     try {
       // Fetch listing
-      const { data: listingData, error: listingError } = await supabase
+      const { data: listingData, error: listingError } = await (supabase as any)
         .from('listings')
         .select('*')
         .eq('id', id)
@@ -41,7 +41,7 @@ export default function ListingDetail() {
       setListing(listingData);
 
       // Fetch polygon
-      const { data: polygonData } = await supabase
+      const { data: polygonData } = await (supabase as any)
         .from('listing_polygons')
         .select('*')
         .eq('listing_id', id)
@@ -50,7 +50,7 @@ export default function ListingDetail() {
       setPolygon(polygonData);
 
       // Fetch media
-      const { data: mediaData } = await supabase
+      const { data: mediaData } = await (supabase as any)
         .from('listing_media')
         .select('*')
         .eq('listing_id', id)
@@ -59,13 +59,15 @@ export default function ListingDetail() {
       setMedia(mediaData || []);
 
       // Fetch owner
-      const { data: ownerData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', listingData.owner_id)
-        .single();
+      if (listingData) {
+        const { data: ownerData } = await (supabase as any)
+          .from('profiles')
+          .select('*')
+          .eq('id', listingData.owner_id)
+          .single();
 
-      setOwner(ownerData);
+        setOwner(ownerData);
+      }
     } catch (error) {
       console.error('Error fetching listing:', error);
     } finally {
@@ -254,10 +256,9 @@ export default function ListingDetail() {
               <Card>
                 <CardContent className="p-0">
                   <div className="h-96 rounded-lg overflow-hidden">
-                    <MapContainer center={center} zoom={15} className="h-full w-full" {...({} as any)}>
+                    <MapContainer center={center} zoom={15} className="h-full w-full">
                       <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        {...({} as any)}
                       />
                       <Polygon
                         positions={polygonCoordinates}

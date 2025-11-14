@@ -37,7 +37,7 @@ function DashboardContent() {
 
       if (isSeller) {
         // Fetch user's own listings
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('listings')
           .select('*')
           .eq('owner_id', profile.id)
@@ -48,13 +48,13 @@ function DashboardContent() {
         setListings(data || []);
         setStats({
           total: data?.length || 0,
-          published: data?.filter(l => l.status === 'published').length || 0,
-          pending: data?.filter(l => l.verification_status === 'pending').length || 0,
-          draft: data?.filter(l => l.status === 'draft').length || 0,
+          published: data?.filter((l: any) => l.status === 'published').length || 0,
+          pending: data?.filter((l: any) => l.verification_status === 'pending').length || 0,
+          draft: data?.filter((l: any) => l.status === 'draft').length || 0,
         });
       } else if (isAdmin) {
         // Fetch all listings for admin
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('listings')
           .select('*')
           .order('created_at', { ascending: false })
@@ -65,11 +65,11 @@ function DashboardContent() {
         setListings(data || []);
         
         // Fetch stats
-        const { count: totalCount } = await supabase
+        const { count: totalCount } = await (supabase as any)
           .from('listings')
           .select('*', { count: 'exact', head: true });
         
-        const { count: pendingCount } = await supabase
+        const { count: pendingCount } = await (supabase as any)
           .from('listings')
           .select('*', { count: 'exact', head: true })
           .eq('verification_status', 'pending');
