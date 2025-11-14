@@ -1,15 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
-import { MapContainer, TileLayer, Polygon, Popup } from 'react-leaflet';
-import type { LatLngExpression } from 'leaflet';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, CheckCircle2 } from 'lucide-react';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import { Polygon } from 'ol/geom';
+import Feature from 'ol/Feature';
+import { Style, Fill, Stroke } from 'ol/style';
+import { fromLonLat } from 'ol/proj';
+import Overlay from 'ol/Overlay';
+import 'ol/ol.css';
 
 interface ListingWithPolygon extends ListingWithDetails {
   polygon?: ListingPolygon;
@@ -20,6 +30,11 @@ export default function MapBrowse() {
   const [loading, setLoading] = useState(true);
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
+  const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<Map | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<Overlay | null>(null);
 
   useEffect(() => {
     fetchListingsWithPolygons();
@@ -37,7 +52,6 @@ export default function MapBrowse() {
 
       if (error) throw error;
       
-      // Filter to only listings that have polygons
       const listingsWithPolygons = (data || []).filter((listing: any) => listing.polygon);
       setListings(listingsWithPolygons);
     } catch (error) {
@@ -53,14 +67,126 @@ export default function MapBrowse() {
     return matchesListingType && matchesPropertyType;
   });
 
-  // Tanzania center coordinates
-  const center: LatLngExpression = [-6.369028, 34.888822];
-
   const getPolygonColor = (listing: ListingWithPolygon) => {
-    if (listing.verification_status === 'verified') return '#22c55e'; // Success green
-    if (listing.verification_status === 'pending') return '#eab308'; // Warning yellow
-    return '#94a3b8'; // Muted gray
+    if (listing.verification_status === 'verified') return '#22c55e';
+    if (listing.verification_status === 'pending') return '#eab308';
+    return '#94a3b8';
   };
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = new Map({
+      target: mapRef.current,
+      layers: [
+        new TileLayer({
+          source: new OSM(),
+        }),
+      ],
+      view: new View({
+        center: fromLonLat([34.888822, -6.369028]),
+        zoom: 6,
+      }),
+    });
+
+    mapInstance.current = map;
+
+    if (popupRef.current) {
+      const overlay = new Overlay({
+        element: popupRef.current,
+        autoPan: {
+          animation: {
+            duration: 250,
+          },
+        },
+      });
+      map.addOverlay(overlay);
+      overlayRef.current = overlay;
+    }
+
+    return () => {
+      map.setTarget(undefined);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    const layers = mapInstance.current.getLayers().getArray();
+    layers.forEach(layer => {
+      if (layer instanceof VectorLayer) {
+        mapInstance.current?.removeLayer(layer);
+      }
+    });
+
+    const features: Feature[] = [];
+    
+    filteredListings.forEach((listing) => {
+      if (!listing.polygon?.geojson) return;
+
+      try {
+        const geojson = typeof listing.polygon.geojson === 'string' 
+          ? JSON.parse(listing.polygon.geojson) 
+          : listing.polygon.geojson;
+
+        const coordinates = geojson.coordinates[0].map((coord: [number, number]) => 
+          fromLonLat([coord[0], coord[1]])
+        );
+
+        const polygon = new Polygon([coordinates]);
+        const feature = new Feature({
+          geometry: polygon,
+          listing: listing,
+        });
+
+        const color = getPolygonColor(listing);
+        feature.setStyle(
+          new Style({
+            fill: new Fill({
+              color: color + '66',
+            }),
+            stroke: new Stroke({
+              color: color,
+              width: 2,
+            }),
+          })
+        );
+
+        features.push(feature);
+      } catch (error) {
+        console.error('Error rendering polygon:', error);
+      }
+    });
+
+    const vectorSource = new VectorSource({
+      features: features,
+    });
+
+    const vectorLayer = new VectorLayer({
+      source: vectorSource,
+    });
+
+    mapInstance.current.addLayer(vectorLayer);
+
+    mapInstance.current.on('click', (evt) => {
+      const feature = mapInstance.current?.forEachFeatureAtPixel(evt.pixel, (f) => f);
+      if (feature) {
+        const listing = feature.get('listing') as ListingWithPolygon;
+        setSelectedListing(listing);
+        overlayRef.current?.setPosition(evt.coordinate);
+      } else {
+        setSelectedListing(null);
+        overlayRef.current?.setPosition(undefined);
+      }
+    });
+
+    mapInstance.current.on('pointermove', (evt) => {
+      const hit = mapInstance.current?.hasFeatureAtPixel(evt.pixel);
+      if (mapRef.current) {
+        mapRef.current.style.cursor = hit ? 'pointer' : '';
+      }
+    });
+  }, [filteredListings]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,68 +253,33 @@ export default function MapBrowse() {
 
         {/* Map */}
         <div className="flex-1 relative">
-          <MapContainer
-            center={center}
-            zoom={6}
-            className="h-full w-full"
-            style={{ background: '#f8f9fa' }}
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+          <div ref={mapRef} className="h-full w-full" />
 
-            {filteredListings
-              .filter(listing => listing.polygon?.geojson)
-              .map((listing) => {
-                try {
-                  const geojson = typeof listing.polygon!.geojson === 'string' 
-                    ? JSON.parse(listing.polygon!.geojson) 
-                    : listing.polygon!.geojson;
-
-                  const coordinates = geojson.coordinates[0].map((coord: [number, number]) => [coord[1], coord[0]]);
-
-                  return (
-                    <Polygon
-                      key={listing.id}
-                      positions={coordinates}
-                      pathOptions={{
-                        color: getPolygonColor(listing),
-                        fillColor: getPolygonColor(listing),
-                        fillOpacity: 0.4,
-                        weight: 2,
-                      }}
-                    >
-                      <Popup>
-                        <div className="p-2">
-                          <h3 className="font-semibold mb-2">{listing.title}</h3>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                            <MapPin className="h-3 w-3" />
-                            {listing.location_label}
-                          </div>
-                          {listing.verification_status === 'verified' && (
-                            <Badge className="bg-success text-success-foreground mb-2">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Verified
-                            </Badge>
-                          )}
-                          <div className="text-lg font-bold text-primary mb-3">
-                            {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
-                          </div>
-                          <Link to={`/listings/${listing.id}`}>
-                            <Button size="sm" className="w-full">
-                              View Details
-                            </Button>
-                          </Link>
-                        </div>
-                      </Popup>
-                    </Polygon>
-                  );
-                } catch (error) {
-                  console.error('Error rendering polygon:', error);
-                  return null;
-                }
-              }).filter(Boolean)}
-          </MapContainer>
+          <div ref={popupRef} className="absolute bg-card border border-border rounded-lg shadow-lg p-0 min-w-[250px]" style={{ display: selectedListing ? 'block' : 'none' }}>
+            {selectedListing && (
+              <div className="p-4">
+                <h3 className="font-semibold mb-2">{selectedListing.title}</h3>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                  <MapPin className="h-3 w-3" />
+                  {selectedListing.location_label}
+                </div>
+                {selectedListing.verification_status === 'verified' && (
+                  <Badge className="bg-success text-success-foreground mb-2">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
+                <div className="text-lg font-bold text-primary mb-3">
+                  {selectedListing.price ? `${selectedListing.price.toLocaleString()} ${selectedListing.currency}` : 'Price on request'}
+                </div>
+                <Link to={`/listings/${selectedListing.id}`}>
+                  <Button size="sm" className="w-full">
+                    View Details
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
 
           {filteredListings.length === 0 && !loading && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

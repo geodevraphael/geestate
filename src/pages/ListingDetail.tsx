@@ -1,16 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
-import { MapContainer, TileLayer, Polygon } from 'react-leaflet';
-import type { LatLngExpression } from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft } from 'lucide-react';
 import { ListingWithDetails, ListingPolygon, ListingMedia, Profile } from '@/types/database';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import { Polygon } from 'ol/geom';
+import Feature from 'ol/Feature';
+import { Style, Fill, Stroke } from 'ol/style';
+import { fromLonLat } from 'ol/proj';
+import 'ol/ol.css';
 
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,12 +29,77 @@ export default function ListingDetail() {
   const [media, setMedia] = useState<ListingMedia[]>([]);
   const [owner, setOwner] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
       fetchListing();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!mapRef.current || !polygon?.geojson) return;
+
+    try {
+      const geojson = typeof polygon.geojson === 'string' 
+        ? JSON.parse(polygon.geojson) 
+        : polygon.geojson;
+
+      const coordinates = geojson.coordinates[0].map((coord: [number, number]) => 
+        fromLonLat([coord[0], coord[1]])
+      );
+
+      const polygonGeom = new Polygon([coordinates]);
+      const feature = new Feature({
+        geometry: polygonGeom,
+      });
+
+      const color = listing?.verification_status === 'verified' ? '#22c55e' : '#eab308';
+      feature.setStyle(
+        new Style({
+          fill: new Fill({
+            color: color + '66',
+          }),
+          stroke: new Stroke({
+            color: color,
+            width: 3,
+          }),
+        })
+      );
+
+      const vectorSource = new VectorSource({
+        features: [feature],
+      });
+
+      const vectorLayer = new VectorLayer({
+        source: vectorSource,
+      });
+
+      const center = polygon.centroid_lng && polygon.centroid_lat
+        ? fromLonLat([polygon.centroid_lng, polygon.centroid_lat])
+        : fromLonLat([34.888822, -6.369028]);
+
+      const map = new Map({
+        target: mapRef.current,
+        layers: [
+          new TileLayer({
+            source: new OSM(),
+          }),
+          vectorLayer,
+        ],
+        view: new View({
+          center: center,
+          zoom: 15,
+        }),
+      });
+
+      return () => {
+        map.setTarget(undefined);
+      };
+    } catch (error) {
+      console.error('Error rendering map:', error);
+    }
+  }, [polygon, listing]);
 
   const fetchListing = async () => {
     try {
@@ -129,23 +203,6 @@ export default function ListingDetail() {
       </div>
     );
   }
-
-  const polygonCoordinates = polygon?.geojson
-    ? (() => {
-        try {
-          const geojson = typeof polygon.geojson === 'string' 
-            ? JSON.parse(polygon.geojson) 
-            : polygon.geojson;
-          return geojson.coordinates[0].map((coord: [number, number]) => [coord[1], coord[0]]);
-        } catch {
-          return null;
-        }
-      })()
-    : null;
-
-  const center: LatLngExpression = polygon?.centroid_lat && polygon?.centroid_lng
-    ? [polygon.centroid_lat, polygon.centroid_lng]
-    : [-6.369028, 34.888822];
 
   return (
     <div className="min-h-screen bg-background">
@@ -251,25 +308,10 @@ export default function ListingDetail() {
             </Card>
 
             {/* Map */}
-            {polygon && polygonCoordinates && (
+            {polygon && (
               <Card>
                 <CardContent className="p-0">
-                  <div className="h-96 rounded-lg overflow-hidden">
-                    <MapContainer center={center} zoom={15} className="h-full w-full">
-                      <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      <Polygon
-                        positions={polygonCoordinates}
-                        pathOptions={{
-                          color: listing.verification_status === 'verified' ? '#22c55e' : '#eab308',
-                          fillColor: listing.verification_status === 'verified' ? '#22c55e' : '#eab308',
-                          fillOpacity: 0.4,
-                          weight: 3,
-                        }}
-                      />
-                    </MapContainer>
-                  </div>
+                  <div ref={mapRef} className="h-96 rounded-lg overflow-hidden" />
                 </CardContent>
               </Card>
             )}
