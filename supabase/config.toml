@@ -17,3 +17,9 @@ verify_jwt = true
 
 [functions.calculate-valuation]
 verify_jwt = true
+
+[functions.detect-admin-boundaries]
+verify_jwt = false
+
+[functions.setup-staff-accounts]
+verify_jwt = false
