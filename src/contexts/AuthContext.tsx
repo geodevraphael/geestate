@@ -29,30 +29,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // Fetch profile
-      const { data: profileData, error: profileError } = await (supabase as any)
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      // Fetch profile and roles in parallel for better performance
+      const [profileResult, rolesResult] = await Promise.all([
+        (supabase as any)
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle(),
+        (supabase as any)
+          .from('user_roles')
+          .select('role, assigned_at')
+          .eq('user_id', userId)
+          .order('assigned_at', { ascending: true })
+      ]);
 
-      if (profileError) throw profileError;
-      setProfile(profileData);
-
-      // Fetch roles from user_roles table
-      const { data: rolesData, error: rolesError } = await (supabase as any)
-        .from('user_roles')
-        .select('role, assigned_at')
-        .eq('user_id', userId)
-        .order('assigned_at', { ascending: true });
-
-      if (rolesError) throw rolesError;
+      if (profileResult.error) throw profileResult.error;
+      if (rolesResult.error) throw rolesResult.error;
       
-      const userRoles = rolesData?.map((r: any) => r.role) || [];
+      setProfile(profileResult.data);
+      
+      const userRoles = rolesResult.data?.map((r: any) => r.role) || [];
       setRoles(userRoles);
       setPrimaryRole(userRoles[0] || null);
     } catch (error) {
       console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,11 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Fetch profile when user logs in
         if (session?.user) {
+          setLoading(true);
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
         } else {
           setProfile(null);
+          setRoles([]);
+          setPrimaryRole(null);
+          setLoading(false);
         }
       }
     );
@@ -90,8 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
