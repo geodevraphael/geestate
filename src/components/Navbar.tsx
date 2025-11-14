@@ -34,6 +34,24 @@ export function Navbar() {
                 <Link to="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                   Dashboard
                 </Link>
+                
+                {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
+                  <Link to="/payment-proofs" className="text-sm font-medium hover:text-primary transition-colors">
+                    Payments
+                  </Link>
+                )}
+
+                {profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role) && (
+                  <>
+                    <Link to="/admin/payments" className="text-sm font-medium hover:text-primary transition-colors">
+                      Admin Payments
+                    </Link>
+                    <Link to="/admin/compliance" className="text-sm font-medium hover:text-primary transition-colors">
+                      Compliance
+                    </Link>
+                  </>
+                )}
+
                 {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
                   <Link to="/listings/new">
                     <Button size="sm" className="bg-primary hover:bg-primary/90">
@@ -94,6 +112,36 @@ export function Navbar() {
                 >
                   Dashboard
                 </Link>
+
+                {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
+                  <Link
+                    to="/payment-proofs"
+                    className="block py-2 text-sm font-medium hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Payments
+                  </Link>
+                )}
+
+                {profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role) && (
+                  <>
+                    <Link
+                      to="/admin/payments"
+                      className="block py-2 text-sm font-medium hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Admin Payments
+                    </Link>
+                    <Link
+                      to="/admin/compliance"
+                      className="block py-2 text-sm font-medium hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Compliance
+                    </Link>
+                  </>
+                )}
+
                 {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
                   <Link
                     to="/listings/new"
