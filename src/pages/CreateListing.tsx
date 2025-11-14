@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, X, MapPin, Save } from 'lucide-react';
+import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil } from 'lucide-react';
 import { validatePolygon } from '@/lib/polygonValidation';
 import { PolygonValidationPanel } from '@/components/PolygonValidationPanel';
 import { logAuditAction } from '@/lib/auditLog';
@@ -21,12 +22,46 @@ import OSM from 'ol/source/OSM';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Draw from 'ol/interaction/Draw';
+import { defaults as defaultControls, FullScreen, ScaleLine, ZoomToExtent } from 'ol/control';
 import { Polygon } from 'ol/geom';
 import Feature from 'ol/Feature';
-import { Style, Fill, Stroke } from 'ol/style';
+import { Style, Fill, Stroke, Text } from 'ol/style';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import * as turf from '@turf/turf';
+import { z } from 'zod';
 import 'ol/ol.css';
+
+// GeoJSON Schema supporting both single features and feature collections
+const geoJsonSchema = z.union([
+  // Single Feature
+  z.object({
+    type: z.literal('Feature'),
+    properties: z.record(z.any()).optional(),
+    geometry: z.object({
+      type: z.literal('Polygon'),
+      coordinates: z.array(z.array(z.array(z.number()))),
+    }),
+  }),
+  // FeatureCollection (multiple parcels)
+  z.object({
+    type: z.literal('FeatureCollection'),
+    features: z.array(
+      z.object({
+        type: z.literal('Feature'),
+        properties: z.record(z.any()).optional(),
+        geometry: z.object({
+          type: z.literal('Polygon'),
+          coordinates: z.array(z.array(z.array(z.number()))),
+        }),
+      })
+    ),
+  }),
+  // Direct Polygon
+  z.object({
+    type: z.literal('Polygon'),
+    coordinates: z.array(z.array(z.array(z.number()))),
+  }),
+]);
 
 export default function CreateListing() {
   const { id } = useParams<{ id: string }>();
@@ -41,7 +76,9 @@ export default function CreateListing() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [existingListing, setExistingListing] = useState<any>(null);
-  const [drawnPolygon, setDrawnPolygon] = useState<any>(null);
+  const [polygons, setPolygons] = useState<any[]>([]);
+  const [jsonFileName, setJsonFileName] = useState<string>('');
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -59,41 +96,66 @@ export default function CreateListing() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [existingMedia, setExistingMedia] = useState<any[]>([]);
 
+  const isLandProperty = formData.property_type === 'land';
+
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
 
-    // Initialize map
     if (mapRef.current && !mapInstance.current) {
       initializeMap();
     }
 
-    // Load existing listing if editing
     if (id) {
       loadExistingListing();
     }
   }, [user, id]);
+
+  // Update drawing mode based on property type
+  useEffect(() => {
+    if (!isLandProperty && !isDrawingMode) {
+      enableDrawingMode();
+    } else if (isLandProperty && isDrawingMode) {
+      disableDrawingMode();
+    }
+  }, [formData.property_type]);
 
   const initializeMap = () => {
     vectorSource.current = new VectorSource();
 
     const vectorLayer = new VectorLayer({
       source: vectorSource.current,
-      style: new Style({
-        fill: new Fill({
-          color: 'rgba(234, 179, 8, 0.4)',
-        }),
-        stroke: new Stroke({
-          color: '#eab308',
-          width: 3,
-        }),
-      }),
+      style: (feature) => {
+        const isLand = feature.get('isLand');
+        return new Style({
+          fill: new Fill({
+            color: isLand ? 'rgba(234, 179, 8, 0.3)' : 'rgba(59, 130, 246, 0.3)',
+          }),
+          stroke: new Stroke({
+            color: isLand ? '#eab308' : '#3b82f6',
+            width: 2,
+          }),
+          text: new Text({
+            text: feature.get('label') || '',
+            fill: new Fill({ color: '#000' }),
+            stroke: new Stroke({ color: '#fff', width: 3 }),
+            font: '12px sans-serif',
+          }),
+        });
+      },
     });
 
     mapInstance.current = new Map({
       target: mapRef.current!,
+      controls: defaultControls().extend([
+        new FullScreen(),
+        new ScaleLine(),
+        new ZoomToExtent({
+          extent: fromLonLat([29.0, -12.0]).concat(fromLonLat([41.0, -1.0]))
+        }),
+      ]),
       layers: [
         new TileLayer({
           source: new OSM(),
@@ -101,12 +163,25 @@ export default function CreateListing() {
         vectorLayer,
       ],
       view: new View({
-        center: fromLonLat([34.888822, -6.369028]), // Tanzania center
+        center: fromLonLat([34.888822, -6.369028]),
         zoom: 6,
+        minZoom: 5,
+        maxZoom: 20,
       }),
     });
 
-    // Add draw interaction
+    // Enable mouse wheel zoom
+    mapInstance.current.getView().setConstrainResolution(false);
+  };
+
+  const enableDrawingMode = () => {
+    if (!mapInstance.current || !vectorSource.current) return;
+
+    // Remove existing draw interaction
+    if (drawInteraction.current) {
+      mapInstance.current.removeInteraction(drawInteraction.current);
+    }
+
     drawInteraction.current = new Draw({
       source: vectorSource.current,
       type: 'Polygon',
@@ -117,25 +192,138 @@ export default function CreateListing() {
       const geometry = feature.getGeometry() as Polygon;
       const coordinates = geometry.getCoordinates()[0].map(coord => toLonLat(coord));
       
-      // Create GeoJSON
       const geojson = {
         type: 'Polygon',
         coordinates: [coordinates],
       };
 
-      setDrawnPolygon(geojson);
+      feature.set('isLand', false);
+      feature.set('label', `Parcel ${polygons.length + 1}`);
 
-      // Remove old polygons
-      vectorSource.current?.clear();
-      vectorSource.current?.addFeature(feature);
+      setPolygons(prev => [...prev, geojson]);
 
-      // Remove draw interaction after drawing
-      if (mapInstance.current && drawInteraction.current) {
-        mapInstance.current.removeInteraction(drawInteraction.current);
-      }
+      toast({
+        title: 'Polygon drawn',
+        description: 'Property boundary has been added',
+      });
     });
 
     mapInstance.current.addInteraction(drawInteraction.current);
+    setIsDrawingMode(true);
+  };
+
+  const disableDrawingMode = () => {
+    if (mapInstance.current && drawInteraction.current) {
+      mapInstance.current.removeInteraction(drawInteraction.current);
+      drawInteraction.current = null;
+    }
+    setIsDrawingMode(false);
+  };
+
+  const clearAllPolygons = () => {
+    if (vectorSource.current) {
+      vectorSource.current.clear();
+    }
+    setPolygons([]);
+    setJsonFileName('');
+    toast({
+      title: 'Cleared',
+      description: 'All polygons have been removed',
+    });
+  };
+
+  const displayPolygonsOnMap = (polygonArray: any[], isLand: boolean = false) => {
+    if (!vectorSource.current || !mapInstance.current) return;
+
+    vectorSource.current.clear();
+    const features: Feature[] = [];
+
+    polygonArray.forEach((geojson, index) => {
+      const coordinates = geojson.coordinates[0].map((coord: [number, number]) => 
+        fromLonLat([coord[0], coord[1]])
+      );
+      const polygonGeom = new Polygon([coordinates]);
+      const feature = new Feature({ geometry: polygonGeom });
+      feature.set('isLand', isLand);
+      feature.set('label', isLand ? `Parcel ${index + 1}` : '');
+      features.push(feature);
+    });
+
+    vectorSource.current.addFeatures(features);
+
+    // Fit map to all features
+    const extent = vectorSource.current.getExtent();
+    mapInstance.current.getView().fit(extent, { 
+      padding: [50, 50, 50, 50],
+      duration: 1000
+    });
+  };
+
+  const handleGeoJsonUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.match(/\.(json|geojson)$/i)) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload a GeoJSON or JSON file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const jsonData = JSON.parse(text);
+      
+      // Validate GeoJSON structure
+      const validated = geoJsonSchema.parse(jsonData);
+      
+      let extractedPolygons: any[] = [];
+
+      if (validated.type === 'FeatureCollection') {
+        // Multiple parcels
+        extractedPolygons = validated.features.map(f => f.geometry);
+        toast({
+          title: 'GeoJSON loaded',
+          description: `${extractedPolygons.length} parcel(s) imported successfully`,
+        });
+      } else if (validated.type === 'Feature') {
+        // Single feature
+        extractedPolygons = [validated.geometry];
+        toast({
+          title: 'GeoJSON loaded',
+          description: '1 parcel imported successfully',
+        });
+      } else if (validated.type === 'Polygon') {
+        // Direct polygon
+        extractedPolygons = [validated];
+        toast({
+          title: 'GeoJSON loaded',
+          description: '1 parcel imported successfully',
+        });
+      }
+
+      setPolygons(extractedPolygons);
+      displayPolygonsOnMap(extractedPolygons, true);
+      setJsonFileName(file.name);
+      
+    } catch (error) {
+      console.error('GeoJSON parsing error:', error);
+      let errorMessage = 'Failed to parse GeoJSON file';
+      
+      if (error instanceof z.ZodError) {
+        errorMessage = 'Invalid GeoJSON format. Must contain Polygon geometries.';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: 'Invalid GeoJSON',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    }
   };
 
   const loadExistingListing = async () => {
@@ -166,22 +354,8 @@ export default function CreateListing() {
         const geojson = typeof polygonRes.data.geojson === 'string' 
           ? JSON.parse(polygonRes.data.geojson) 
           : polygonRes.data.geojson;
-        setDrawnPolygon(geojson);
-        
-        // Draw existing polygon on map
-        if (vectorSource.current) {
-          const coordinates = geojson.coordinates[0].map((coord: [number, number]) => 
-            fromLonLat([coord[0], coord[1]])
-          );
-          const polygonGeom = new Polygon([coordinates]);
-          const feature = new Feature({ geometry: polygonGeom });
-          vectorSource.current.addFeature(feature);
-
-          // Center map on polygon
-          if (mapInstance.current) {
-            mapInstance.current.getView().fit(polygonGeom.getExtent(), { padding: [50, 50, 50, 50] });
-          }
-        }
+        setPolygons([geojson]);
+        displayPolygonsOnMap([geojson], listingRes.data?.property_type === 'land');
       }
 
       if (mediaRes.data) {
@@ -216,68 +390,127 @@ export default function CreateListing() {
       if (error) throw error;
 
       setExistingMedia(prev => prev.filter(m => m.id !== mediaId));
-      toast({ title: 'Success', description: 'Image removed' });
+      
+      toast({
+        title: 'Media removed',
+        description: 'Media file has been deleted',
+      });
     } catch (error) {
       console.error('Error removing media:', error);
-      toast({ title: 'Error', description: 'Failed to remove image', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: 'Failed to remove media',
+        variant: 'destructive',
+      });
     }
   };
 
-  const enablePolygonDrawing = () => {
-    if (mapInstance.current && drawInteraction.current) {
-      mapInstance.current.addInteraction(drawInteraction.current);
-      vectorSource.current?.clear();
-      setDrawnPolygon(null);
+  const uploadFiles = async (listingId: string) => {
+    if (selectedFiles.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadPromises = selectedFiles.map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${listingId}/${Math.random()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('listing-images')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('listing-images')
+          .getPublicUrl(fileName);
+
+        return {
+          listing_id: listingId,
+          file_url: publicUrl,
+          media_type: 'image' as 'image',
+        };
+      });
+
+      const mediaRecords = await Promise.all(uploadPromises);
+
+      const { error: insertError } = await supabase
+        .from('listing_media')
+        .insert(mediaRecords);
+
+      if (insertError) throw insertError;
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      throw error;
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!drawnPolygon) {
+    // Validation: Land must have JSON upload
+    if (isLandProperty && jsonFileName === '') {
       toast({
-        title: 'Missing Polygon',
-        description: 'Please draw a polygon on the map to define the property boundaries',
+        title: 'GeoJSON Required',
+        description: 'Land parcels must be uploaded via GeoJSON file',
         variant: 'destructive',
       });
       return;
     }
 
-    // Validate polygon
-    const validation = validatePolygon(drawnPolygon);
-    if (!validation.isValid) {
+    if (polygons.length === 0) {
       toast({
-        title: 'Invalid Polygon',
-        description: validation.errors.join(', '),
+        title: 'Boundary Required',
+        description: isLandProperty 
+          ? 'Please upload a GeoJSON file with parcel boundaries'
+          : 'Please draw the property boundary on the map',
         variant: 'destructive',
       });
       return;
+    }
+
+    // Validate all polygons
+    for (const polygon of polygons) {
+      const validation = validatePolygon(polygon);
+      if (!validation.isValid) {
+        toast({
+          title: 'Invalid Polygon',
+          description: validation.errors.join(', '),
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setLoading(true);
-
     try {
-      let listingId = id;
+      // Use first polygon for single polygon or create MultiPolygon
+      const primaryPolygon = polygons[0];
+      const turfPolygon = turf.polygon(primaryPolygon.coordinates);
+      const area = turf.area(turfPolygon);
+      const centroid = turf.centroid(turfPolygon);
 
       // Create or update listing
       const listingData = {
         title: formData.title,
-        description: formData.description || null,
+        description: formData.description,
         listing_type: formData.listing_type,
         property_type: formData.property_type,
         price: formData.price ? parseFloat(formData.price) : null,
         currency: formData.currency,
         location_label: formData.location_label,
-        region: formData.region || null,
-        district: formData.district || null,
-        ward: formData.ward || null,
+        region: formData.region,
+        district: formData.district,
+        ward: formData.ward,
         owner_id: user!.id,
-        status: 'draft' as const,
-        verification_status: 'unverified' as const,
+        status: 'draft' as 'draft',
+        verification_status: 'unverified' as 'unverified',
       };
 
+      let listingId = id;
+
       if (id) {
-        // Update existing listing
         const { error } = await supabase
           .from('listings')
           .update(listingData)
@@ -285,9 +518,20 @@ export default function CreateListing() {
 
         if (error) throw error;
 
-        await logAuditAction('UPDATE_LISTING', user!.id, id, { title: formData.title });
+        const { error: polygonError } = await supabase
+          .from('listing_polygons')
+          .update({
+            geojson: primaryPolygon,
+            area_m2: area,
+            centroid_lat: centroid.geometry.coordinates[1],
+            centroid_lng: centroid.geometry.coordinates[0],
+          })
+          .eq('listing_id', id);
+
+        if (polygonError) throw polygonError;
+
+        await logAuditAction('UPDATE_LISTING', user!.id, id);
       } else {
-        // Create new listing
         const { data, error } = await supabase
           .from('listings')
           .insert(listingData)
@@ -297,69 +541,40 @@ export default function CreateListing() {
         if (error) throw error;
         listingId = data.id;
 
-        await logAuditAction('CREATE_LISTING', user!.id, listingId, { title: formData.title });
+        const { error: polygonError } = await supabase
+          .from('listing_polygons')
+          .insert({
+            listing_id: data.id,
+            geojson: primaryPolygon,
+            area_m2: area,
+            centroid_lat: centroid.geometry.coordinates[1],
+            centroid_lng: centroid.geometry.coordinates[0],
+          });
+
+        if (polygonError) throw polygonError;
+
+        await logAuditAction('CREATE_LISTING', user!.id, data.id);
       }
 
-      // Save polygon
-      const polygon = turf.polygon(drawnPolygon.coordinates);
-      const area_m2 = turf.area(polygon);
-      const centroid = turf.centroid(polygon);
-
-      const polygonData = {
-        listing_id: listingId,
-        geojson: drawnPolygon,
-        area_m2,
-        centroid_lat: centroid.geometry.coordinates[1],
-        centroid_lng: centroid.geometry.coordinates[0],
-      };
-
-      const { error: polygonError } = await supabase
-        .from('listing_polygons')
-        .upsert(polygonData);
-
-      if (polygonError) throw polygonError;
-
-      // Upload images
       if (selectedFiles.length > 0) {
-        setUploading(true);
-        for (const file of selectedFiles) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${listingId}/${Date.now()}.${fileExt}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('listing-media')
-            .upload(fileName, file);
-
-          if (uploadError) throw uploadError;
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('listing-media')
-            .getPublicUrl(fileName);
-
-          await supabase.from('listing_media').insert({
-            listing_id: listingId,
-            file_url: publicUrl,
-            media_type: 'image' as const,
-          });
-        }
+        await uploadFiles(listingId!);
       }
 
       toast({
-        title: 'Success',
-        description: id ? 'Listing updated successfully' : 'Listing created successfully',
+        title: id ? 'Listing Updated' : 'Listing Created',
+        description: `Your listing has been ${id ? 'updated' : 'created'} successfully`,
       });
 
-      navigate(`/listings/${listingId}`);
-    } catch (error: any) {
+      navigate('/dashboard');
+    } catch (error) {
       console.error('Error saving listing:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save listing',
+        description: 'Failed to save listing',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
-      setUploading(false);
     }
   };
 
@@ -367,297 +582,303 @@ export default function CreateListing() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto p-6 max-w-5xl">
         <Button
           variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-6 flex items-center gap-2"
+          onClick={() => navigate('/dashboard')}
+          className="mb-4"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
         </Button>
 
-        <h1 className="text-3xl font-bold mb-6">
-          {id ? 'Edit Listing' : 'Create New Listing'}
-        </h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>{id ? 'Edit Listing' : 'Create New Listing'}</CardTitle>
+            <CardDescription>
+              {isLandProperty 
+                ? 'Upload GeoJSON file for land parcels (can contain multiple parcels)'
+                : 'Draw property boundary on the map'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Property Type Selection */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property_type">Property Type *</Label>
+                  <Select
+                    value={formData.property_type}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, property_type: value as any });
+                      clearAllPolygons();
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="land">Land / Parcel</SelectItem>
+                      <SelectItem value="house">House</SelectItem>
+                      <SelectItem value="apartment">Apartment</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Left Column - Form */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                  <CardDescription>Enter the property details</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="title">Title *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="e.g., 5 Acre Plot in Dar es Salaam"
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="listing_type">Listing Type *</Label>
+                  <Select
+                    value={formData.listing_type}
+                    onValueChange={(value) => setFormData({ ...formData, listing_type: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sale">For Sale</SelectItem>
+                      <SelectItem value="rent">For Rent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Describe the property..."
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="listing_type">Listing Type *</Label>
-                      <Select
-                        value={formData.listing_type}
-                        onValueChange={(value: 'sale' | 'rent') =>
-                          setFormData({ ...formData, listing_type: value })
-                        }
-                      >
-                        <SelectTrigger id="listing_type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sale">For Sale</SelectItem>
-                          <SelectItem value="rent">For Rent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="property_type">Property Type *</Label>
-                      <Select
-                        value={formData.property_type}
-                        onValueChange={(value: any) =>
-                          setFormData({ ...formData, property_type: value })
-                        }
-                      >
-                        <SelectTrigger id="property_type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="land">Land</SelectItem>
-                          <SelectItem value="house">House</SelectItem>
-                          <SelectItem value="apartment">Apartment</SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="col-span-2">
-                      <Label htmlFor="price">Price</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select
-                        value={formData.currency}
-                        onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                      >
-                        <SelectTrigger id="currency">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="TZS">TZS</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Location</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="location_label">Location Label *</Label>
-                    <Input
-                      id="location_label"
-                      value={formData.location_label}
-                      onChange={(e) => setFormData({ ...formData, location_label: e.target.value })}
-                      placeholder="e.g., Masaki, Dar es Salaam"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="region">Region</Label>
-                      <Input
-                        id="region"
-                        value={formData.region}
-                        onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                        placeholder="e.g., Dar es Salaam"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="district">District</Label>
-                      <Input
-                        id="district"
-                        value={formData.district}
-                        onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                        placeholder="e.g., Kinondoni"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="ward">Ward</Label>
-                      <Input
-                        id="ward"
-                        value={formData.ward}
-                        onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
-                        placeholder="e.g., Masaki"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Upload className="h-5 w-5" />
-                    Images
-                  </CardTitle>
-                  <CardDescription>Upload property photos</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Existing Media */}
-                  {existingMedia.length > 0 && (
-                    <div className="grid grid-cols-3 gap-4">
-                      {existingMedia.map((media) => (
-                        <div key={media.id} className="relative">
-                          <img
-                            src={media.file_url}
-                            alt="Property"
-                            className="w-full h-24 object-cover rounded-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute -top-2 -right-2 h-6 w-6"
-                            onClick={() => removeExistingMedia(media.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* New Files */}
-                  {selectedFiles.length > 0 && (
-                    <div className="grid grid-cols-3 gap-4">
-                      {selectedFiles.map((file, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            className="w-full h-24 object-cover rounded-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute -top-2 -right-2 h-6 w-6"
-                            onClick={() => removeFile(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileSelect}
-                      className="cursor-pointer"
-                    />
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Upload JPG, PNG, or WebP images (max 5MB each)
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - Map & Polygon */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
-                        Property Boundaries
-                      </CardTitle>
-                      <CardDescription>Draw the property polygon on the map</CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={enablePolygonDrawing}
-                    >
-                      {drawnPolygon ? 'Redraw' : 'Draw Polygon'}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div ref={mapRef} className="h-96 rounded-lg border" />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Click on the map to start drawing. Double-click to finish.
-                  </p>
-                </CardContent>
-              </Card>
-
-              {drawnPolygon && (
-                <PolygonValidationPanel geojson={drawnPolygon} />
+              {/* GeoJSON Upload or Drawing Instructions */}
+              {isLandProperty ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Land parcels must be uploaded as GeoJSON.</strong> This file can contain multiple parcels in a FeatureCollection. Property boundaries are sensitive information in Tanzania.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert>
+                  <MapIcon className="h-4 w-4" />
+                  <AlertDescription>
+                    Draw the property boundary by clicking points on the map. Double-click the last point to complete the polygon.
+                  </AlertDescription>
+                </Alert>
               )}
-            </div>
-          </div>
 
-          <div className="flex gap-4 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate(-1)}
-              disabled={loading || uploading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading || uploading}>
-              <Save className="h-4 w-4 mr-2" />
-              {loading || uploading ? 'Saving...' : id ? 'Update Listing' : 'Create Listing'}
-            </Button>
-          </div>
-        </form>
+              {/* GeoJSON Upload Section (Land Only) */}
+              {isLandProperty && (
+                <div className="space-y-2">
+                  <Label htmlFor="geojson-upload">Upload GeoJSON File *</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="geojson-upload"
+                      type="file"
+                      accept=".json,.geojson"
+                      onChange={handleGeoJsonUpload}
+                      className="flex-1"
+                    />
+                    {jsonFileName && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileJson className="h-4 w-4" />
+                        <span>{jsonFileName}</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Supports single Polygon or FeatureCollection with multiple parcels
+                  </p>
+                </div>
+              )}
+
+              {/* Map Visualization */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Property Boundary *</Label>
+                  {polygons.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {polygons.length} polygon(s)
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllPolygons}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Clear All
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div ref={mapRef} className="w-full h-[500px] rounded-lg border" />
+                {isDrawingMode && !isLandProperty && (
+                  <p className="text-sm text-primary flex items-center gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Drawing mode active - Click on the map to draw boundary
+                  </p>
+                )}
+                {polygons.length > 0 && (
+                  <p className="text-sm text-success">
+                    ✓ {polygons.length} polygon(s) loaded
+                  </p>
+                )}
+              </div>
+
+              {/* Polygon Validation */}
+              {polygons.length > 0 && polygons.map((polygon, idx) => (
+                <PolygonValidationPanel key={idx} geojson={polygon} />
+              ))}
+
+              {/* Property Details */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location *</Label>
+                  <Input
+                    id="location"
+                    value={formData.location_label}
+                    onChange={(e) => setFormData({ ...formData, location_label: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Input
+                    id="currency"
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="region">Region</Label>
+                  <Input
+                    id="region"
+                    value={formData.region}
+                    onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="district">District</Label>
+                  <Input
+                    id="district"
+                    value={formData.district}
+                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="ward">Ward</Label>
+                  <Input
+                    id="ward"
+                    value={formData.ward}
+                    onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                />
+              </div>
+
+              {/* Image Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="images">Property Images</Label>
+                <Input
+                  id="images"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileSelect}
+                />
+                
+                {selectedFiles.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {existingMedia.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {existingMedia.map((media) => (
+                      <div key={media.id} className="relative group">
+                        <img
+                          src={media.file_url}
+                          alt="Listing media"
+                          className="w-full h-24 object-cover rounded"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingMedia(media.id)}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex gap-4 justify-end pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate('/dashboard')}
+                  disabled={loading || uploading}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading || uploading || polygons.length === 0}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {loading ? 'Saving...' : id ? 'Update Listing' : 'Create Listing'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-
