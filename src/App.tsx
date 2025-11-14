@@ -21,8 +21,9 @@ import Subscriptions from "./pages/Subscriptions";
 import AdminDashboard from "./pages/AdminDashboard";
 import AuditLogs from "./pages/AuditLogs";
 import InstitutionalSellers from "./pages/InstitutionalSellers";
-import VisitRequests from "./pages/VisitRequests";
-import DataExport from "./pages/DataExport";
+import VisitRequests from './pages/VisitRequests';
+import DataExport from './pages/DataExport';
+import InstitutionalSellerApplication from './pages/InstitutionalSellerApplication';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/institutional-sellers" element={<InstitutionalSellers />} />
             <Route path="/visit-requests" element={<VisitRequests />} />
             <Route path="/data-export" element={<DataExport />} />
+            <Route path="/apply-institutional-seller" element={<InstitutionalSellerApplication />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

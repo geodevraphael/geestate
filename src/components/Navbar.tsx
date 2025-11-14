@@ -53,6 +53,12 @@ export function Navbar() {
                   </>
                 )}
 
+                {(profile?.role === 'seller' || profile?.role === 'broker') && (
+                  <Link to="/apply-institutional-seller" className="text-sm font-medium hover:text-primary transition-colors">
+                    Apply as Institution
+                  </Link>
+                )}
+
                 {profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role) && (
                   <>
                     <Link to="/admin-dashboard" className="text-sm font-medium hover:text-primary transition-colors">
