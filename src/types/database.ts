@@ -21,6 +21,18 @@ export type ComplianceFlagType =
   | 'buyer_seller_conflict'
   | 'other';
 
+export type MessageType = 'text' | 'system';
+
+export type NotificationType = 
+  | 'new_message'
+  | 'payment_proof_submitted'
+  | 'payment_confirmed'
+  | 'deal_approved'
+  | 'deal_rejected'
+  | 'compliance_flag'
+  | 'subscription_expiring'
+  | 'listing_verified';
+
 export interface PaymentProof {
   id: string;
   listing_id: string;
@@ -70,6 +82,29 @@ export interface ComplianceFlag {
   resolution_notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  listing_id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  timestamp: string;
+  is_read: boolean;
+  created_at: string;
+  message_type: MessageType;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link_url?: string;
+  is_read: boolean;
+  created_at: string;
 }
 export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
 export type ListingStatus = 'draft' | 'published' | 'archived' | 'closed';
