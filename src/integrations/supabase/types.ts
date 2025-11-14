@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          listing_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          listing_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          listing_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_flags: {
         Row: {
           created_at: string
@@ -203,6 +251,116 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutional_sellers: {
+        Row: {
+          approved_at: string | null
+          approved_by_admin_id: string | null
+          contact_email: string
+          contact_person: string
+          contact_phone: string | null
+          created_at: string
+          id: string
+          institution_name: string
+          institution_type: Database["public"]["Enums"]["institution_type"]
+          is_approved: boolean | null
+          notes: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_admin_id?: string | null
+          contact_email: string
+          contact_person: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          institution_name: string
+          institution_type: Database["public"]["Enums"]["institution_type"]
+          is_approved?: boolean | null
+          notes?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_admin_id?: string | null
+          contact_email?: string
+          contact_person?: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          institution_name?: string
+          institution_type?: Database["public"]["Enums"]["institution_type"]
+          is_approved?: boolean | null
+          notes?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institutional_sellers_approved_by_admin_id_fkey"
+            columns: ["approved_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "institutional_sellers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      land_use_profiles: {
+        Row: {
+          allowed_uses: string[] | null
+          calculated_at: string
+          created_at: string
+          dominant_land_use: string
+          id: string
+          land_use_conflict: boolean | null
+          listing_id: string
+          notes: string | null
+          updated_at: string
+          zoning_code: string | null
+        }
+        Insert: {
+          allowed_uses?: string[] | null
+          calculated_at?: string
+          created_at?: string
+          dominant_land_use: string
+          id?: string
+          land_use_conflict?: boolean | null
+          listing_id: string
+          notes?: string | null
+          updated_at?: string
+          zoning_code?: string | null
+        }
+        Update: {
+          allowed_uses?: string[] | null
+          calculated_at?: string
+          created_at?: string
+          dominant_land_use?: string
+          id?: string
+          land_use_conflict?: boolean | null
+          listing_id?: string
+          notes?: string | null
+          updated_at?: string
+          zoning_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_use_profiles_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
             referencedColumns: ["id"]
           },
         ]
@@ -627,6 +785,59 @@ export type Database = {
           },
         ]
       }
+      spatial_risk_profiles: {
+        Row: {
+          calculated_at: string
+          created_at: string
+          distance_to_river_m: number | null
+          elevation_m: number | null
+          environmental_notes: string | null
+          flood_risk_level: string
+          flood_risk_score: number
+          id: string
+          listing_id: string
+          near_river: boolean | null
+          slope_percent: number | null
+          updated_at: string
+        }
+        Insert: {
+          calculated_at?: string
+          created_at?: string
+          distance_to_river_m?: number | null
+          elevation_m?: number | null
+          environmental_notes?: string | null
+          flood_risk_level: string
+          flood_risk_score: number
+          id?: string
+          listing_id: string
+          near_river?: boolean | null
+          slope_percent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          calculated_at?: string
+          created_at?: string
+          distance_to_river_m?: number | null
+          elevation_m?: number | null
+          environmental_notes?: string | null
+          flood_risk_level?: string
+          flood_risk_score?: number
+          id?: string
+          listing_id?: string
+          near_river?: boolean | null
+          slope_percent?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spatial_risk_profiles_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount_paid: number | null
@@ -674,6 +885,114 @@ export type Database = {
           },
         ]
       }
+      valuation_estimates: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          estimated_value: number
+          estimation_currency: string | null
+          estimation_method: Database["public"]["Enums"]["estimation_method"]
+          id: string
+          listing_id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          estimated_value: number
+          estimation_currency?: string | null
+          estimation_method?: Database["public"]["Enums"]["estimation_method"]
+          id?: string
+          listing_id: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          estimated_value?: number
+          estimation_currency?: string | null
+          estimation_method?: Database["public"]["Enums"]["estimation_method"]
+          id?: string
+          listing_id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "valuation_estimates_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visit_requests: {
+        Row: {
+          buyer_id: string
+          buyer_notes: string | null
+          created_at: string
+          id: string
+          listing_id: string
+          requested_date: string
+          requested_time_slot: string
+          seller_id: string
+          seller_notes: string | null
+          status: Database["public"]["Enums"]["visit_status"]
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          buyer_notes?: string | null
+          created_at?: string
+          id?: string
+          listing_id: string
+          requested_date: string
+          requested_time_slot: string
+          seller_id: string
+          seller_notes?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          buyer_notes?: string | null
+          created_at?: string
+          id?: string
+          listing_id?: string
+          requested_date?: string
+          requested_time_slot?: string
+          seller_id?: string
+          seller_notes?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_requests_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visit_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visit_requests_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -709,6 +1028,7 @@ export type Database = {
         | "closed"
         | "disputed"
         | "cancelled"
+      estimation_method: "rule_based_v1" | "ml_model_v1" | "external_api"
       fraud_signal_type:
         | "duplicate_polygon"
         | "similar_polygon"
@@ -718,6 +1038,7 @@ export type Database = {
         | "rapid_price_drop"
         | "multiple_accounts_same_phone"
         | "immediate_closure_attempt"
+      institution_type: "government" | "municipal" | "authority" | "company"
       listing_status: "draft" | "published" | "archived" | "closed"
       listing_type: "sale" | "rent"
       media_type: "image" | "document"
@@ -739,6 +1060,12 @@ export type Database = {
       property_type: "land" | "house" | "apartment" | "commercial" | "other"
       subscription_plan: "basic" | "pro" | "enterprise"
       verification_status: "unverified" | "pending" | "verified" | "rejected"
+      visit_status:
+        | "pending"
+        | "accepted"
+        | "rejected"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -887,6 +1214,7 @@ export const Constants = {
         "disputed",
         "cancelled",
       ],
+      estimation_method: ["rule_based_v1", "ml_model_v1", "external_api"],
       fraud_signal_type: [
         "duplicate_polygon",
         "similar_polygon",
@@ -897,6 +1225,7 @@ export const Constants = {
         "multiple_accounts_same_phone",
         "immediate_closure_attempt",
       ],
+      institution_type: ["government", "municipal", "authority", "company"],
       listing_status: ["draft", "published", "archived", "closed"],
       listing_type: ["sale", "rent"],
       media_type: ["image", "document"],
@@ -920,6 +1249,13 @@ export const Constants = {
       property_type: ["land", "house", "apartment", "commercial", "other"],
       subscription_plan: ["basic", "pro", "enterprise"],
       verification_status: ["unverified", "pending", "verified", "rejected"],
+      visit_status: [
+        "pending",
+        "accepted",
+        "rejected",
+        "completed",
+        "cancelled",
+      ],
     },
   },
 } as const

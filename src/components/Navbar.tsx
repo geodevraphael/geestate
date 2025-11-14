@@ -56,13 +56,26 @@ export function Navbar() {
                 {profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role) && (
                   <>
                     <Link to="/admin-dashboard" className="text-sm font-medium hover:text-primary transition-colors">
-                      Admin
+                      Dashboard
                     </Link>
-                    <Link to="/fraud-detection" className="text-sm font-medium hover:text-primary transition-colors">
-                      Fraud
+                    <Link to="/audit-logs" className="text-sm font-medium hover:text-primary transition-colors">
+                      Audit Logs
+                    </Link>
+                    <Link to="/data-export" className="text-sm font-medium hover:text-primary transition-colors">
+                      Export
                     </Link>
                   </>
                 )}
+
+                {profile?.role === 'admin' && (
+                  <Link to="/institutional-sellers" className="text-sm font-medium hover:text-primary transition-colors">
+                    Institutions
+                  </Link>
+                )}
+
+                <Link to="/visit-requests" className="text-sm font-medium hover:text-primary transition-colors">
+                  Visits
+                </Link>
 
                 {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
                   <Link to="/listings/new">

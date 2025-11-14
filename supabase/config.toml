@@ -8,3 +8,12 @@ verify_jwt = true
 
 [functions.detect-price-anomaly]
 verify_jwt = true
+
+[functions.calculate-spatial-risk]
+verify_jwt = true
+
+[functions.calculate-land-use]
+verify_jwt = true
+
+[functions.calculate-valuation]
+verify_jwt = true
