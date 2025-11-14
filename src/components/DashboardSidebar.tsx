@@ -1,6 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useState } from 'react';
 import {
   LayoutDashboard,
   MapPin,
@@ -18,6 +21,8 @@ import {
   Webhook,
   Activity,
   Briefcase,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface NavItem {
@@ -140,6 +145,7 @@ const navItems: NavItem[] = [
 export function DashboardSidebar() {
   const location = useLocation();
   const { roles } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
   const visibleItems = navItems.filter((item) => {
     if (!item.roles) return true;
@@ -147,30 +153,78 @@ export function DashboardSidebar() {
   });
 
   return (
-    <aside className="w-64 border-r border-border bg-card h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto p-4">
-      <nav className="space-y-1">
-        {visibleItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.href || 
-            (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
+    <aside className={cn(
+      "border-r border-border bg-card h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto transition-all duration-300",
+      collapsed ? "w-16" : "w-64"
+    )}>
+      <div className="p-4 space-y-2">
+        {/* Toggle Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            "w-full transition-all",
+            collapsed ? "px-0 justify-center" : "justify-end"
+          )}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
 
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {item.title}
-            </Link>
-          );
-        })}
-      </nav>
+        {/* Navigation */}
+        <TooltipProvider delayDuration={0}>
+          <nav className="space-y-1">
+            {visibleItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.href || 
+                (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
+
+              if (collapsed) {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.href}
+                        className={cn(
+                          'flex items-center justify-center px-3 py-2 rounded-md transition-colors',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{item.title}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{item.title}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </TooltipProvider>
+      </div>
     </aside>
   );
 }
