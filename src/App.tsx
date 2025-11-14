@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
 import MapBrowse from "./pages/MapBrowse";
+import PaymentProofs from "./pages/PaymentProofs";
+import AdminPayments from "./pages/AdminPayments";
+import ComplianceFlags from "./pages/ComplianceFlags";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ const App = () => (
             <Route path="/listings" element={<Listings />} />
             <Route path="/listings/:id" element={<ListingDetail />} />
             <Route path="/map" element={<MapBrowse />} />
+            <Route path="/payment-proofs" element={<PaymentProofs />} />
+            <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/compliance" element={<ComplianceFlags />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

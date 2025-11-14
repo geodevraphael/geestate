@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
+import { PaymentProofDialog } from '@/components/PaymentProofDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,7 @@ import 'ol/ol.css';
 
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [listing, setListing] = useState<ListingWithDetails | null>(null);
   const [polygon, setPolygon] = useState<ListingPolygon | null>(null);
   const [media, setMedia] = useState<ListingMedia[]>([]);
@@ -335,6 +336,13 @@ export default function ListingDetail() {
                 <Button className="w-full mt-4">
                   Contact Seller
                 </Button>
+
+                {/* Payment Proof Button for Buyers */}
+                {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
+                  <div className="mt-4">
+                    <PaymentProofDialog listing={listing} />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
