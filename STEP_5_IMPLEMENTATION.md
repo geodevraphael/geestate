@@ -14,13 +14,13 @@
 - ✅ RLS policies for public read access, admin write access
 
 **Features:**
-- Administrative hierarchy data structure ready
-- Listings can be linked to specific regions/districts/wards
-- Filters can be added by region/district/ward
+- ✅ Administrative hierarchy data structure ready
+- ✅ Listings can be linked to specific regions/districts/wards
+- ✅ **Auto-assignment logic implemented** - Polygons automatically detect region/district/ward on upload
+- ✅ Edge function `detect-admin-boundaries` using Turf.js for spatial intersection
 
 **Next Steps:**
 - Populate regions, districts, wards with Tanzania data
-- Implement auto-assignment logic using polygon intersection
 - Add region/district/ward filters to search UI
 
 ---
