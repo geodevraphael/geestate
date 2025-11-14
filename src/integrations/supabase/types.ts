@@ -1122,6 +1122,207 @@ export type Database = {
           },
         ]
       }
+      service_providers: {
+        Row: {
+          average_turnaround_days: number | null
+          company_address: string | null
+          company_name: string
+          company_type: string
+          completed_projects: number | null
+          contact_email: string
+          contact_person: string
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          license_number: string | null
+          logo_url: string | null
+          rating: number | null
+          services_offered: string[]
+          total_reviews: number | null
+          updated_at: string
+          website_url: string | null
+          years_in_business: number | null
+        }
+        Insert: {
+          average_turnaround_days?: number | null
+          company_address?: string | null
+          company_name: string
+          company_type: string
+          completed_projects?: number | null
+          contact_email: string
+          contact_person: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          license_number?: string | null
+          logo_url?: string | null
+          rating?: number | null
+          services_offered?: string[]
+          total_reviews?: number | null
+          updated_at?: string
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Update: {
+          average_turnaround_days?: number | null
+          company_address?: string | null
+          company_name?: string
+          company_type?: string
+          completed_projects?: number | null
+          contact_email?: string
+          contact_person?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          license_number?: string | null
+          logo_url?: string | null
+          rating?: number | null
+          services_offered?: string[]
+          total_reviews?: number | null
+          updated_at?: string
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Relationships: []
+      }
+      service_requests: {
+        Row: {
+          actual_completion_date: string | null
+          created_at: string
+          estimated_completion_date: string | null
+          id: string
+          listing_id: string
+          provider_notes: string | null
+          quoted_currency: string | null
+          quoted_price: number | null
+          report_file_url: string | null
+          request_notes: string | null
+          requester_id: string
+          service_category: string
+          service_provider_id: string | null
+          service_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          created_at?: string
+          estimated_completion_date?: string | null
+          id?: string
+          listing_id: string
+          provider_notes?: string | null
+          quoted_currency?: string | null
+          quoted_price?: number | null
+          report_file_url?: string | null
+          request_notes?: string | null
+          requester_id: string
+          service_category: string
+          service_provider_id?: string | null
+          service_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_completion_date?: string | null
+          created_at?: string
+          estimated_completion_date?: string | null
+          id?: string
+          listing_id?: string
+          provider_notes?: string | null
+          quoted_currency?: string | null
+          quoted_price?: number | null
+          report_file_url?: string | null
+          request_notes?: string | null
+          requester_id?: string
+          service_category?: string
+          service_provider_id?: string | null
+          service_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_service_provider_id_fkey"
+            columns: ["service_provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          professionalism_score: number | null
+          quality_score: number | null
+          rating: number
+          review_text: string | null
+          reviewer_id: string
+          service_provider_id: string
+          service_request_id: string
+          timeliness_score: number | null
+          would_recommend: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          professionalism_score?: number | null
+          quality_score?: number | null
+          rating: number
+          review_text?: string | null
+          reviewer_id: string
+          service_provider_id: string
+          service_request_id: string
+          timeliness_score?: number | null
+          would_recommend?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          professionalism_score?: number | null
+          quality_score?: number | null
+          rating?: number
+          review_text?: string | null
+          reviewer_id?: string
+          service_provider_id?: string
+          service_request_id?: string
+          timeliness_score?: number | null
+          would_recommend?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_reviews_service_provider_id_fkey"
+            columns: ["service_provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reviews_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_risk_profiles: {
         Row: {
           calculated_at: string
