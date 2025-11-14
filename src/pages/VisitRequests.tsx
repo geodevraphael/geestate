@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -120,20 +121,21 @@ export default function VisitRequests() {
   };
 
   if (loading) {
-    return <div className="container mx-auto p-6">Loading...</div>;
+    return <MainLayout><div className="container mx-auto p-6">Loading...</div></MainLayout>;
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Calendar className="h-8 w-8" />
-          Visit Requests
-        </h1>
-        <p className="text-muted-foreground">Manage property site visit schedules</p>
-      </div>
+    <MainLayout>
+      <div className="container mx-auto p-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Calendar className="h-8 w-8" />
+            Visit Requests
+          </h1>
+          <p className="text-muted-foreground">Manage property site visit schedules</p>
+        </div>
 
-      <div className="grid gap-6">
+        <div className="grid gap-6">
         {visits.length === 0 ? (
           <Card>
             <CardContent className="text-center py-8">
@@ -237,5 +239,6 @@ export default function VisitRequests() {
         )}
       </div>
     </div>
+    </MainLayout>
   );
 }
