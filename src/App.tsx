@@ -35,6 +35,7 @@ import Contact from './pages/Contact';
 import SetupStaff from './pages/SetupStaff';
 import UserProfile from './pages/UserProfile';
 import ManageUserRoles from './pages/ManageUserRoles';
+import ManageUsers from './pages/ManageUsers';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/setup-staff" element={<SetupStaff />} />
             <Route path="/profile/:userId" element={<UserProfile />} />
+            <Route path="/admin/users" element={<ManageUsers />} />
             <Route path="/admin/users/:userId/roles" element={<ManageUserRoles />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
