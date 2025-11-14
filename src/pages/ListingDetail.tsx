@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { PaymentProofDialog } from '@/components/PaymentProofDialog';
 import { VisitRequestDialog } from '@/components/VisitRequestDialog';
+import { GeospatialServiceRequest } from '@/components/GeospatialServiceRequest';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -257,7 +258,7 @@ export default function ListingDetail() {
           )}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
@@ -341,158 +342,115 @@ export default function ListingDetail() {
             {/* Map */}
             {polygon && (
               <Card>
-                <CardContent className="p-0">
-                  <div ref={mapRef} className="h-96 rounded-lg overflow-hidden" />
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Owner Info */}
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Listed By</h2>
-                <div className="space-y-2">
-                  <p className="font-medium">{owner?.organization_name || owner?.full_name}</p>
-                  <Badge variant="outline" className="capitalize">
-                    {owner?.role}
-                  </Badge>
-                  {owner?.phone && (
-                    <p className="text-sm text-muted-foreground">Phone: {owner.phone}</p>
-                  )}
-                </div>
-                <Button className="w-full mt-4">
-                  Contact Seller
-                </Button>
-
-                {/* Payment Proof Button for Buyers */}
-                {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
-                  <div className="mt-4 space-y-2">
-                    <VisitRequestDialog listingId={id!} sellerId={listing.owner_id} />
-                    <PaymentProofDialog listing={listing} />
-                  </div>
-                )}
-
-                {/* Edit Button for Owner */}
-                {canEdit && (
-                  <Link to={`/listings/${id}/edit`} className="mt-4 block">
-                    <Button variant="outline" className="w-full flex items-center gap-2">
-                      <Edit className="h-4 w-4" />
-                      Edit Listing
-                    </Button>
-                  </Link>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* STEP 4: Flood Risk & Environmental */}
-            {spatialRisk && (
-              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Droplets className="h-5 w-5 text-primary" />
-                    Flood Risk & Environmental Profile
-                  </CardTitle>
+                  <CardTitle>Property Location & Boundaries</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Flood Risk Level</span>
-                    <Badge variant={
-                      spatialRisk.flood_risk_level === 'low' ? 'default' :
-                      spatialRisk.flood_risk_level === 'medium' ? 'secondary' : 'destructive'
-                    }>
-                      {spatialRisk.flood_risk_level.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Risk Score</span>
-                      <span className="font-medium">{spatialRisk.flood_risk_score}/100</span>
+                <CardContent className="p-4">
+                  <div ref={mapRef} className="h-96 rounded-lg overflow-hidden border" />
+                  {polygon.area_m2 && (
+                    <div className="mt-4 flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Total Area</span>
+                      <span className="font-semibold">{polygon.area_m2.toLocaleString()} m²</span>
                     </div>
-                    <Progress value={spatialRisk.flood_risk_score} className="h-2" />
-                  </div>
-                  {spatialRisk.near_river && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Distance to River: </span>
-                      <span className="font-medium">{spatialRisk.distance_to_river_m?.toFixed(0)}m</span>
-                    </div>
-                  )}
-                  {spatialRisk.elevation_m && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Elevation: </span>
-                      <span className="font-medium">{spatialRisk.elevation_m.toFixed(0)}m</span>
-                    </div>
-                  )}
-                  {spatialRisk.environmental_notes && (
-                    <p className="text-sm text-muted-foreground pt-2 border-t">
-                      {spatialRisk.environmental_notes}
-                    </p>
                   )}
                 </CardContent>
               </Card>
             )}
 
-            {/* STEP 4: Land Use & Zoning */}
-            {landUse && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TreePine className="h-5 w-5 text-primary" />
-                    Land Use & Zoning
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Dominant Land Use</p>
-                      <p className="font-medium capitalize">{landUse.dominant_land_use}</p>
+            {/* STEP 4: Risk & Environmental Analysis */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Flood Risk */}
+              {spatialRisk && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Droplets className="h-5 w-5 text-primary" />
+                      Flood Risk Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Risk Level</span>
+                      <Badge variant={
+                        spatialRisk.flood_risk_level === 'low' ? 'default' :
+                        spatialRisk.flood_risk_level === 'medium' ? 'secondary' : 'destructive'
+                      }>
+                        {spatialRisk.flood_risk_level.toUpperCase()}
+                      </Badge>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Zoning Code</p>
-                      <p className="font-medium">{landUse.zoning_code || 'N/A'}</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Risk Score</span>
+                        <span className="font-medium">{spatialRisk.flood_risk_score}/100</span>
+                      </div>
+                      <Progress value={spatialRisk.flood_risk_score} className="h-2" />
                     </div>
-                  </div>
-                  {landUse.allowed_uses && landUse.allowed_uses.length > 0 && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2">Allowed Uses</p>
-                      <div className="flex flex-wrap gap-2">
-                        {landUse.allowed_uses.map((use) => (
-                          <Badge key={use} variant="outline" className="capitalize">
-                            {use}
-                          </Badge>
-                        ))}
+                    {spatialRisk.near_river && (
+                      <div className="text-sm pt-2 border-t">
+                        <span className="text-muted-foreground">Distance to River: </span>
+                        <span className="font-medium">{spatialRisk.distance_to_river_m?.toFixed(0)}m</span>
+                      </div>
+                    )}
+                    {spatialRisk.elevation_m && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Elevation: </span>
+                        <span className="font-medium">{spatialRisk.elevation_m.toFixed(0)}m</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Land Use */}
+              {landUse && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <TreePine className="h-5 w-5 text-primary" />
+                      Land Use & Zoning
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Land Use</p>
+                        <p className="font-medium capitalize">{landUse.dominant_land_use}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Zoning</p>
+                        <p className="font-medium">{landUse.zoning_code || 'N/A'}</p>
                       </div>
                     </div>
-                  )}
-                  {landUse.land_use_conflict && (
-                    <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                      <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-destructive">Land Use Conflict Detected</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          The property type may not align with the designated land use. Verify with local authorities.
-                        </p>
+                    {landUse.allowed_uses && landUse.allowed_uses.length > 0 && (
+                      <div className="pt-2 border-t">
+                        <p className="text-sm text-muted-foreground mb-2">Allowed Uses</p>
+                        <div className="flex flex-wrap gap-2">
+                          {landUse.allowed_uses.map((use) => (
+                            <Badge key={use} variant="outline" className="capitalize text-xs">
+                              {use}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {landUse.notes && (
-                    <p className="text-sm text-muted-foreground pt-2 border-t">
-                      {landUse.notes}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                    )}
+                    {landUse.land_use_conflict && (
+                      <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-destructive">Land use conflict detected. Verify with local authorities.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
-            {/* STEP 4: Valuation Estimate */}
+            {/* Valuation Estimate */}
             {valuation && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-primary" />
-                    Estimated Market Value
+                    Market Valuation Estimate
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -502,17 +460,19 @@ export default function ListingDetail() {
                     </span>
                     <span className="text-lg text-muted-foreground">{valuation.estimation_currency}</span>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Confidence Score</span>
-                      <span className="font-medium">{valuation.confidence_score}/100</span>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Confidence</span>
+                        <span className="font-medium">{valuation.confidence_score}/100</span>
+                      </div>
+                      <Progress value={valuation.confidence_score || 0} className="h-2" />
                     </div>
-                    <Progress value={valuation.confidence_score || 0} className="h-2" />
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline" className="capitalize">
-                      {valuation.estimation_method.replace(/_/g, ' ')}
-                    </Badge>
+                    <div className="flex items-center justify-center">
+                      <Badge variant="outline" className="capitalize">
+                        {valuation.estimation_method.replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
                   </div>
                   {valuation.notes && (
                     <p className="text-sm text-muted-foreground pt-2 border-t">
@@ -520,15 +480,18 @@ export default function ListingDetail() {
                     </p>
                   )}
                   <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      <AlertCircle className="h-3 w-3 inline mr-1" />
-                      This is an automated estimate for reference only, not an official valuation.
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Automated estimate for reference only. Not an official valuation.
                     </p>
                   </div>
                 </CardContent>
               </Card>
             )}
+          </div>
 
+          {/* Sidebar */}
+          <div className="space-y-6">
             {/* Property Details */}
             <Card>
               <CardContent className="p-6">
@@ -576,6 +539,48 @@ export default function ListingDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Owner Info */}
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Listed By</h2>
+                <div className="space-y-2">
+                  <p className="font-medium">{owner?.organization_name || owner?.full_name}</p>
+                  <Badge variant="outline" className="capitalize">
+                    {owner?.role}
+                  </Badge>
+                  {owner?.phone && (
+                    <p className="text-sm text-muted-foreground">Phone: {owner.phone}</p>
+                  )}
+                </div>
+                <Button className="w-full mt-4">
+                  Contact Seller
+                </Button>
+
+                {/* Payment Proof Button for Buyers */}
+                {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
+                  <div className="mt-4 space-y-2">
+                    <VisitRequestDialog listingId={id!} sellerId={listing.owner_id} />
+                    <PaymentProofDialog listing={listing} />
+                  </div>
+                )}
+
+                {/* Edit Button for Owner */}
+                {canEdit && (
+                  <Link to={`/listings/${id}/edit`} className="mt-4 block">
+                    <Button variant="outline" className="w-full flex items-center gap-2">
+                      <Edit className="h-4 w-4" />
+                      Edit Listing
+                    </Button>
+                  </Link>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Geospatial Services */}
+            {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
+              <GeospatialServiceRequest listingId={id!} sellerId={listing.owner_id} />
+            )}
           </div>
         </div>
       </div>
