@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 
 export function Navbar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, hasRole } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -54,7 +54,7 @@ export function Navbar() {
                   Disputes
                 </Link>
                 
-                {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
+                {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <>
                     <Link to="/payment-proofs" className="text-sm font-medium hover:text-primary transition-colors">
                       Payments
@@ -65,13 +65,13 @@ export function Navbar() {
                   </>
                 )}
 
-                {(profile?.role === 'seller' || profile?.role === 'broker') && (
+                {(hasRole('seller') || hasRole('broker')) && (
                   <Link to="/apply-institutional-seller" className="text-sm font-medium hover:text-primary transition-colors">
                     Apply as Institution
                   </Link>
                 )}
 
-                {profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role) && (
+                {(hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer')) && (
                   <>
                     <Link to="/admin-dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                       Dashboard
@@ -101,7 +101,7 @@ export function Navbar() {
                   Visits
                 </Link>
 
-                {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
+                {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <Link to="/listings/new">
                     <Button size="sm" className="bg-primary hover:bg-primary/90">
                       List Property
@@ -163,7 +163,7 @@ export function Navbar() {
                   Dashboard
                 </Link>
 
-                {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
+                {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <Link
                     to="/payment-proofs"
                     className="block py-2 text-sm font-medium hover:text-primary"
@@ -173,7 +173,7 @@ export function Navbar() {
                   </Link>
                 )}
 
-                {profile?.role && ['admin', 'verification_officer', 'compliance_officer'].includes(profile.role) && (
+                {(hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer')) && (
                   <>
                     <Link
                       to="/admin/payments"
@@ -192,7 +192,7 @@ export function Navbar() {
                   </>
                 )}
 
-                {profile?.role && ['seller', 'broker', 'admin'].includes(profile.role) && (
+                {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <Link
                     to="/listings/new"
                     className="block py-2"

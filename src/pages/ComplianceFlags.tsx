@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { Navigate, Link } from 'react-router-dom';
 
 export default function ComplianceFlags() {
-  const { profile } = useAuth();
+  const { profile, hasRole } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [flags, setFlags] = useState<any[]>([]);
@@ -23,7 +23,7 @@ export default function ComplianceFlags() {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  const isAdmin = profile?.role && ['admin', 'compliance_officer'].includes(profile.role);
+  const isAdmin = hasRole('admin') || hasRole('compliance_officer');
 
   useEffect(() => {
     if (isAdmin) {

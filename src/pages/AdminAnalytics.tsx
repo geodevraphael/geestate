@@ -11,7 +11,7 @@ import { BarChart as RechartsBar, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Leg
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 export default function AdminAnalytics() {
-  const { user, profile } = useAuth();
+  const { user, profile, hasRole } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>({
@@ -27,8 +27,8 @@ export default function AdminAnalytics() {
   });
 
   useEffect(() => {
-    if (user && profile?.role) {
-      if (!['admin', 'compliance_officer'].includes(profile.role)) {
+    if (user) {
+      if (!hasRole('admin') && !hasRole('compliance_officer')) {
         navigate('/dashboard');
         return;
       }

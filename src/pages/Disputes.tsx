@@ -26,12 +26,12 @@ interface Dispute {
 }
 
 export default function Disputes() {
-  const { user, profile } = useAuth();
+  const { user, profile, hasRole } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
 
-  const isAdmin = profile?.role && ['admin', 'compliance_officer'].includes(profile.role);
+  const isAdmin = hasRole('admin') || hasRole('compliance_officer');
 
   useEffect(() => {
     if (user) {

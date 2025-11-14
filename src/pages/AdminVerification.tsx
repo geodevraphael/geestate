@@ -38,7 +38,7 @@ interface ListingWithOwner {
 }
 
 export default function AdminVerification() {
-  const { user, profile } = useAuth();
+  const { user, profile, hasRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [listings, setListings] = useState<ListingWithOwner[]>([]);
@@ -48,8 +48,8 @@ export default function AdminVerification() {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    if (user && profile?.role) {
-      if (!['admin', 'verification_officer'].includes(profile.role)) {
+    if (user) {
+      if (!hasRole('admin') && !hasRole('verification_officer')) {
         navigate('/dashboard');
         return;
       }

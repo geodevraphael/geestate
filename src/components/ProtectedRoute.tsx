@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, roles, loading } = useAuth();
 
   if (loading) {
     return (
@@ -25,11 +25,11 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!profile?.role) {
+  if (!roles || roles.length === 0) {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (requireRole && !requireRole.includes(profile.role)) {
+  if (requireRole && !requireRole.some(role => roles.includes(role))) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
