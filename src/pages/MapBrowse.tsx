@@ -23,6 +23,11 @@ import 'ol/ol.css';
 
 interface ListingWithPolygon extends ListingWithDetails {
   polygon?: ListingPolygon;
+  owner?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
 }
 
 export default function MapBrowse() {
@@ -30,6 +35,7 @@ export default function MapBrowse() {
   const [loading, setLoading] = useState(true);
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
+  const [dealerFilter, setDealerFilter] = useState<string>('all');
   const [basemap, setBasemap] = useState<'street' | 'satellite'>('satellite');
   const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -51,7 +57,8 @@ export default function MapBrowse() {
         .from('listings')
         .select(`
           *,
-          polygon:listing_polygons(*)
+          polygon:listing_polygons(*),
+          owner:profiles!owner_id(id, full_name, email)
         `)
         .eq('status', 'published');
 
@@ -113,14 +120,25 @@ export default function MapBrowse() {
     return listingsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
   };
 
+  const uniqueDealers = useMemo(() => {
+    const dealersMap: Record<string, { id: string; full_name: string; email: string }> = {};
+    listings.forEach(listing => {
+      if (listing.owner && !dealersMap[listing.owner.id]) {
+        dealersMap[listing.owner.id] = listing.owner;
+      }
+    });
+    return Object.values(dealersMap);
+  }, [listings]);
+
   const filteredListings = useMemo(() => {
     const filtered = listings.filter((listing) => {
       const matchesListingType = listingTypeFilter === 'all' || listing.listing_type === listingTypeFilter;
       const matchesPropertyType = propertyTypeFilter === 'all' || listing.property_type === propertyTypeFilter;
-      return matchesListingType && matchesPropertyType;
+      const matchesDealer = dealerFilter === 'all' || listing.owner_id === dealerFilter;
+      return matchesListingType && matchesPropertyType && matchesDealer;
     });
     return getSortedListings(filtered);
-  }, [listings, listingTypeFilter, propertyTypeFilter, userLocation]);
+  }, [listings, listingTypeFilter, propertyTypeFilter, dealerFilter, userLocation]);
 
   const zoomToListing = (listing: ListingWithPolygon) => {
     if (!mapInstance.current || !listing.polygon) return;
@@ -323,6 +341,23 @@ export default function MapBrowse() {
                   <SelectItem value="apartment">Apartment</SelectItem>
                   <SelectItem value="commercial">Commercial</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Dealer/Seller</label>
+              <Select value={dealerFilter} onValueChange={setDealerFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Dealers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dealers</SelectItem>
+                  {uniqueDealers.map((dealer) => (
+                    <SelectItem key={dealer.id} value={dealer.id}>
+                      {dealer.full_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
