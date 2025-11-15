@@ -39,22 +39,8 @@ export default function Messages() {
     }
   }, [selectedConversation]);
 
-  useEffect(() => {
-    // If listingId and sellerId are provided but no conversation exists, create a new one
-    if (listingId && sellerId && user && conversations.length > 0) {
-      const existingConversation = conversations.find(
-        (c: any) => c.listing_id === listingId
-      );
-      
-      if (!existingConversation) {
-        // Fetch listing and seller details to create a new conversation
-        initializeNewConversation();
-      }
-    }
-  }, [listingId, sellerId, user, conversations]);
-
   const initializeNewConversation = async () => {
-    if (!listingId || !sellerId) return;
+    if (!listingId || !sellerId || !user) return;
     
     try {
       const [{ data: listingData }, { data: sellerData }] = await Promise.all([
@@ -68,13 +54,12 @@ export default function Messages() {
           listing_title: listingData.title,
           other_user_id: sellerData.id,
           other_user_name: sellerData.full_name,
-          last_message: '',
+          last_message: 'Start your conversation',
           last_message_time: new Date().toISOString(),
           unread_count: 0,
         };
         
         setSelectedConversation(newConversation);
-        setConversations([newConversation, ...conversations]);
       }
     } catch (error) {
       console.error('Error initializing conversation:', error);
@@ -129,12 +114,16 @@ export default function Messages() {
         const conversationsList = Object.values(groupedConversations);
         setConversations(conversationsList);
 
+        // Check if we need to open a specific conversation from URL params
         if (listingId) {
           const targetConversation = conversationsList.find(
             (c: any) => c.listing_id === listingId
           );
           if (targetConversation) {
             setSelectedConversation(targetConversation);
+          } else if (sellerId) {
+            // No existing conversation, create a new one
+            initializeNewConversation();
           }
         }
       }
