@@ -8,37 +8,37 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Tanzania-inspired color palette: savanna gold, earth tones, deep greens */
-    --background: 42 45% 97%;
-    --foreground: 25 25% 15%;
+    /* GeoEstate navy blue color palette */
+    --background: 0 0% 98%;
+    --foreground: 203 100% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 25 25% 15%;
+    --card-foreground: 203 100% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 25 25% 15%;
+    --popover-foreground: 203 100% 18%;
 
-    /* Savanna Gold - Primary brand color */
-    --primary: 38 92% 50%;
-    --primary-foreground: 25 25% 15%;
+    /* Navy Blue - Primary brand color from logo */
+    --primary: 203 100% 18%;
+    --primary-foreground: 0 0% 100%;
     
-    /* Earth tones for secondary */
-    --secondary: 28 40% 92%;
-    --secondary-foreground: 25 25% 15%;
+    /* Light blue for secondary */
+    --secondary: 203 50% 92%;
+    --secondary-foreground: 203 100% 18%;
 
-    --muted: 42 30% 95%;
-    --muted-foreground: 25 15% 45%;
+    --muted: 203 20% 95%;
+    --muted-foreground: 203 30% 45%;
 
-    /* Forest Green accent */
-    --accent: 142 40% 35%;
+    /* Lighter blue accent */
+    --accent: 203 80% 40%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 42 20% 88%;
-    --input: 42 20% 88%;
-    --ring: 38 92% 50%;
+    --border: 203 20% 88%;
+    --input: 203 20% 88%;
+    --ring: 203 100% 18%;
 
     --radius: 0.75rem;
 
@@ -52,68 +52,68 @@ All colors MUST be HSL.
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 25 25% 15%;
-    --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 25 25% 15%;
-    --sidebar-accent: 42 30% 95%;
-    --sidebar-accent-foreground: 25 25% 15%;
-    --sidebar-border: 42 20% 88%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-foreground: 203 100% 18%;
+    --sidebar-primary: 203 100% 18%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 203 20% 95%;
+    --sidebar-accent-foreground: 203 100% 18%;
+    --sidebar-border: 203 20% 88%;
+    --sidebar-ring: 203 100% 18%;
 
     /* Custom design tokens */
-    --gradient-hero: linear-gradient(135deg, hsl(38 92% 50%), hsl(25 85% 55%));
-    --gradient-mesh: linear-gradient(135deg, hsl(38 92% 50% / 0.1), hsl(142 40% 35% / 0.1));
+    --gradient-hero: linear-gradient(135deg, hsl(203 100% 18%), hsl(203 80% 35%));
+    --gradient-mesh: linear-gradient(135deg, hsl(203 100% 18% / 0.1), hsl(203 80% 40% / 0.1));
     --gradient-shine: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.2), transparent);
-    --shadow-soft: 0 4px 20px -2px hsl(25 25% 15% / 0.08);
-    --shadow-hover: 0 8px 30px -4px hsl(25 25% 15% / 0.12);
-    --shadow-xl: 0 20px 50px -12px hsl(25 25% 15% / 0.15);
+    --shadow-soft: 0 4px 20px -2px hsl(203 100% 18% / 0.08);
+    --shadow-hover: 0 8px 30px -4px hsl(203 100% 18% / 0.12);
+    --shadow-xl: 0 20px 50px -12px hsl(203 100% 18% / 0.15);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .dark {
-    --background: 25 30% 8%;
-    --foreground: 42 30% 95%;
+    --background: 203 50% 8%;
+    --foreground: 0 0% 95%;
 
-    --card: 25 25% 12%;
-    --card-foreground: 42 30% 95%;
+    --card: 203 40% 12%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 25 25% 12%;
-    --popover-foreground: 42 30% 95%;
+    --popover: 203 40% 12%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 38 92% 50%;
-    --primary-foreground: 25 25% 15%;
+    --primary: 203 80% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 25 20% 18%;
-    --secondary-foreground: 42 30% 95%;
+    --secondary: 203 30% 18%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 25 20% 18%;
-    --muted-foreground: 42 15% 60%;
+    --muted: 203 30% 18%;
+    --muted-foreground: 203 15% 60%;
 
-    --accent: 142 45% 40%;
+    --accent: 203 70% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 25 20% 25%;
-    --input: 25 20% 25%;
-    --ring: 38 92% 50%;
+    --border: 203 30% 25%;
+    --input: 203 30% 25%;
+    --ring: 203 80% 45%;
 
     --success: 142 70% 45%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 25 25% 15%;
+    --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 25 25% 12%;
-    --sidebar-foreground: 42 30% 95%;
-    --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 25 25% 15%;
-    --sidebar-accent: 25 20% 18%;
-    --sidebar-accent-foreground: 42 30% 95%;
-    --sidebar-border: 25 20% 25%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-background: 203 40% 12%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 203 80% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 203 30% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 203 30% 25%;
+    --sidebar-ring: 203 80% 45%;
 
     --shadow-soft: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
     --shadow-hover: 0 8px 30px -4px hsl(0 0% 0% / 0.4);

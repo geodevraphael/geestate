@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { MapPin, Menu, X, Plus } from 'lucide-react';
+import { Menu, X, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { UserMenu } from './navbar/UserMenu';
 import { AdminMenu } from './navbar/AdminMenu';
 import { useTranslation } from 'react-i18next';
+import logo from '@/assets/geoestate-logo.png';
 
 export function Navbar() {
   const { user, hasRole } = useAuth();
@@ -19,11 +20,8 @@ export function Navbar() {
       <div className="w-full px-6">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-            <MapPin className="h-6 w-6 text-primary" />
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              {t('app.name')}
-            </span>
+          <Link to="/" className="flex items-center gap-2">
+            <img src={logo} alt="GeoEstate" className="h-10 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}

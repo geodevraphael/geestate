@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import logo from '@/assets/geoestate-logo.png';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -68,10 +69,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <MapPin className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              GeoEstate Tanzania
-            </h1>
+            <img src={logo} alt="GeoEstate Tanzania" className="h-16 w-auto" />
           </div>
           <p className="text-muted-foreground">
             Your trusted marketplace for verified land and property
