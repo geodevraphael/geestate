@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -113,13 +113,14 @@ export default function MapBrowse() {
     return listingsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
   };
 
-  const filteredListings = getSortedListings(
-    listings.filter((listing) => {
+  const filteredListings = useMemo(() => {
+    const filtered = listings.filter((listing) => {
       const matchesListingType = listingTypeFilter === 'all' || listing.listing_type === listingTypeFilter;
       const matchesPropertyType = propertyTypeFilter === 'all' || listing.property_type === propertyTypeFilter;
       return matchesListingType && matchesPropertyType;
-    })
-  );
+    });
+    return getSortedListings(filtered);
+  }, [listings, listingTypeFilter, propertyTypeFilter, userLocation]);
 
   const zoomToListing = (listing: ListingWithPolygon) => {
     if (!mapInstance.current || !listing.polygon) return;
