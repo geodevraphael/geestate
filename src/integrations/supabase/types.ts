@@ -894,6 +894,45 @@ export type Database = {
           },
         ]
       }
+      payment_account_settings: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          currency: string
+          id: string
+          instructions: string | null
+          is_active: boolean
+          swift_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          currency?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_proofs: {
         Row: {
           admin_notes: string | null
@@ -1411,6 +1450,75 @@ export type Database = {
           },
         ]
       }
+      subscription_payment_proofs: {
+        Row: {
+          admin_notes: string | null
+          amount_paid: number
+          buyer_notes: string | null
+          created_at: string
+          id: string
+          payment_method: string
+          plan_type: Database["public"]["Enums"]["subscription_plan"]
+          proof_file_url: string
+          reviewed_at: string | null
+          status: string
+          submitted_at: string
+          subscription_id: string | null
+          transaction_reference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_paid: number
+          buyer_notes?: string | null
+          created_at?: string
+          id?: string
+          payment_method: string
+          plan_type: Database["public"]["Enums"]["subscription_plan"]
+          proof_file_url: string
+          reviewed_at?: string | null
+          status?: string
+          submitted_at?: string
+          subscription_id?: string | null
+          transaction_reference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_paid?: number
+          buyer_notes?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          plan_type?: Database["public"]["Enums"]["subscription_plan"]
+          proof_file_url?: string
+          reviewed_at?: string | null
+          status?: string
+          submitted_at?: string
+          subscription_id?: string | null
+          transaction_reference?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payment_proofs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payment_proofs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount_paid: number | null
@@ -1484,6 +1592,86 @@ export type Database = {
           stack_trace?: string | null
         }
         Relationships: []
+      }
+      transaction_reviews: {
+        Row: {
+          communication_score: number | null
+          created_at: string
+          deal_closure_id: string
+          honesty_score: number | null
+          id: string
+          listing_id: string
+          rating: number
+          reliability_score: number | null
+          review_text: string | null
+          reviewed_user_id: string
+          reviewer_id: string
+          reviewer_role: string
+          updated_at: string
+          would_transact_again: boolean | null
+        }
+        Insert: {
+          communication_score?: number | null
+          created_at?: string
+          deal_closure_id: string
+          honesty_score?: number | null
+          id?: string
+          listing_id: string
+          rating: number
+          reliability_score?: number | null
+          review_text?: string | null
+          reviewed_user_id: string
+          reviewer_id: string
+          reviewer_role: string
+          updated_at?: string
+          would_transact_again?: boolean | null
+        }
+        Update: {
+          communication_score?: number | null
+          created_at?: string
+          deal_closure_id?: string
+          honesty_score?: number | null
+          id?: string
+          listing_id?: string
+          rating?: number
+          reliability_score?: number | null
+          review_text?: string | null
+          reviewed_user_id?: string
+          reviewer_id?: string
+          reviewer_role?: string
+          updated_at?: string
+          would_transact_again?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_reviews_deal_closure_id_fkey"
+            columns: ["deal_closure_id"]
+            isOneToOne: false
+            referencedRelation: "deal_closures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_reviews_reviewed_user_id_fkey"
+            columns: ["reviewed_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
