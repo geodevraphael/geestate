@@ -617,12 +617,12 @@ export default function ListingDetail() {
             </Card>
 
             {/* Geospatial Services */}
-            {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
+            {user && listing.status === 'published' && (
               <GeospatialServiceRequest listingId={id!} sellerId={listing.owner_id} />
             )}
 
             {/* GeoInsight Professional Services */}
-            {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
+            {user && listing.status === 'published' && (
               <GeoInsightServices listingId={id!} sellerId={listing.owner_id} />
             )}
           </div>
