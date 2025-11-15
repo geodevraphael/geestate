@@ -39,6 +39,8 @@ import ManageUsers from './pages/ManageUsers';
 import CRMDashboard from './pages/CRMDashboard';
 import Integrations from './pages/Integrations';
 import SystemStatus from './pages/SystemStatus';
+import AdminServiceRequests from './pages/AdminServiceRequests';
+import ServiceRequestDetail from './pages/ServiceRequestDetail';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -86,6 +88,8 @@ const App = () => (
             <Route path="/crm" element={<CRMDashboard />} />
             <Route path="/integrations" element={<Integrations />} />
             <Route path="/admin/system-status" element={<SystemStatus />} />
+            <Route path="/admin/service-requests" element={<AdminServiceRequests />} />
+            <Route path="/admin/service-requests/:id" element={<ServiceRequestDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
