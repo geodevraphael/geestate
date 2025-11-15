@@ -5,11 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
+import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload } from 'lucide-react';
 import { Listing } from '@/types/database';
+import { useToast } from '@/hooks/use-toast';
 
 export function SellerDashboard() {
   const { profile } = useAuth();
+  const { toast } = useToast();
   const [listings, setListings] = useState<Listing[]>([]);
   const [stats, setStats] = useState({ total: 0, published: 0, pending: 0, draft: 0 });
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
@@ -80,6 +83,35 @@ export function SellerDashboard() {
     return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
   };
 
+  const handlePublishListing = async (listingId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: 'published' as 'published' })
+        .eq('id', listingId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Listing Published',
+        description: 'Your listing is now visible to buyers',
+      });
+
+      // Refresh the listings
+      fetchSellerData();
+    } catch (error: any) {
+      console.error('Error publishing listing:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to publish listing. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -135,6 +167,19 @@ export function SellerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Info: Draft vs Published */}
+      {stats.draft > 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <div className="ml-2">
+            <h4 className="font-semibold mb-1">You have {stats.draft} draft listing{stats.draft > 1 ? 's' : ''}</h4>
+            <p className="text-sm text-muted-foreground">
+              Draft listings are not visible to buyers. Click "Publish Listing" on any draft to make it visible on the marketplace, or edit your listing and click "Publish Listing" to make it live.
+            </p>
+          </div>
+        </Alert>
+      )}
 
       {/* Quick Actions */}
       <Card>
@@ -220,8 +265,8 @@ export function SellerDashboard() {
           ) : (
             <div className="space-y-4">
               {listings.map((listing) => (
-                <Link key={listing.id} to={`/listings/${listing.id}`}>
-                  <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                <div key={listing.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                  <Link to={`/listings/${listing.id}`}>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{listing.title}</h3>
@@ -244,8 +289,25 @@ export function SellerDashboard() {
                         </span>
                       )}
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  {listing.status === 'draft' && (
+                    <div className="mt-3 pt-3 border-t flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={(e) => handlePublishListing(listing.id, e)}
+                        className="flex-1"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Publish Listing
+                      </Button>
+                      <Link to={`/listings/${listing.id}/edit`} className="flex-1">
+                        <Button size="sm" variant="outline" className="w-full">
+                          Edit
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
