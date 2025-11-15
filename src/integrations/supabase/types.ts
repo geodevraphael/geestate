@@ -428,6 +428,255 @@ export type Database = {
           },
         ]
       }
+      geoinsight_fee_definitions: {
+        Row: {
+          code: string
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          fee_type: string
+          fixed_amount: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          percentage_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          fee_type: string
+          fixed_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          percentage_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          fee_type?: string
+          fixed_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          percentage_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      geoinsight_income_records: {
+        Row: {
+          admin_notes: string | null
+          admin_verified_by: string | null
+          amount_due: number
+          created_at: string | null
+          currency: string | null
+          description: string
+          due_date: string | null
+          fee_definition_id: string
+          id: string
+          paid_at: string | null
+          related_listing_id: string | null
+          related_subscription_id: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          admin_verified_by?: string | null
+          amount_due: number
+          created_at?: string | null
+          currency?: string | null
+          description: string
+          due_date?: string | null
+          fee_definition_id: string
+          id?: string
+          paid_at?: string | null
+          related_listing_id?: string | null
+          related_subscription_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          admin_verified_by?: string | null
+          amount_due?: number
+          created_at?: string | null
+          currency?: string | null
+          description?: string
+          due_date?: string | null
+          fee_definition_id?: string
+          id?: string
+          paid_at?: string | null
+          related_listing_id?: string | null
+          related_subscription_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geoinsight_income_records_admin_verified_by_fkey"
+            columns: ["admin_verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geoinsight_income_records_fee_definition_id_fkey"
+            columns: ["fee_definition_id"]
+            isOneToOne: false
+            referencedRelation: "geoinsight_fee_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geoinsight_income_records_related_listing_id_fkey"
+            columns: ["related_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geoinsight_income_records_related_subscription_id_fkey"
+            columns: ["related_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geoinsight_income_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      geoinsight_invoices: {
+        Row: {
+          created_at: string | null
+          id: string
+          income_record_id: string
+          invoice_number: string
+          issued_at: string | null
+          pdf_url: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          income_record_id: string
+          invoice_number: string
+          issued_at?: string | null
+          pdf_url?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          income_record_id?: string
+          invoice_number?: string
+          issued_at?: string | null
+          pdf_url?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geoinsight_invoices_income_record_id_fkey"
+            columns: ["income_record_id"]
+            isOneToOne: true
+            referencedRelation: "geoinsight_income_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      geoinsight_payment_proofs: {
+        Row: {
+          admin_review_notes: string | null
+          admin_reviewed_by: string | null
+          amount_paid: number | null
+          created_at: string | null
+          id: string
+          income_record_id: string
+          payer_id: string
+          payment_channel: string | null
+          proof_file_url: string | null
+          proof_text: string | null
+          status: string
+          submitted_at: string | null
+          transaction_reference: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_review_notes?: string | null
+          admin_reviewed_by?: string | null
+          amount_paid?: number | null
+          created_at?: string | null
+          id?: string
+          income_record_id: string
+          payer_id: string
+          payment_channel?: string | null
+          proof_file_url?: string | null
+          proof_text?: string | null
+          status?: string
+          submitted_at?: string | null
+          transaction_reference?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_review_notes?: string | null
+          admin_reviewed_by?: string | null
+          amount_paid?: number | null
+          created_at?: string | null
+          id?: string
+          income_record_id?: string
+          payer_id?: string
+          payment_channel?: string | null
+          proof_file_url?: string | null
+          proof_text?: string | null
+          status?: string
+          submitted_at?: string | null
+          transaction_reference?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geoinsight_payment_proofs_admin_reviewed_by_fkey"
+            columns: ["admin_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geoinsight_payment_proofs_income_record_id_fkey"
+            columns: ["income_record_id"]
+            isOneToOne: false
+            referencedRelation: "geoinsight_income_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geoinsight_payment_proofs_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institutional_sellers: {
         Row: {
           approved_at: string | null
