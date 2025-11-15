@@ -6,7 +6,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, CheckCircle2 } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MapPin, CheckCircle2, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -28,6 +31,10 @@ interface ListingWithPolygon extends ListingWithDetails {
     full_name: string;
     email: string;
   };
+  region_id?: string | null;
+  district_id?: string | null;
+  ward_id?: string | null;
+  street_village_id?: string | null;
 }
 
 export default function MapBrowse() {
@@ -36,10 +43,19 @@ export default function MapBrowse() {
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
   const [dealerFilter, setDealerFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [districtFilter, setDistrictFilter] = useState<string>('all');
+  const [wardFilter, setWardFilter] = useState<string>('all');
+  const [streetFilter, setStreetFilter] = useState<string>('all');
   const [basemap, setBasemap] = useState<'street' | 'satellite'>('satellite');
   const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationPermissionAsked, setLocationPermissionAsked] = useState(false);
+  const [dealerSearchOpen, setDealerSearchOpen] = useState(false);
+  const [regions, setRegions] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [wards, setWards] = useState<any[]>([]);
+  const [streets, setStreets] = useState<any[]>([]);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<Map | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -49,7 +65,61 @@ export default function MapBrowse() {
   useEffect(() => {
     fetchListingsWithPolygons();
     requestUserLocation();
+    fetchLocations();
   }, []);
+
+  const fetchLocations = async () => {
+    const { data: regionsData } = await supabase.from('regions').select('*').order('name');
+    setRegions(regionsData || []);
+  };
+
+  useEffect(() => {
+    if (regionFilter !== 'all') {
+      fetchDistricts(regionFilter);
+      setDistrictFilter('all');
+      setWardFilter('all');
+      setStreetFilter('all');
+    } else {
+      setDistricts([]);
+      setWards([]);
+      setStreets([]);
+    }
+  }, [regionFilter]);
+
+  useEffect(() => {
+    if (districtFilter !== 'all') {
+      fetchWards(districtFilter);
+      setWardFilter('all');
+      setStreetFilter('all');
+    } else {
+      setWards([]);
+      setStreets([]);
+    }
+  }, [districtFilter]);
+
+  useEffect(() => {
+    if (wardFilter !== 'all') {
+      fetchStreets(wardFilter);
+      setStreetFilter('all');
+    } else {
+      setStreets([]);
+    }
+  }, [wardFilter]);
+
+  const fetchDistricts = async (regionId: string) => {
+    const { data } = await supabase.from('districts').select('*').eq('region_id', regionId).order('name');
+    setDistricts(data || []);
+  };
+
+  const fetchWards = async (districtId: string) => {
+    const { data } = await supabase.from('wards').select('*').eq('district_id', districtId).order('name');
+    setWards(data || []);
+  };
+
+  const fetchStreets = async (wardId: string) => {
+    const { data } = await supabase.from('streets_villages').select('*').eq('ward_id', wardId).order('name');
+    setStreets(data || []);
+  };
 
   const fetchListingsWithPolygons = async () => {
     try {
@@ -135,10 +205,14 @@ export default function MapBrowse() {
       const matchesListingType = listingTypeFilter === 'all' || listing.listing_type === listingTypeFilter;
       const matchesPropertyType = propertyTypeFilter === 'all' || listing.property_type === propertyTypeFilter;
       const matchesDealer = dealerFilter === 'all' || listing.owner_id === dealerFilter;
-      return matchesListingType && matchesPropertyType && matchesDealer;
+      const matchesRegion = regionFilter === 'all' || listing.region_id === regionFilter;
+      const matchesDistrict = districtFilter === 'all' || listing.district_id === districtFilter;
+      const matchesWard = wardFilter === 'all' || listing.ward_id === wardFilter;
+      const matchesStreet = streetFilter === 'all' || listing.street_village_id === streetFilter;
+      return matchesListingType && matchesPropertyType && matchesDealer && matchesRegion && matchesDistrict && matchesWard && matchesStreet;
     });
     return getSortedListings(filtered);
-  }, [listings, listingTypeFilter, propertyTypeFilter, dealerFilter, userLocation]);
+  }, [listings, listingTypeFilter, propertyTypeFilter, dealerFilter, regionFilter, districtFilter, wardFilter, streetFilter, userLocation]);
 
   const zoomToListing = (listing: ListingWithPolygon) => {
     if (!mapInstance.current || !listing.polygon) return;
@@ -347,19 +421,142 @@ export default function MapBrowse() {
 
             <div>
               <label className="text-sm font-medium mb-2 block">Dealer/Seller</label>
-              <Select value={dealerFilter} onValueChange={setDealerFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Dealers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Dealers</SelectItem>
-                  {uniqueDealers.map((dealer) => (
-                    <SelectItem key={dealer.id} value={dealer.id}>
-                      {dealer.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={dealerSearchOpen} onOpenChange={setDealerSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={dealerSearchOpen}
+                    className="w-full justify-between"
+                  >
+                    {dealerFilter === 'all'
+                      ? 'All Dealers'
+                      : uniqueDealers.find((dealer) => dealer.id === dealerFilter)?.full_name || 'Select dealer...'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search dealer..." />
+                    <CommandList>
+                      <CommandEmpty>No dealer found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setDealerFilter('all');
+                            setDealerSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              dealerFilter === 'all' ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          All Dealers
+                        </CommandItem>
+                        {uniqueDealers.map((dealer) => (
+                          <CommandItem
+                            key={dealer.id}
+                            value={dealer.full_name}
+                            onSelect={() => {
+                              setDealerFilter(dealer.id);
+                              setDealerSearchOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                dealerFilter === dealer.id ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            {dealer.full_name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="pt-4 border-t border-border space-y-4">
+              <h3 className="text-sm font-medium">Location Filters</h3>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Region</label>
+                <Select value={regionFilter} onValueChange={setRegionFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Regions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    {regions.map((region) => (
+                      <SelectItem key={region.id} value={region.id}>
+                        {region.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {districts.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">District</label>
+                  <Select value={districtFilter} onValueChange={setDistrictFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Districts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Districts</SelectItem>
+                      {districts.map((district) => (
+                        <SelectItem key={district.id} value={district.id}>
+                          {district.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {wards.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Ward</label>
+                  <Select value={wardFilter} onValueChange={setWardFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Wards" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Wards</SelectItem>
+                      {wards.map((ward) => (
+                        <SelectItem key={ward.id} value={ward.id}>
+                          {ward.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {streets.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Street/Village</label>
+                  <Select value={streetFilter} onValueChange={setStreetFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Streets" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Streets</SelectItem>
+                      {streets.map((street) => (
+                        <SelectItem key={street.id} value={street.id}>
+                          {street.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-border">
