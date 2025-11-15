@@ -93,6 +93,7 @@ const App = () => (
             <Route path="/admin/system-status" element={<SystemStatus />} />
             <Route path="/admin/service-requests" element={<AdminServiceRequests />} />
             <Route path="/admin/service-requests/:id" element={<ServiceRequestDetail />} />
+            <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
             <Route path="/admin/payment-settings" element={<AdminPaymentSettings />} />
             <Route path="/admin/subscription-payments" element={<AdminSubscriptionPayments />} />
             <Route path="/admin/geodata-upload" element={<AdminGeoDataUpload />} />
