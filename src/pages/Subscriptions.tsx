@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { SubscriptionPaymentDialog } from '@/components/SubscriptionPaymentDialog';
 
 interface Subscription {
   id: string;
@@ -28,6 +29,8 @@ export default function Subscriptions() {
   const { toast } = useToast();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ type: "basic" | "pro" | "enterprise"; amount: number } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -58,10 +61,9 @@ export default function Subscriptions() {
       return;
     }
     
-    toast({
-      title: 'Contact Sales',
-      description: `To upgrade to the ${planType} plan, please contact our sales team at sales@geoestate.tz`,
-    });
+    const planPrices = { basic: 50000, pro: 150000, enterprise: 500000 };
+    setSelectedPlan({ type: planType, amount: planPrices[planType] });
+    setPaymentDialogOpen(true);
   };
 
   if (loading) {
@@ -126,7 +128,7 @@ export default function Subscriptions() {
               key={plan.type}
               plan={plan}
               isCurrentPlan={subscription?.plan_type === plan.type}
-              onUpgrade={handleUpgrade}
+              onSubscribe={handleUpgrade}
             />
           ))}
         </div>

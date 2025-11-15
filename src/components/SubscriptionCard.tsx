@@ -15,10 +15,10 @@ interface SubscriptionPlan {
 interface SubscriptionCardProps {
   plan: SubscriptionPlan;
   isCurrentPlan?: boolean;
-  onUpgrade: (planType: 'basic' | 'pro' | 'enterprise') => void;
+  onSubscribe: (planType: 'basic' | 'pro' | 'enterprise') => void;
 }
 
-export function SubscriptionCard({ plan, isCurrentPlan, onUpgrade }: SubscriptionCardProps) {
+export function SubscriptionCard({ plan, isCurrentPlan, onSubscribe }: SubscriptionCardProps) {
   const Icon = plan.icon;
 
   return (
@@ -56,7 +56,7 @@ export function SubscriptionCard({ plan, isCurrentPlan, onUpgrade }: Subscriptio
         </ul>
 
         <Button
-          onClick={() => onUpgrade(plan.type)}
+          onClick={() => onSubscribe(plan.type)}
           className="w-full"
           variant={plan.popular ? 'default' : 'outline'}
           disabled={isCurrentPlan}
