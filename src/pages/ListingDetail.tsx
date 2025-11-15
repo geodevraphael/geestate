@@ -18,7 +18,7 @@ import { useListingCalculations } from '@/hooks/useListingCalculations';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
-import OSM from 'ol/source/OSM';
+import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Polygon } from 'ol/geom';
@@ -117,7 +117,16 @@ export default function ListingDetail() {
         target: mapRef.current,
         layers: [
           new TileLayer({
-            source: new OSM(),
+            source: new XYZ({
+              url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+              attributions: '© Esri',
+            }),
+          }),
+          new TileLayer({
+            source: new XYZ({
+              url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+              attributions: '© Esri',
+            }),
           }),
           vectorLayer,
         ],
