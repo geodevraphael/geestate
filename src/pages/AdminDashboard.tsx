@@ -13,6 +13,7 @@ import {
   TrendingUp,
   FileCheck,
   Flag,
+  Briefcase,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,6 +26,8 @@ interface DashboardStats {
   fraudSignals: number;
   complianceFlags: number;
   closedDeals: number;
+  serviceRequests: number;
+  pendingServiceRequests: number;
 }
 
 export default function AdminDashboard() {
@@ -39,8 +42,11 @@ export default function AdminDashboard() {
     fraudSignals: 0,
     complianceFlags: 0,
     closedDeals: 0,
+    serviceRequests: 0,
+    pendingServiceRequests: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
 
   useEffect(() => {
     if (user && profile?.role === 'admin') {
@@ -63,6 +69,8 @@ export default function AdminDashboard() {
       fraudRes,
       complianceRes,
       dealsRes,
+      serviceReqRes,
+      pendingServiceReqRes,
     ] = await Promise.all([
       supabase.from('listings').select('id', { count: 'exact', head: true }),
       supabase
@@ -87,6 +95,11 @@ export default function AdminDashboard() {
         .from('deal_closures')
         .select('id', { count: 'exact', head: true })
         .eq('closure_status', 'closed'),
+      supabase.from('service_requests').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('service_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
     ]);
 
     setStats({
@@ -98,7 +111,39 @@ export default function AdminDashboard() {
       fraudSignals: fraudRes.count || 0,
       complianceFlags: complianceRes.count || 0,
       closedDeals: dealsRes.count || 0,
+      serviceRequests: serviceReqRes.count || 0,
+      pendingServiceRequests: pendingServiceReqRes.count || 0,
     });
+
+    // Fetch recent service requests
+    const { data: requests } = await supabase
+      .from('service_requests')
+      .select(`
+        *,
+        listings!inner(title, location_label)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (requests) {
+      const requestsWithProfiles = await Promise.all(
+        requests.map(async (request) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', request.requester_id)
+            .single();
+          
+          return {
+            ...request,
+            listing: request.listings,
+            requester: profile
+          };
+        })
+      );
+      setRecentRequests(requestsWithProfiles);
+    }
+
     setLoading(false);
   };
 
@@ -192,6 +237,19 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.closedDeals}</div>
             <p className="text-xs text-muted-foreground">Successful transactions</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:bg-muted/50" onClick={() => navigate('/admin/service-requests')}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Service Requests</CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.serviceRequests}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.pendingServiceRequests} pending
+            </p>
           </CardContent>
         </Card>
 
@@ -327,6 +385,65 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Service Requests */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Recent Service Requests</CardTitle>
+              <CardDescription>Latest geospatial and professional services</CardDescription>
+            </div>
+            <button
+              onClick={() => navigate('/admin/service-requests')}
+              className="text-sm text-primary hover:underline"
+            >
+              View All
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {recentRequests.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No service requests yet
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {recentRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/admin/service-requests/${request.id}`)}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">
+                        {request.service_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                      </p>
+                      <Badge variant={request.status === 'pending' ? 'secondary' : 'default'}>
+                        {request.status}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {request.listing?.title} • {request.requester?.full_name}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(request.created_at).toLocaleDateString()}
+                    </p>
+                    {request.quoted_price && (
+                      <p className="text-sm font-medium">
+                        {request.quoted_currency} {request.quoted_price.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
