@@ -31,7 +31,8 @@ export type NotificationType =
   | 'deal_rejected'
   | 'compliance_flag'
   | 'subscription_expiring'
-  | 'listing_verified';
+  | 'listing_verified'
+  | 'visit_requested';
 
 export interface PaymentProof {
   id: string;
