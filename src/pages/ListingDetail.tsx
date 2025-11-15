@@ -39,7 +39,9 @@ export default function ListingDetail() {
   const [landUse, setLandUse] = useState<LandUseProfile | null>(null);
   const [valuation, setValuation] = useState<ValuationEstimate | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mapMounted, setMapMounted] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<Map | null>(null);
 
   // Trigger automatic calculations for STEP 4 data
   useListingCalculations({
@@ -57,9 +59,22 @@ export default function ListingDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (!mapRef.current || !polygon?.geojson) {
-      console.log('Map not ready:', { hasMapRef: !!mapRef.current, hasPolygon: !!polygon, hasGeojson: !!polygon?.geojson });
+    // Check if map container is ready
+    if (mapRef.current && !mapMounted) {
+      setMapMounted(true);
+    }
+  }, [listing, polygon]);
+
+  useEffect(() => {
+    if (!mapMounted || !mapRef.current || !polygon?.geojson) {
+      console.log('Map not ready:', { mapMounted, hasMapRef: !!mapRef.current, hasPolygon: !!polygon, hasGeojson: !!polygon?.geojson });
       return;
+    }
+
+    // Clean up previous map instance
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setTarget(undefined);
+      mapInstanceRef.current = null;
     }
 
     console.log('Initializing map with polygon:', polygon);
@@ -121,20 +136,26 @@ export default function ListingDetail() {
         }),
       });
 
+      mapInstanceRef.current = map;
+
       // Force map to update its size after initialization
       setTimeout(() => {
         map.updateSize();
-      }, 100);
+        console.log('Map size updated');
+      }, 250);
 
       console.log('Map initialized successfully');
 
       return () => {
-        map.setTarget(undefined);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setTarget(undefined);
+          mapInstanceRef.current = null;
+        }
       };
     } catch (error) {
       console.error('Error rendering map:', error);
     }
-  }, [polygon, listing]);
+  }, [mapMounted, polygon, listing?.verification_status]);
 
   const fetchListing = async () => {
     try {
@@ -193,6 +214,9 @@ export default function ListingDetail() {
 
   const canEdit = profile?.id === listing?.owner_id || 
     hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer');
+  
+  const isOwner = profile?.id === listing?.owner_id;
+  const editingAsAdmin = canEdit && !isOwner;
 
   const getVerificationBadge = () => {
     if (!listing) return null;
@@ -257,9 +281,12 @@ export default function ListingDetail() {
           </Link>
           {canEdit && (
             <Link to={`/listings/${id}/edit`}>
-              <Button size="sm">
+              <Button size="sm" className="relative">
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Listing
+                {editingAsAdmin && (
+                  <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>
+                )}
               </Button>
             </Link>
           )}
@@ -576,12 +603,15 @@ export default function ListingDetail() {
                   </div>
                 )}
 
-                {/* Edit Button for Owner */}
+                {/* Edit Button for Owner/Admin */}
                 {canEdit && (
                   <Link to={`/listings/${id}/edit`} className="mt-4 block">
                     <Button variant="outline" className="w-full flex items-center gap-2">
                       <Edit className="h-4 w-4" />
                       Edit Listing
+                      {editingAsAdmin && (
+                        <Badge variant="secondary" className="ml-auto text-xs">Admin Access</Badge>
+                      )}
                     </Button>
                   </Link>
                 )}
