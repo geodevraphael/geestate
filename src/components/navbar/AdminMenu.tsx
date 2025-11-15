@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase, Map } from 'lucide-react';
+import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase, Map, DollarSign } from 'lucide-react';
 
 export function AdminMenu() {
   const { hasRole } = useAuth();
@@ -73,6 +73,13 @@ export function AdminMenu() {
         )}
 
         <DropdownMenuSeparator />
+        
+        <DropdownMenuItem asChild>
+          <Link to="/admin/income" className="cursor-pointer">
+            <DollarSign className="mr-2 h-4 w-4" />
+            Income Management
+          </Link>
+        </DropdownMenuItem>
         
         <DropdownMenuItem asChild>
           <Link to="/admin/analytics" className="cursor-pointer">

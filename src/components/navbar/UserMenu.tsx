@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, MessageSquare, Star, Shield, LogOut, FileText } from 'lucide-react';
+import { User, MessageSquare, Star, Shield, LogOut, FileText, CreditCard } from 'lucide-react';
 
 export function UserMenu() {
   const { user, signOut, hasRole } = useAuth();
@@ -60,7 +60,14 @@ export function UserMenu() {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/payment-proofs" className="cursor-pointer">
+                <CreditCard className="mr-2 h-4 w-4" />
                 Payments
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/geoinsight-payments" className="cursor-pointer">
+                <CreditCard className="mr-2 h-4 w-4" />
+                My GeoInsight Fees
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
