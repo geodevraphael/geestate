@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil } from 'lucide-react';
+import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil, CheckCircle2 } from 'lucide-react';
 import { validatePolygon } from '@/lib/polygonValidation';
 import { PolygonValidationPanel } from '@/components/PolygonValidationPanel';
 import { logAuditAction } from '@/lib/auditLog';
@@ -76,6 +76,7 @@ export default function CreateListing() {
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [publishOnSave, setPublishOnSave] = useState(false);
   const [existingListing, setExistingListing] = useState<any>(null);
   const [polygons, setPolygons] = useState<any[]>([]);
   const [jsonFileName, setJsonFileName] = useState<string>('');
@@ -588,7 +589,7 @@ export default function CreateListing() {
         ward_id: adminBoundaries.ward_id,
         street_village_id: adminBoundaries.street_village_id,
         owner_id: user!.id,
-        status: 'draft' as 'draft',
+        status: (publishOnSave ? 'published' : 'draft') as 'draft' | 'published',
         verification_status: 'unverified' as 'unverified',
       };
 
@@ -646,7 +647,9 @@ export default function CreateListing() {
 
       toast({
         title: id ? 'Listing Updated' : 'Listing Created',
-        description: `Your listing has been ${id ? 'updated' : 'created'} successfully`,
+        description: publishOnSave 
+          ? `Your listing has been ${id ? 'updated and published' : 'created and published'} successfully` 
+          : `Your listing has been ${id ? 'updated' : 'created'} as a draft`,
       });
 
       navigate('/dashboard');
@@ -942,7 +945,7 @@ export default function CreateListing() {
                 )}
               </div>
 
-              {/* Submit Button */}
+              {/* Submit Buttons */}
               <div className="flex gap-4 justify-end pt-4 border-t">
                 <Button
                   type="button"
@@ -952,9 +955,22 @@ export default function CreateListing() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading || uploading || polygons.length === 0}>
+                <Button 
+                  type="submit" 
+                  variant="outline"
+                  disabled={loading || uploading || polygons.length === 0}
+                  onClick={() => setPublishOnSave(false)}
+                >
                   <Save className="h-4 w-4 mr-2" />
-                  {loading ? 'Saving...' : id ? 'Update Listing' : 'Create Listing'}
+                  {loading && !publishOnSave ? 'Saving...' : 'Save as Draft'}
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={loading || uploading || polygons.length === 0}
+                  onClick={() => setPublishOnSave(true)}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {loading && publishOnSave ? 'Publishing...' : existingListing?.status === 'published' ? 'Update & Keep Published' : 'Publish Listing'}
                 </Button>
               </div>
             </form>
