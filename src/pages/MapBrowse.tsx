@@ -289,6 +289,44 @@ export default function MapBrowse() {
                 </div>
               </div>
             </div>
+
+            {/* Listings List */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-medium mb-3">Properties on Map</h3>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {filteredListings.map((listing) => (
+                  <Link 
+                    key={listing.id} 
+                    to={`/listings/${listing.id}`}
+                    className="block"
+                  >
+                    <Card className="p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                      <div className="space-y-1">
+                        <h4 className="font-medium text-sm line-clamp-1">{listing.title}</h4>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          <span className="line-clamp-1">{listing.location_label}</span>
+                        </div>
+                        {listing.verification_status === 'verified' && (
+                          <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
+                            <CheckCircle2 className="h-2.5 w-2.5 mr-1" />
+                            Verified
+                          </Badge>
+                        )}
+                        <div className="text-sm font-bold text-primary">
+                          {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+                {filteredListings.length === 0 && !loading && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No properties found
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
