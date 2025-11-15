@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Send } from 'lucide-react';
+import { Send, CheckCheck, Check } from 'lucide-react';
 import { Message } from '@/types/database';
 import { format } from 'date-fns';
 
@@ -173,6 +173,25 @@ export default function Messages() {
           setMessages(prev => [...prev, payload.new as Message]);
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `listing_id=eq.${listingId}`,
+        },
+        (payload) => {
+          // Update message read status in real-time
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === payload.new.id 
+                ? { ...msg, is_read: (payload.new as Message).is_read }
+                : msg
+            )
+          );
+        }
+      )
       .subscribe();
 
     return () => {
@@ -308,13 +327,22 @@ export default function Messages() {
                             }`}
                           >
                             <p className="text-sm">{message.content}</p>
-                            <p
-                              className={`text-xs mt-1 ${
+                            <div
+                              className={`flex items-center gap-1 justify-end text-xs mt-1 ${
                                 isSender ? 'text-primary-foreground/70' : 'text-muted-foreground'
                               }`}
                             >
-                              {format(new Date(message.timestamp), 'HH:mm')}
-                            </p>
+                              <span>{format(new Date(message.timestamp), 'HH:mm')}</span>
+                              {isSender && (
+                                <span className="ml-1">
+                                  {message.is_read ? (
+                                    <CheckCheck className="h-3 w-3" />
+                                  ) : (
+                                    <Check className="h-3 w-3" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
