@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle, Eye, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, AlertCircle, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { Navigate } from 'react-router-dom';
+import { TransactionReviewDialog } from '@/components/TransactionReviewDialog';
 
 export default function AdminPayments() {
   const { profile, hasRole } = useAuth();
@@ -24,6 +25,14 @@ export default function AdminPayments() {
   const [actionDialog, setActionDialog] = useState<'approve_payment' | 'reject_payment' | 'approve_closure' | 'reject_closure' | null>(null);
   const [notes, setNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [reviewDialog, setReviewDialog] = useState<{
+    open: boolean;
+    dealClosureId: string;
+    listingId: string;
+    reviewedUserId: string;
+    reviewedUserName: string;
+    reviewerRole: "buyer" | "seller";
+  } | null>(null);
 
   const isAdmin = hasRole('admin') || hasRole('verification_officer') || hasRole('compliance_officer');
 
@@ -432,6 +441,41 @@ export default function AdminPayments() {
                         </Button>
                       </div>
                     )}
+                    
+                    {closure.closure_status === 'closed' && (
+                      <div className="flex gap-2 pt-2 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setReviewDialog({
+                            open: true,
+                            dealClosureId: closure.id,
+                            listingId: closure.listing_id,
+                            reviewedUserId: closure.seller_id,
+                            reviewedUserName: closure.seller?.full_name || 'Seller',
+                            reviewerRole: 'buyer',
+                          })}
+                        >
+                          <Star className="mr-2 h-4 w-4" />
+                          Review Seller
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setReviewDialog({
+                            open: true,
+                            dealClosureId: closure.id,
+                            listingId: closure.listing_id,
+                            reviewedUserId: closure.buyer_id,
+                            reviewedUserName: closure.buyer?.full_name || 'Buyer',
+                            reviewerRole: 'seller',
+                          })}
+                        >
+                          <Star className="mr-2 h-4 w-4" />
+                          Review Buyer
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -562,6 +606,22 @@ export default function AdminPayments() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {reviewDialog && (
+        <TransactionReviewDialog
+          open={reviewDialog.open}
+          onOpenChange={(open) => {
+            if (!open) {
+              setReviewDialog(null);
+            }
+          }}
+          dealClosureId={reviewDialog.dealClosureId}
+          listingId={reviewDialog.listingId}
+          reviewedUserId={reviewDialog.reviewedUserId}
+          reviewedUserName={reviewDialog.reviewedUserName}
+          reviewerRole={reviewDialog.reviewerRole}
+        />
+      )}
     </div>
   );
 }
