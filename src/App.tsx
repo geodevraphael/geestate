@@ -43,6 +43,7 @@ import AdminServiceRequests from './pages/AdminServiceRequests';
 import ServiceRequestDetail from './pages/ServiceRequestDetail';
 import AdminPaymentSettings from './pages/AdminPaymentSettings';
 import AdminSubscriptionPayments from './pages/AdminSubscriptionPayments';
+import AdminGeoDataUpload from './pages/AdminGeoDataUpload';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/admin/service-requests/:id" element={<ServiceRequestDetail />} />
             <Route path="/admin/payment-settings" element={<AdminPaymentSettings />} />
             <Route path="/admin/subscription-payments" element={<AdminSubscriptionPayments />} />
+            <Route path="/admin/geodata-upload" element={<AdminGeoDataUpload />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

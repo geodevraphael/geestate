@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase } from 'lucide-react';
+import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase, Map } from 'lucide-react';
 
 export function AdminMenu() {
   const { hasRole } = useAuth();
@@ -61,6 +61,12 @@ export function AdminMenu() {
               <Link to="/institutional-sellers" className="cursor-pointer">
                 <Building className="mr-2 h-4 w-4" />
                 Institutions
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/geodata-upload" className="cursor-pointer">
+                <Map className="mr-2 h-4 w-4" />
+                GeoData Upload
               </Link>
             </DropdownMenuItem>
           </>
