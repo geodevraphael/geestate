@@ -41,6 +41,8 @@ import Integrations from './pages/Integrations';
 import SystemStatus from './pages/SystemStatus';
 import AdminServiceRequests from './pages/AdminServiceRequests';
 import ServiceRequestDetail from './pages/ServiceRequestDetail';
+import AdminPaymentSettings from './pages/AdminPaymentSettings';
+import AdminSubscriptionPayments from './pages/AdminSubscriptionPayments';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -90,6 +92,8 @@ const App = () => (
             <Route path="/admin/system-status" element={<SystemStatus />} />
             <Route path="/admin/service-requests" element={<AdminServiceRequests />} />
             <Route path="/admin/service-requests/:id" element={<ServiceRequestDetail />} />
+            <Route path="/admin/payment-settings" element={<AdminPaymentSettings />} />
+            <Route path="/admin/subscription-payments" element={<AdminSubscriptionPayments />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
