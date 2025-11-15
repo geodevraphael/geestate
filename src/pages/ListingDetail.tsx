@@ -38,6 +38,7 @@ export default function ListingDetail() {
   const [spatialRisk, setSpatialRisk] = useState<SpatialRiskProfile | null>(null);
   const [landUse, setLandUse] = useState<LandUseProfile | null>(null);
   const [valuation, setValuation] = useState<ValuationEstimate | null>(null);
+  const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
@@ -54,6 +55,7 @@ export default function ListingDetail() {
   useEffect(() => {
     if (id) {
       fetchListing();
+      fetchServiceRequests();
     }
   }, [id]);
 
@@ -154,6 +156,27 @@ export default function ListingDetail() {
       }
     };
   }, [polygon?.geojson, listing?.verification_status]);
+
+  const fetchServiceRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('service_requests')
+        .select(`
+          *,
+          service_providers (
+            company_name,
+            contact_person
+          )
+        `)
+        .eq('listing_id', id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setServiceRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching service requests:', error);
+    }
+  };
 
   const fetchListing = async () => {
     try {
@@ -475,6 +498,81 @@ export default function ListingDetail() {
                 </Card>
               )}
             </div>
+
+            {/* Service Request History */}
+            {serviceRequests.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Service Request History</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {serviceRequests.map((request) => (
+                    <div key={request.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="font-semibold capitalize">
+                            {request.service_type.replace(/_/g, ' ')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {request.service_category}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant={
+                            request.status === 'completed' ? 'default' : 
+                            request.status === 'in_progress' ? 'secondary' : 
+                            'outline'
+                          }
+                          className="capitalize"
+                        >
+                          {request.status.replace(/_/g, ' ')}
+                        </Badge>
+                      </div>
+                      
+                      {request.service_providers && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Provider:</span>{' '}
+                          {request.service_providers.company_name}
+                        </p>
+                      )}
+                      
+                      {request.quoted_price && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Quote:</span>{' '}
+                          <span className="font-medium">
+                            {request.quoted_price.toLocaleString()} {request.quoted_currency || 'TZS'}
+                          </span>
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Requested: {new Date(request.created_at).toLocaleDateString()}
+                        </div>
+                        {request.actual_completion_date && (
+                          <div className="flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                            Completed: {new Date(request.actual_completion_date).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {request.report_file_url && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={() => window.open(request.report_file_url, '_blank')}
+                        >
+                          View Report
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Valuation Estimate */}
             {valuation && (
