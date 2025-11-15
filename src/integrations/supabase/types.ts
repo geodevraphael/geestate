@@ -2020,6 +2020,7 @@ export type Database = {
         | "compliance_flag"
         | "subscription_expiring"
         | "listing_verified"
+        | "visit_requested"
       payment_proof_status:
         | "pending_seller_confirmation"
         | "pending_admin_review"
@@ -2237,6 +2238,7 @@ export const Constants = {
         "compliance_flag",
         "subscription_expiring",
         "listing_verified",
+        "visit_requested",
       ],
       payment_proof_status: [
         "pending_seller_confirmation",
