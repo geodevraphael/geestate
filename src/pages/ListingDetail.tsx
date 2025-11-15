@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -30,6 +30,7 @@ import 'ol/ol.css';
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const { profile, user, hasRole } = useAuth();
+  const navigate = useNavigate();
   const [listing, setListing] = useState<ListingWithDetails | null>(null);
   const [polygon, setPolygon] = useState<ListingPolygon | null>(null);
   const [media, setMedia] = useState<ListingMedia[]>([]);
@@ -554,8 +555,12 @@ export default function ListingDetail() {
                     <p className="text-sm text-muted-foreground">Phone: {owner.phone}</p>
                   )}
                 </div>
-                <Button className="w-full mt-4">
-                  Contact Seller
+                <Button 
+                  className="w-full mt-4"
+                  onClick={() => navigate(`/messages?listing=${id}&seller=${listing.owner_id}`)}
+                  disabled={!user || profile?.id === listing.owner_id}
+                >
+                  {profile?.id === listing.owner_id ? 'Your Listing' : 'Contact Seller'}
                 </Button>
 
                 {/* Payment Proof Button for Buyers */}

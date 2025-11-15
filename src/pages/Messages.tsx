@@ -17,6 +17,7 @@ export default function Messages() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const listingId = searchParams.get('listing');
+  const sellerId = searchParams.get('seller');
   
   const [conversations, setConversations] = useState<any[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<any | null>(null);
@@ -37,6 +38,53 @@ export default function Messages() {
       subscribeToMessages(selectedConversation.listing_id);
     }
   }, [selectedConversation]);
+
+  useEffect(() => {
+    // If listingId and sellerId are provided but no conversation exists, create a new one
+    if (listingId && sellerId && user && conversations.length > 0) {
+      const existingConversation = conversations.find(
+        (c: any) => c.listing_id === listingId
+      );
+      
+      if (!existingConversation) {
+        // Fetch listing and seller details to create a new conversation
+        initializeNewConversation();
+      }
+    }
+  }, [listingId, sellerId, user, conversations]);
+
+  const initializeNewConversation = async () => {
+    if (!listingId || !sellerId) return;
+    
+    try {
+      const [{ data: listingData }, { data: sellerData }] = await Promise.all([
+        supabase.from('listings').select('id, title').eq('id', listingId).single(),
+        supabase.from('profiles').select('id, full_name').eq('id', sellerId).single(),
+      ]);
+
+      if (listingData && sellerData) {
+        const newConversation = {
+          listing_id: listingData.id,
+          listing_title: listingData.title,
+          other_user_id: sellerData.id,
+          other_user_name: sellerData.full_name,
+          last_message: '',
+          last_message_time: new Date().toISOString(),
+          unread_count: 0,
+        };
+        
+        setSelectedConversation(newConversation);
+        setConversations([newConversation, ...conversations]);
+      }
+    } catch (error) {
+      console.error('Error initializing conversation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start conversation',
+        variant: 'destructive',
+      });
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
