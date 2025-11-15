@@ -121,6 +121,11 @@ export default function ListingDetail() {
         }),
       });
 
+      // Force map to update its size after initialization
+      setTimeout(() => {
+        map.updateSize();
+      }, 100);
+
       console.log('Map initialized successfully');
 
       return () => {
