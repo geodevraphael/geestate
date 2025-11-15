@@ -39,7 +39,6 @@ export default function ListingDetail() {
   const [landUse, setLandUse] = useState<LandUseProfile | null>(null);
   const [valuation, setValuation] = useState<ValuationEstimate | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mapMounted, setMapMounted] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 
@@ -59,17 +58,16 @@ export default function ListingDetail() {
   }, [id]);
 
   useEffect(() => {
-    // Check if map container is ready
-    if (mapRef.current && !mapMounted) {
-      setMapMounted(true);
-    }
-  }, [listing, polygon]);
-
-  useEffect(() => {
-    if (!mapMounted || !mapRef.current || !polygon?.geojson) {
-      console.log('Map not ready:', { mapMounted, hasMapRef: !!mapRef.current, hasPolygon: !!polygon, hasGeojson: !!polygon?.geojson });
+    if (!polygon?.geojson) {
       return;
     }
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (!mapRef.current) {
+        console.log('Map container not ready');
+        return;
+      }
 
     // Clean up previous map instance
     if (mapInstanceRef.current) {
@@ -145,17 +143,19 @@ export default function ListingDetail() {
       }, 250);
 
       console.log('Map initialized successfully');
-
-      return () => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.setTarget(undefined);
-          mapInstanceRef.current = null;
-        }
-      };
     } catch (error) {
       console.error('Error rendering map:', error);
     }
-  }, [mapMounted, polygon, listing?.verification_status]);
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.setTarget(undefined);
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [polygon?.geojson, listing?.verification_status]);
 
   const fetchListing = async () => {
     try {
