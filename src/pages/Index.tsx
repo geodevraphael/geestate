@@ -1,137 +1,286 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Shield, Search, CheckCircle2 } from 'lucide-react';
+import { MapPin, Shield, Search, CheckCircle2, TrendingUp, Users, Lock, Sparkles, ArrowRight, Star } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-background via-secondary/30 to-background">
-        <div className="container mx-auto px-4 py-20 md:py-32">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
-              <Shield className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Verified Properties Only</span>
+      {/* Hero Section with Advanced Design */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Animated Background Mesh */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary/20 to-background">
+          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute top-1/3 -right-20 w-[500px] h-[500px] bg-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        </div>
+
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
+
+        <div className="container relative z-10 mx-auto px-4 py-20">
+          <div className="max-w-5xl mx-auto">
+            {/* Trust Badge */}
+            <div className="mb-8 inline-flex items-center gap-2 px-5 py-2.5 glass rounded-full animate-fade-in border border-primary/20">
+              <div className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </div>
+              <span className="text-sm font-semibold text-primary">Verified by GeoInsight Enterprise</span>
+              <CheckCircle2 className="h-4 w-4 text-success" />
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              Find Your Perfect{' '}
-              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                Land & Property
-              </span>{' '}
-              in Tanzania
+            {/* Main Heading */}
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-8 leading-[1.1] animate-fade-in-up">
+              Discover Premium{' '}
+              <span className="relative inline-block">
+                <span className="text-gradient">Land & Property</span>
+                <svg className="absolute -bottom-2 left-0 w-full" height="12" viewBox="0 0 300 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 10C80 4 220 4 298 10" stroke="hsl(38 92% 50%)" strokeWidth="3" strokeLinecap="round"/>
+                </svg>
+              </span>
+              {' '}in Tanzania
             </h1>
             
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              GeoEstate Tanzania is your trusted marketplace for verified land and properties. 
-              Browse polygon-mapped listings with complete transparency and verification.
+            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              Africa's most advanced real estate marketplace. Every property is polygon-mapped, 
+              AI-verified, and backed by our comprehensive fraud detection system.
             </p>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap items-center gap-6 mb-12 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent ring-2 ring-background" />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-foreground">1,000+ Happy Clients</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                ))}
+                <span className="ml-2 text-sm font-medium">4.9/5 Rating</span>
+              </div>
+            </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/map">
-                <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                  <MapPin className="mr-2 h-5 w-5" />
-                  Browse Map
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <Link to="/map" className="group">
+                <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg bg-primary hover:bg-primary/90 shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105">
+                  <MapPin className="mr-2 h-6 w-6 group-hover:rotate-12 transition-transform" />
+                  Explore Interactive Map
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link to="/listings">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  <Search className="mr-2 h-5 w-5" />
-                  View Listings
+              <Link to="/listings" className="group">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg glass hover:bg-primary/10 border-2 border-border hover:border-primary/50 transition-all duration-300">
+                  <Search className="mr-2 h-6 w-6" />
+                  Browse All Listings
                 </Button>
               </Link>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+              {[
+                { value: '500+', label: 'Properties Listed' },
+                { value: '98%', label: 'Verification Rate' },
+                { value: '24/7', label: 'Support Available' },
+                { value: '100%', label: 'Secure Transactions' },
+              ].map((stat, i) => (
+                <div key={i} className="glass-card p-4 rounded-2xl hover-lift">
+                  <div className="text-2xl md:text-3xl font-display font-bold text-primary">{stat.value}</div>
+                  <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Decorative elements */}
-        <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 rounded-full border-2 border-primary/30 flex items-start justify-center p-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-glow" />
+          </div>
+        </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-card">
+      {/* Features Section - Redesigned */}
+      <section className="py-32 relative">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose GeoEstate?</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              We combine modern technology with rigorous verification to create a secure marketplace
+          <div className="text-center mb-20 animate-in">
+            <Badge className="mb-4 px-4 py-2 bg-primary/10 text-primary border-primary/20">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Platform Features
+            </Badge>
+            <h2 className="text-4xl md:text-6xl font-display font-bold mb-6">
+              Why Choose <span className="text-gradient">GeoEstate</span>?
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Combining cutting-edge geospatial technology with rigorous verification 
+              to create Africa's most trusted property marketplace.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                <MapPin className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Polygon-Based Mapping</h3>
-              <p className="text-muted-foreground">
-                Every property is mapped with precise GeoJSON polygons, giving you exact boundaries and locations
+          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {[
+              {
+                icon: MapPin,
+                title: 'Precision Mapping',
+                description: 'Every property mapped with exact GeoJSON polygon boundaries. See the true size and location with satellite accuracy.',
+                color: 'from-primary/20 to-primary/5',
+                badge: 'Geospatial AI'
+              },
+              {
+                icon: Shield,
+                title: 'Verified Listings',
+                description: 'Multi-layer verification by GeoInsight experts. AI-powered fraud detection protects your investment.',
+                color: 'from-success/20 to-success/5',
+                badge: 'Enterprise Grade'
+              },
+              {
+                icon: Lock,
+                title: 'Secure Transactions',
+                description: 'Bank-grade security with escrow protection. Every transaction is monitored and fully traceable.',
+                color: 'from-accent/20 to-accent/5',
+                badge: 'SSL Protected'
+              },
+            ].map((feature, i) => (
+              <Card 
+                key={i} 
+                className="relative group p-8 glass-card hover-lift border-2 hover:border-primary/30 transition-all duration-500 overflow-hidden animate-in"
+                style={{ animationDelay: `${i * 0.2}s` }}
+              >
+                {/* Gradient Background */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform duration-300">
+                      <feature.icon className="h-8 w-8 text-primary" />
+                    </div>
+                    <Badge variant="outline" className="text-xs">{feature.badge}</Badge>
+                  </div>
+                  
+                  <h3 className="text-2xl font-display font-semibold mb-4 group-hover:text-primary transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof Section */}
+      <section className="py-32 bg-gradient-to-b from-background to-secondary/30 relative overflow-hidden">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16 animate-in">
+              <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+                Trusted by <span className="text-gradient">Thousands</span> Across Tanzania
+              </h2>
+              <p className="text-xl text-muted-foreground">
+                Join the community of smart property investors and sellers
               </p>
             </div>
 
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 mb-4">
-                <CheckCircle2 className="h-8 w-8 text-success" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Verified Listings</h3>
-              <p className="text-muted-foreground">
-                All properties go through our verification process by GeoInsight Enterprise experts
-              </p>
-            </div>
-
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
-                <Shield className="h-8 w-8 text-accent" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Secure Transactions</h3>
-              <p className="text-muted-foreground">
-                Connect directly with verified sellers and brokers in a transparent environment
-              </p>
+            <div className="grid md:grid-cols-3 gap-8 animate-in" style={{ animationDelay: '0.2s' }}>
+              {[
+                { icon: Users, value: '1,500+', label: 'Active Users' },
+                { icon: TrendingUp, value: '$50M+', label: 'Property Value' },
+                { icon: CheckCircle2, value: '500+', label: 'Verified Sales' },
+              ].map((stat, i) => (
+                <div 
+                  key={i} 
+                  className="glass-card p-8 rounded-3xl text-center hover-lift"
+                >
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 mb-6">
+                    <stat.icon className="h-10 w-10 text-primary" />
+                  </div>
+                  <div className="text-4xl md:text-5xl font-display font-bold text-primary mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="text-lg text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Get Started?</h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join GeoEstate Tanzania today and experience the future of real estate in Tanzania
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth?tab=signup">
-              <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                Create Account
-              </Button>
-            </Link>
-            <Link to="/auth">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Sign In
-              </Button>
-            </Link>
+      <section className="py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
+        <div className="container relative mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center glass-card p-12 md:p-16 rounded-3xl animate-in">
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+              Ready to Find Your Perfect Property?
+            </h2>
+            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+              Start exploring verified listings today and make your property dreams a reality
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth" className="group">
+                <Button size="lg" className="w-full sm:w-auto h-14 px-10 text-lg bg-primary hover:bg-primary/90 shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105">
+                  Get Started Now
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <Link to="/how-it-works">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-10 text-lg glass hover:bg-primary/10 border-2">
+                  Learn More
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 bg-card">
+      <footer className="py-12 border-t border-border/50 bg-card/50">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-6 w-6 text-primary" />
-              <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                GeoEstate Tanzania
-              </span>
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h3 className="font-display font-bold text-lg mb-4">GeoEstate Tanzania</h3>
+              <p className="text-sm text-muted-foreground">
+                Africa's premier verified property marketplace.
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground text-center md:text-right">
-              Operated by GeoInsight Enterprise<br />
-              © 2025 GeoEstate Tanzania. All rights reserved.
-            </p>
+            <div>
+              <h4 className="font-semibold mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/listings" className="text-muted-foreground hover:text-primary transition-colors">Browse Listings</Link></li>
+                <li><Link to="/map" className="text-muted-foreground hover:text-primary transition-colors">Map View</Link></li>
+                <li><Link to="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">How It Works</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/about-us" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
+                <li><Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
+            <p>&copy; {new Date().getFullYear()} GeoEstate Tanzania. All rights reserved.</p>
           </div>
         </div>
       </footer>
