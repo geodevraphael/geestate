@@ -81,10 +81,22 @@ const navItems: NavItem[] = [
     roles: ['seller', 'broker'],
   },
   {
+    title: 'My GeoInsight Fees',
+    href: '/geoinsight-payments',
+    icon: CreditCard,
+    roles: ['seller', 'broker'],
+  },
+  {
     title: 'Admin Payments',
     href: '/admin/payments',
     icon: CreditCard,
     roles: ['admin', 'verification_officer', 'compliance_officer'],
+  },
+  {
+    title: 'Income Management',
+    href: '/admin/income',
+    icon: CreditCard,
+    roles: ['admin', 'compliance_officer'],
   },
   {
     title: 'Compliance',
