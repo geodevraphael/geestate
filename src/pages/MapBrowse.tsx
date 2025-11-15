@@ -32,6 +32,8 @@ export default function MapBrowse() {
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
   const [basemap, setBasemap] = useState<'street' | 'satellite'>('satellite');
   const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationPermissionAsked, setLocationPermissionAsked] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<Map | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,7 @@ export default function MapBrowse() {
 
   useEffect(() => {
     fetchListingsWithPolygons();
+    requestUserLocation();
   }, []);
 
   const fetchListingsWithPolygons = async () => {
@@ -63,11 +66,77 @@ export default function MapBrowse() {
     }
   };
 
-  const filteredListings = listings.filter((listing) => {
-    const matchesListingType = listingTypeFilter === 'all' || listing.listing_type === listingTypeFilter;
-    const matchesPropertyType = propertyTypeFilter === 'all' || listing.property_type === propertyTypeFilter;
-    return matchesListingType && matchesPropertyType;
-  });
+  const requestUserLocation = () => {
+    if (navigator.geolocation && !locationPermissionAsked) {
+      setLocationPermissionAsked(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.log('Location permission denied or unavailable:', error);
+        }
+      );
+    }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in km
+  };
+
+  const getSortedListings = (listings: ListingWithPolygon[]): ListingWithPolygon[] => {
+    if (!userLocation) return listings;
+
+    const listingsWithDistance = listings.map(listing => {
+      const distance = listing.polygon?.centroid_lat && listing.polygon?.centroid_lng
+        ? calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            listing.polygon.centroid_lat,
+            listing.polygon.centroid_lng
+          )
+        : Infinity;
+      return { ...listing, distance };
+    });
+
+    return listingsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+  };
+
+  const filteredListings = getSortedListings(
+    listings.filter((listing) => {
+      const matchesListingType = listingTypeFilter === 'all' || listing.listing_type === listingTypeFilter;
+      const matchesPropertyType = propertyTypeFilter === 'all' || listing.property_type === propertyTypeFilter;
+      return matchesListingType && matchesPropertyType;
+    })
+  );
+
+  const zoomToListing = (listing: ListingWithPolygon) => {
+    if (!mapInstance.current || !listing.polygon) return;
+
+    const center = listing.polygon.centroid_lng && listing.polygon.centroid_lat
+      ? fromLonLat([listing.polygon.centroid_lng, listing.polygon.centroid_lat])
+      : fromLonLat([34.888822, -6.369028]);
+
+    mapInstance.current.getView().animate({
+      center: center,
+      zoom: 16,
+      duration: 1000,
+    });
+
+    setSelectedListing(listing);
+    overlayRef.current?.setPosition(center);
+  };
 
   const getPolygonColor = (listing: ListingWithPolygon) => {
     if (listing.verification_status === 'verified') return '#22c55e';
@@ -292,20 +361,46 @@ export default function MapBrowse() {
 
             {/* Listings List */}
             <div className="pt-4 border-t border-border">
-              <h3 className="text-sm font-medium mb-3">Properties on Map</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium">
+                  {userLocation ? 'Properties (Sorted by Distance)' : 'Properties on Map'}
+                </h3>
+                {!locationPermissionAsked && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={requestUserLocation}
+                    className="text-xs"
+                  >
+                    <MapPin className="h-3 w-3 mr-1" />
+                    Near Me
+                  </Button>
+                )}
+              </div>
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {filteredListings.map((listing) => (
-                  <Link 
-                    key={listing.id} 
-                    to={`/listings/${listing.id}`}
-                    className="block"
+                  <div
+                    key={listing.id}
+                    onClick={() => zoomToListing(listing)}
+                    className="cursor-pointer"
                   >
-                    <Card className="p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                    <Card className={`p-3 transition-colors ${
+                      selectedListing?.id === listing.id 
+                        ? 'bg-primary/10 border-primary' 
+                        : 'hover:bg-accent/50'
+                    }`}>
                       <div className="space-y-1">
                         <h4 className="font-medium text-sm line-clamp-1">{listing.title}</h4>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" />
                           <span className="line-clamp-1">{listing.location_label}</span>
+                          {userLocation && (listing as any).distance && (
+                            <span className="ml-auto text-xs font-medium text-primary">
+                              {(listing as any).distance < 1 
+                                ? `${((listing as any).distance * 1000).toFixed(0)}m` 
+                                : `${(listing as any).distance.toFixed(1)}km`}
+                            </span>
+                          )}
                         </div>
                         {listing.verification_status === 'verified' && (
                           <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
@@ -318,7 +413,7 @@ export default function MapBrowse() {
                         </div>
                       </div>
                     </Card>
-                  </Link>
+                  </div>
                 ))}
                 {filteredListings.length === 0 && !loading && (
                   <p className="text-sm text-muted-foreground text-center py-4">
