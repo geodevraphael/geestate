@@ -58,16 +58,9 @@ export default function ListingDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (!polygon?.geojson) {
+    if (!polygon?.geojson || !mapRef.current) {
       return;
     }
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      if (!mapRef.current) {
-        console.log('Map container not ready');
-        return;
-      }
 
     // Clean up previous map instance
     if (mapInstanceRef.current) {
@@ -136,20 +129,20 @@ export default function ListingDetail() {
 
       mapInstanceRef.current = map;
 
-      // Force map to update its size after initialization
+      // Force map to update its size
       setTimeout(() => {
-        map.updateSize();
-        console.log('Map size updated');
-      }, 250);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.updateSize();
+          console.log('Map size updated');
+        }
+      }, 200);
 
       console.log('Map initialized successfully');
     } catch (error) {
       console.error('Error rendering map:', error);
     }
-    }, 100);
 
     return () => {
-      clearTimeout(timer);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.setTarget(undefined);
         mapInstanceRef.current = null;
@@ -380,7 +373,7 @@ export default function ListingDetail() {
                   <CardTitle>Property Location & Boundaries</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div ref={mapRef} className="h-96 rounded-lg overflow-hidden border" />
+                  <div ref={mapRef} className="w-full h-96 rounded-lg overflow-hidden border bg-muted" style={{ minHeight: '384px' }} />
                   {polygon.area_m2 && (
                     <div className="mt-4 flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Total Area</span>
