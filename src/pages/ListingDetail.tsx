@@ -118,21 +118,17 @@ export default function ListingDetail() {
         layers: [
           new TileLayer({
             source: new XYZ({
-              url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-              attributions: '© Esri',
-            }),
-          }),
-          new TileLayer({
-            source: new XYZ({
-              url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-              attributions: '© Esri',
+              url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              attributions: '© OpenStreetMap contributors',
+              crossOrigin: 'anonymous',
             }),
           }),
           vectorLayer,
         ],
         view: new View({
           center: center,
-          zoom: 15,
+          zoom: 16,
+          maxZoom: 19,
         }),
       });
 
