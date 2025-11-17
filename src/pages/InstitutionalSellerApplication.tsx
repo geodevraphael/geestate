@@ -1,5 +1,5 @@
 import { Navbar } from '@/components/Navbar';
-import { InstitutionalSellerForm } from '@/components/InstitutionalSellerForm';
+import { InstitutionalSellerEnhancedForm } from '@/components/InstitutionalSellerEnhancedForm';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -24,11 +24,11 @@ export default function InstitutionalSellerApplication() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Institutional Seller Application</h1>
           <p className="text-muted-foreground">
-            Apply to list properties on behalf of your government agency, municipality, or company
+            Create your professional institutional profile with custom branding. Get your own landing page to showcase your organization and properties.
           </p>
         </div>
 
-        <InstitutionalSellerForm />
+        <InstitutionalSellerEnhancedForm />
       </div>
     </div>
   );

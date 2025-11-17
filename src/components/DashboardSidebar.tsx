@@ -87,6 +87,12 @@ const navItems: NavItem[] = [
     roles: ['seller', 'broker'],
   },
   {
+    title: 'Institution Dashboard',
+    href: '/institutional-seller/dashboard',
+    icon: Building,
+    roles: ['seller', 'broker'],
+  },
+  {
     title: 'Admin Payments',
     href: '/admin/payments',
     icon: CreditCard,
