@@ -679,49 +679,82 @@ export type Database = {
       }
       institutional_sellers: {
         Row: {
+          about_company: string | null
           approved_at: string | null
           approved_by_admin_id: string | null
+          certifications: string[] | null
           contact_email: string
           contact_person: string
           contact_phone: string | null
+          cover_image_url: string | null
           created_at: string
           id: string
           institution_name: string
           institution_type: Database["public"]["Enums"]["institution_type"]
           is_approved: boolean | null
+          logo_url: string | null
+          mission_statement: string | null
           notes: string | null
           profile_id: string
+          service_areas: string[] | null
+          slug: string | null
+          social_media: Json | null
+          total_employees: number | null
           updated_at: string
+          website_url: string | null
+          year_established: number | null
         }
         Insert: {
+          about_company?: string | null
           approved_at?: string | null
           approved_by_admin_id?: string | null
+          certifications?: string[] | null
           contact_email: string
           contact_person: string
           contact_phone?: string | null
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           institution_name: string
           institution_type: Database["public"]["Enums"]["institution_type"]
           is_approved?: boolean | null
+          logo_url?: string | null
+          mission_statement?: string | null
           notes?: string | null
           profile_id: string
+          service_areas?: string[] | null
+          slug?: string | null
+          social_media?: Json | null
+          total_employees?: number | null
           updated_at?: string
+          website_url?: string | null
+          year_established?: number | null
         }
         Update: {
+          about_company?: string | null
           approved_at?: string | null
           approved_by_admin_id?: string | null
+          certifications?: string[] | null
           contact_email?: string
           contact_person?: string
           contact_phone?: string | null
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           institution_name?: string
           institution_type?: Database["public"]["Enums"]["institution_type"]
           is_approved?: boolean | null
+          logo_url?: string | null
+          mission_statement?: string | null
           notes?: string | null
           profile_id?: string
+          service_areas?: string[] | null
+          slug?: string | null
+          social_media?: Json | null
+          total_employees?: number | null
           updated_at?: string
+          website_url?: string | null
+          year_established?: number | null
         }
         Relationships: [
           {
@@ -2190,6 +2223,10 @@ export type Database = {
           p_type: Database["public"]["Enums"]["notification_type"]
           p_user_id: string
         }
+        Returns: string
+      }
+      generate_institution_slug: {
+        Args: { institution_name: string }
         Returns: string
       }
       get_primary_role: {
