@@ -27,6 +27,8 @@ import InstitutionalSellers from "./pages/InstitutionalSellers";
 import VisitRequests from './pages/VisitRequests';
 import DataExport from './pages/DataExport';
 import InstitutionalSellerApplication from './pages/InstitutionalSellerApplication';
+import InstitutionLandingPage from './pages/InstitutionLandingPage';
+import InstitutionalSellerDashboard from './pages/InstitutionalSellerDashboard';
 import AdminAnalytics from './pages/AdminAnalytics';
 import Disputes from './pages/Disputes';
 import AboutUs from './pages/AboutUs';
@@ -78,6 +80,8 @@ const App = () => (
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/institutional-sellers" element={<InstitutionalSellers />} />
+            <Route path="/institution/:slug" element={<InstitutionLandingPage />} />
+            <Route path="/institutional-seller/dashboard" element={<InstitutionalSellerDashboard />} />
             <Route path="/visit-requests" element={<VisitRequests />} />
             <Route path="/data-export" element={<DataExport />} />
             <Route path="/apply-institutional-seller" element={<InstitutionalSellerApplication />} />

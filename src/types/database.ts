@@ -216,8 +216,25 @@ export interface InstitutionalSeller {
   approved_by_admin_id?: string;
   approved_at?: string;
   notes?: string;
+  slug?: string;
+  logo_url?: string;
+  cover_image_url?: string;
+  about_company?: string;
+  mission_statement?: string;
+  website_url?: string;
+  year_established?: number;
+  total_employees?: number;
+  service_areas?: string[];
+  certifications?: string[];
+  social_media?: any;
   created_at: string;
   updated_at: string;
+}
+
+export interface InstitutionalSellerWithDetails extends InstitutionalSeller {
+  profiles?: Partial<Profile>;
+  listings_count?: number;
+  active_listings_count?: number;
 }
 
 export interface ValuationEstimate {
