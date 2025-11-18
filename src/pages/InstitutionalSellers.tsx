@@ -11,32 +11,60 @@ import { InstitutionalSeller } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 
 export default function InstitutionalSellers() {
-  const { user, profile } = useAuth();
+  const { user, hasRole, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [sellers, setSellers] = useState<InstitutionalSeller[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && profile?.role === 'admin') {
+    // Wait for auth to load
+    if (authLoading) return;
+    
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    if (hasRole('admin')) {
       fetchSellers();
-    } else if (user && profile?.role !== 'admin') {
+    } else {
+      toast({
+        title: 'Access Denied',
+        description: 'You need admin privileges to access this page.',
+        variant: 'destructive',
+      });
       navigate('/dashboard');
     }
-  }, [user, profile]);
+  }, [user, hasRole, authLoading]);
 
   const fetchSellers = async () => {
-    const { data, error } = await supabase
-      .from('institutional_sellers')
-      .select('*, profiles(full_name, email)')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('institutional_sellers')
+        .select('*, profiles(full_name, email)')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching institutional sellers:', error);
-    } else if (data) {
-      setSellers(data);
+      if (error) {
+        console.error('Error fetching institutional sellers:', error);
+        toast({
+          title: 'Error Loading Data',
+          description: error.message || 'Failed to fetch institutional sellers',
+          variant: 'destructive',
+        });
+      } else if (data) {
+        setSellers(data);
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleApprove = async (id: string) => {
@@ -96,8 +124,17 @@ export default function InstitutionalSellers() {
     }
   };
 
-  if (loading) {
-    return <div className="container mx-auto p-6">Loading...</div>;
+  if (authLoading || loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+            <p className="text-muted-foreground">Loading institutional sellers...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
