@@ -40,51 +40,59 @@ export default function InstitutionalSellers() {
   };
 
   const handleApprove = async (id: string) => {
-    const { error } = await supabase
-      .from('institutional_sellers')
-      .update({
-        is_approved: true,
-        approved_by_admin_id: user?.id,
-        approved_at: new Date().toISOString(),
-      })
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('institutional_sellers')
+        .update({
+          is_approved: true,
+          approved_by_admin_id: user?.id,
+          approved_at: new Date().toISOString(),
+        })
+        .eq('id', id);
 
-    if (error) {
+      if (error) throw error;
+
       toast({
-        title: 'Error',
-        description: 'Failed to approve institutional seller',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Approved',
-        description: 'Institutional seller has been approved',
+        title: 'Success',
+        description: 'Institution approved successfully. Notification sent to the applicant.',
       });
       fetchSellers();
+    } catch (error) {
+      console.error('Error approving institution:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to approve institutional seller. Please check RLS policies.',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleReject = async (id: string) => {
-    const { error } = await supabase
-      .from('institutional_sellers')
-      .update({
-        is_approved: false,
-        notes: 'Rejected by admin',
-      })
-      .eq('id', id);
+    const rejectionReason = prompt('Please provide a reason for rejection (optional):');
+    
+    try {
+      const { error } = await supabase
+        .from('institutional_sellers')
+        .update({
+          is_approved: false,
+          notes: rejectionReason || 'Rejected by admin',
+        })
+        .eq('id', id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast({
+        title: 'Rejected',
+        description: 'Institution has been rejected',
+      });
+      fetchSellers();
+    } catch (error) {
+      console.error('Error rejecting institution:', error);
       toast({
         title: 'Error',
         description: 'Failed to reject institutional seller',
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Rejected',
-        description: 'Institutional seller has been rejected',
-      });
-      fetchSellers();
     }
   };
 
@@ -174,7 +182,7 @@ export default function InstitutionalSellers() {
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Profile</h4>
+                    <h4 className="font-semibold mb-2">Profile & Timeline</h4>
                     <div className="space-y-1 text-sm">
                       <p>
                         <span className="text-muted-foreground">User:</span>{' '}
@@ -188,6 +196,19 @@ export default function InstitutionalSellers() {
                         <p>
                           <span className="text-muted-foreground">Approved:</span>{' '}
                           {format(new Date(seller.approved_at), 'MMM dd, yyyy')}
+                        </p>
+                      )}
+                      {seller.slug && seller.is_approved && (
+                        <p>
+                          <span className="text-muted-foreground">Landing Page:</span>{' '}
+                          <a 
+                            href={`/institution/${seller.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            View Page
+                          </a>
                         </p>
                       )}
                     </div>
