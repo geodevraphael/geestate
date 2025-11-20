@@ -48,6 +48,8 @@ import AdminSubscriptionPayments from './pages/AdminSubscriptionPayments';
 import AdminGeoDataUpload from './pages/AdminGeoDataUpload';
 import GeoinsightPayments from './pages/GeoinsightPayments';
 import AdminIncomeManagement from './pages/AdminIncomeManagement';
+import AdminApprovals from './pages/AdminApprovals';
+import ApplyForRole from './pages/ApplyForRole';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +82,8 @@ const App = () => (
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/institutional-sellers" element={<InstitutionalSellers />} />
+            <Route path="/admin/approvals" element={<AdminApprovals />} />
+            <Route path="/apply-for-role" element={<ApplyForRole />} />
             <Route path="/institution/:slug" element={<InstitutionLandingPage />} />
             <Route path="/institutional-seller/dashboard" element={<InstitutionalSellerDashboard />} />
             <Route path="/visit-requests" element={<VisitRequests />} />
