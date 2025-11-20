@@ -42,7 +42,11 @@ export default function InstitutionalSellers() {
     try {
       const { data, error } = await supabase
         .from('institutional_sellers')
-        .select('*, profiles(full_name, email)')
+        .select(`
+          *,
+          applicant:profiles!institutional_sellers_profile_id_fkey(full_name, email),
+          approver:profiles!institutional_sellers_approved_by_admin_id_fkey(full_name)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -223,7 +227,7 @@ export default function InstitutionalSellers() {
                     <div className="space-y-1 text-sm">
                       <p>
                         <span className="text-muted-foreground">User:</span>{' '}
-                        {(seller as any).profiles?.full_name}
+                        {(seller as any).applicant?.full_name || 'N/A'}
                       </p>
                       <p>
                         <span className="text-muted-foreground">Applied:</span>{' '}

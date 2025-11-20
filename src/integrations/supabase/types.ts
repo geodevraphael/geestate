@@ -1443,6 +1443,65 @@ export type Database = {
           },
         ]
       }
+      role_requests: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          experience_years: number | null
+          id: string
+          license_number: string | null
+          notes: string | null
+          portfolio_url: string | null
+          reason: string | null
+          rejection_reason: string | null
+          requested_role: Database["public"]["Enums"]["app_role"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string
+          license_number?: string | null
+          notes?: string | null
+          portfolio_url?: string | null
+          reason?: string | null
+          rejection_reason?: string | null
+          requested_role: Database["public"]["Enums"]["app_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string
+          license_number?: string | null
+          notes?: string | null
+          portfolio_url?: string | null
+          reason?: string | null
+          rejection_reason?: string | null
+          requested_role?: Database["public"]["Enums"]["app_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_providers: {
         Row: {
           average_turnaround_days: number | null
@@ -2215,6 +2274,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_role_request: { Args: { request_id: string }; Returns: undefined }
       create_notification: {
         Args: {
           p_link_url?: string
@@ -2239,6 +2299,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reject_role_request: {
+        Args: { reason: string; request_id: string }
+        Returns: undefined
       }
       update_overdue_tasks: { Args: never; Returns: undefined }
     }
