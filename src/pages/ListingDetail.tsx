@@ -351,18 +351,6 @@ export default function ListingDetail() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Satellite Map Thumbnail */}
-            {polygon?.geojson && (
-              <Card>
-                <CardContent className="p-0">
-                  <PropertyMapThumbnail 
-                    geojson={polygon.geojson}
-                    className="w-full h-[400px] rounded-t-lg"
-                  />
-                </CardContent>
-              </Card>
-            )}
-
             {/* Details */}
             <Card>
               <CardContent className="p-6">
@@ -418,13 +406,16 @@ export default function ListingDetail() {
             </Card>
 
             {/* Map */}
-            {polygon && (
+            {polygon?.geojson && (
               <Card>
                 <CardHeader>
                   <CardTitle>Property Location & Boundaries</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div ref={mapRef} className="w-full h-96 rounded-lg overflow-hidden border bg-muted" style={{ minHeight: '384px' }} />
+                  <PropertyMapThumbnail 
+                    geojson={polygon.geojson}
+                    className="w-full h-96 rounded-lg"
+                  />
                   {polygon.area_m2 && (
                     <div className="mt-4 flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Total Area</span>
