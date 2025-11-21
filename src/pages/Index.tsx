@@ -74,6 +74,13 @@ const Index = () => {
                   <span className="sm:hidden">Browse Listings</span>
                 </Button>
               </Link>
+              <Link to="/sellers" className="group w-full sm:w-auto">
+                <Button size="lg" variant="secondary" className="w-full h-12 md:h-14 px-6 md:px-8 text-base md:text-lg hover:bg-secondary/80 transition-all duration-300">
+                  <Search className="mr-2 h-5 md:h-6 w-5 md:w-6" />
+                  <span className="hidden sm:inline">View All Sellers</span>
+                  <span className="sm:hidden">View Sellers</span>
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
