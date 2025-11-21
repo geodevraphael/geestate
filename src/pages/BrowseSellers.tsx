@@ -14,6 +14,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+interface ReputationScore {
+  communication_score: number;
+  reliability_score: number;
+  honesty_score: number;
+  total_score: number;
+  deals_closed_count: number;
+}
+
 interface Seller {
   id: string;
   full_name: string;
@@ -25,6 +33,7 @@ interface Seller {
   address: string | null;
   role: string;
   listingsCount: number;
+  reputation?: ReputationScore;
 }
 
 interface Institution {
@@ -41,6 +50,7 @@ interface Institution {
   service_areas: string[] | null;
   certifications: string[] | null;
   listingsCount: number;
+  reputation?: ReputationScore;
 }
 
 export default function BrowseSellers() {
@@ -86,7 +96,14 @@ export default function BrowseSellers() {
                 .select('*', { count: 'exact', head: true })
                 .eq('owner_id', seller.id)
                 .eq('status', 'published');
-              return { ...seller, listingsCount: count || 0, role: 'seller' };
+              
+              const { data: reputation } = await supabase
+                .from('reputation_scores')
+                .select('*')
+                .eq('user_id', seller.id)
+                .single();
+              
+              return { ...seller, listingsCount: count || 0, role: 'seller', reputation: reputation || undefined };
             })
           );
           setSellers(sellersWithCounts);
@@ -109,7 +126,14 @@ export default function BrowseSellers() {
                 .select('*', { count: 'exact', head: true })
                 .eq('owner_id', broker.id)
                 .eq('status', 'published');
-              return { ...broker, listingsCount: count || 0, role: 'broker' };
+              
+              const { data: reputation } = await supabase
+                .from('reputation_scores')
+                .select('*')
+                .eq('user_id', broker.id)
+                .single();
+              
+              return { ...broker, listingsCount: count || 0, role: 'broker', reputation: reputation || undefined };
             })
           );
           setBrokers(brokersWithCounts);
@@ -131,7 +155,14 @@ export default function BrowseSellers() {
               .select('*', { count: 'exact', head: true })
               .eq('owner_id', inst.profile_id)
               .eq('status', 'published');
-            return { ...inst, listingsCount: count || 0 };
+            
+            const { data: reputation } = await supabase
+              .from('reputation_scores')
+              .select('*')
+              .eq('user_id', inst.profile_id)
+              .single();
+            
+            return { ...inst, listingsCount: count || 0, reputation: reputation || undefined };
           })
         );
         setInstitutions(institutionsWithCounts);
@@ -165,7 +196,36 @@ export default function BrowseSellers() {
     return sorted;
   };
 
-  const SellerCard = ({ seller }: { seller: Seller }) => (
+  const calculateRating = (reputation?: ReputationScore): number => {
+    if (!reputation) return 0;
+    const avg = (reputation.communication_score + reputation.reliability_score + reputation.honesty_score) / 3;
+    return Math.round((avg / 100) * 5 * 2) / 2; // Convert to 0-5 scale with 0.5 increments
+  };
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-3.5 w-3.5 ${
+              star <= Math.floor(rating)
+                ? 'fill-yellow-400 text-yellow-400'
+                : star - 0.5 === rating
+                ? 'fill-yellow-400/50 text-yellow-400'
+                : 'text-muted-foreground/30'
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const SellerCard = ({ seller }: { seller: Seller }) => {
+    const rating = calculateRating(seller.reputation);
+    const reviewCount = seller.reputation?.deals_closed_count || 0;
+    
+    return (
     <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/50 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       <CardHeader className="relative">
@@ -205,6 +265,14 @@ export default function BrowseSellers() {
                 </Badge>
               )}
             </div>
+            {rating > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                {renderStars(rating)}
+                <span className="text-xs text-muted-foreground">
+                  {rating.toFixed(1)} ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -251,8 +319,13 @@ export default function BrowseSellers() {
       </CardContent>
     </Card>
   );
+};
 
-  const InstitutionCard = ({ institution }: { institution: Institution }) => (
+  const InstitutionCard = ({ institution }: { institution: Institution }) => {
+    const rating = calculateRating(institution.reputation);
+    const reviewCount = institution.reputation?.deals_closed_count || 0;
+    
+    return (
     <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/50 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       <CardHeader className="relative">
@@ -288,6 +361,14 @@ export default function BrowseSellers() {
                 {institution.listingsCount} {institution.listingsCount === 1 ? 'Listing' : 'Listings'}
               </Badge>
             </div>
+            {rating > 0 && (
+              <div className="flex items-center gap-2">
+                {renderStars(rating)}
+                <span className="text-xs text-muted-foreground">
+                  {rating.toFixed(1)} ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -357,6 +438,7 @@ export default function BrowseSellers() {
       </CardContent>
     </Card>
   );
+};
 
   if (loading) {
     return (
