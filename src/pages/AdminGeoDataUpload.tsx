@@ -3,176 +3,264 @@ import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileJson, MapPin, Loader2 } from 'lucide-react';
+import { Upload, FileJson, MapPin, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import * as topojson from 'topojson-client';
 
-type BoundaryLevel = 'regions' | 'districts' | 'wards' | 'streets_villages';
+interface FieldMapping {
+  region_name: string;
+  district_name: string;
+  ward_name: string;
+  region_code?: string;
+  district_code?: string;
+  ward_code?: string;
+}
 
 export default function AdminGeoDataUpload() {
   const { hasRole } = useAuth();
   const { toast } = useToast();
-  const [boundaryLevel, setBoundaryLevel] = useState<BoundaryLevel>('regions');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [parentId, setParentId] = useState<string>('');
-  const [parents, setParents] = useState<any[]>([]);
-  const [loadingParents, setLoadingParents] = useState(false);
+  const [fileProperties, setFileProperties] = useState<string[]>([]);
+  const [fieldMapping, setFieldMapping] = useState<FieldMapping>({
+    region_name: '',
+    district_name: '',
+    ward_name: '',
+    region_code: '',
+    district_code: '',
+    ward_code: '',
+  });
+  const [step, setStep] = useState<'upload' | 'mapping' | 'processing'>('upload');
+  const [stats, setStats] = useState({ regions: 0, districts: 0, wards: 0, errors: 0 });
 
-  // Load parent options when boundary level changes
-  const loadParents = async (level: BoundaryLevel) => {
-    if (level === 'regions') return; // Regions don't have parents
-    
-    setLoadingParents(true);
-    try {
-      let data: any[] = [];
-      let error: any = null;
-
-      if (level === 'districts') {
-        const result = await supabase.from('regions').select('id, name').order('name');
-        data = result.data || [];
-        error = result.error;
-      } else if (level === 'wards') {
-        const result = await supabase.from('districts').select('id, name').order('name');
-        data = result.data || [];
-        error = result.error;
-      } else if (level === 'streets_villages') {
-        const result = await supabase.from('wards').select('id, name').order('name');
-        data = result.data || [];
-        error = result.error;
-      }
-
-      if (error) throw error;
-      setParents(data);
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: `Failed to load parent boundaries: ${error.message}`,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingParents(false);
-    }
-  };
-
-  const handleBoundaryLevelChange = (level: BoundaryLevel) => {
-    setBoundaryLevel(level);
-    setParentId('');
-    setParents([]);
-    if (level !== 'regions') {
-      loadParents(level);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (!selectedFile.name.endsWith('.json') && !selectedFile.name.endsWith('.geojson')) {
+      if (!selectedFile.name.endsWith('.json') && !selectedFile.name.endsWith('.topojson')) {
         toast({
           title: 'Invalid file',
-          description: 'Please select a GeoJSON (.json or .geojson) file',
+          description: 'Please select a TopoJSON (.json or .topojson) file',
           variant: 'destructive',
         });
         return;
       }
       setFile(selectedFile);
+      
+      // Parse file to extract properties
+      try {
+        const fileContent = await selectedFile.text();
+        const topology = JSON.parse(fileContent);
+        
+        // Get first feature to extract property names
+        const firstObject = Object.values(topology.objects)[0] as any;
+        if (firstObject && firstObject.geometries && firstObject.geometries[0]) {
+          const properties = Object.keys(firstObject.geometries[0].properties || {});
+          setFileProperties(properties);
+          setStep('mapping');
+        }
+      } catch (error) {
+        console.error('Error parsing file:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to parse TopoJSON file',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
   const handleUpload = async () => {
-    if (!file) {
+    if (!file || !fieldMapping.region_name || !fieldMapping.district_name || !fieldMapping.ward_name) {
       toast({
-        title: 'No file selected',
-        description: 'Please select a GeoJSON file to upload',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (boundaryLevel !== 'regions' && !parentId) {
-      toast({
-        title: 'Parent required',
-        description: `Please select a parent ${boundaryLevel === 'districts' ? 'region' : boundaryLevel === 'wards' ? 'district' : 'ward'}`,
+        title: 'Missing information',
+        description: 'Please map all required fields',
         variant: 'destructive',
       });
       return;
     }
 
     setUploading(true);
+    setStep('processing');
+    
     try {
-      // Read the file
       const fileContent = await file.text();
-      const geojson = JSON.parse(fileContent);
-
-      // Validate GeoJSON structure
-      if (!geojson.type || !geojson.features) {
-        throw new Error('Invalid GeoJSON format');
-      }
-
-      // Process each feature
+      const topology = JSON.parse(fileContent);
+      
+      // Convert TopoJSON to GeoJSON
+      const firstObjectKey = Object.keys(topology.objects)[0];
+      const geojson = topojson.feature(topology, topology.objects[firstObjectKey]) as any;
+      
       const features = geojson.features;
-      let inserted = 0;
+      const regionMap = new Map<string, string>();
+      const districtMap = new Map<string, string>();
+      let regionsInserted = 0;
+      let districtsInserted = 0;
+      let wardsInserted = 0;
       let errors = 0;
 
-      for (const feature of features) {
+      // Group features by region
+      const featuresByRegion = new Map<string, any[]>();
+      features.forEach((feature: any) => {
+        const regionName = feature.properties[fieldMapping.region_name];
+        if (!featuresByRegion.has(regionName)) {
+          featuresByRegion.set(regionName, []);
+        }
+        featuresByRegion.get(regionName)?.push(feature);
+      });
+
+      // Process each region
+      for (const [regionName, regionFeatures] of featuresByRegion.entries()) {
         try {
-          const properties = feature.properties || {};
-          const geometry = feature.geometry;
+          // Insert or get region
+          let regionId: string;
+          const regionCode = fieldMapping.region_code 
+            ? regionFeatures[0].properties[fieldMapping.region_code] 
+            : null;
 
-          // Prepare the data based on boundary level
-          let data: any = {
-            name: properties.name || properties.NAME || 'Unnamed',
-            code: properties.code || properties.CODE || null,
-            geometry: geometry,
-          };
+          const { data: existingRegion } = await supabase
+            .from('regions')
+            .select('id')
+            .eq('name', regionName)
+            .single();
 
-          // Add parent ID for child levels
-          if (boundaryLevel === 'districts') {
-            data.region_id = parentId;
-          } else if (boundaryLevel === 'wards') {
-            data.district_id = parentId;
-          } else if (boundaryLevel === 'streets_villages') {
-            data.ward_id = parentId;
-          }
-
-          // Insert into the appropriate table
-          let error: any = null;
-          
-          if (boundaryLevel === 'regions') {
-            const result = await supabase.from('regions').insert(data);
-            error = result.error;
-          } else if (boundaryLevel === 'districts') {
-            const result = await supabase.from('districts').insert(data);
-            error = result.error;
-          } else if (boundaryLevel === 'wards') {
-            const result = await (supabase as any).from('wards').insert(data);
-            error = result.error;
-          } else if (boundaryLevel === 'streets_villages') {
-            const result = await supabase.from('streets_villages').insert(data);
-            error = result.error;
-          }
-
-          if (error) {
-            console.error('Error inserting feature:', error);
-            errors++;
+          if (existingRegion) {
+            regionId = existingRegion.id;
           } else {
-            inserted++;
+            const { data: newRegion, error: regionError } = await supabase
+              .from('regions')
+              .insert({
+                name: regionName,
+                code: regionCode,
+                geometry: null, // Regions don't have geometry in this model
+              })
+              .select('id')
+              .single();
+
+            if (regionError) throw regionError;
+            regionId = newRegion.id;
+            regionsInserted++;
           }
-        } catch (err: any) {
-          console.error('Error processing feature:', err);
+
+          regionMap.set(regionName, regionId);
+
+          // Group by district within this region
+          const featuresByDistrict = new Map<string, any[]>();
+          regionFeatures.forEach((feature: any) => {
+            const districtName = feature.properties[fieldMapping.district_name];
+            const key = `${regionName}-${districtName}`;
+            if (!featuresByDistrict.has(key)) {
+              featuresByDistrict.set(key, []);
+            }
+            featuresByDistrict.get(key)?.push(feature);
+          });
+
+          // Process each district
+          for (const [key, districtFeatures] of featuresByDistrict.entries()) {
+            try {
+              const districtName = districtFeatures[0].properties[fieldMapping.district_name];
+              let districtId: string;
+              const districtCode = fieldMapping.district_code
+                ? districtFeatures[0].properties[fieldMapping.district_code]
+                : null;
+
+              const { data: existingDistrict } = await supabase
+                .from('districts')
+                .select('id')
+                .eq('name', districtName)
+                .eq('region_id', regionId)
+                .single();
+
+              if (existingDistrict) {
+                districtId = existingDistrict.id;
+              } else {
+                const { data: newDistrict, error: districtError } = await supabase
+                  .from('districts')
+                  .insert({
+                    name: districtName,
+                    code: districtCode,
+                    region_id: regionId,
+                    geometry: null,
+                  })
+                  .select('id')
+                  .single();
+
+                if (districtError) throw districtError;
+                districtId = newDistrict.id;
+                districtsInserted++;
+              }
+
+              districtMap.set(key, districtId);
+
+              // Process wards
+              for (const feature of districtFeatures) {
+                try {
+                  const wardName = feature.properties[fieldMapping.ward_name];
+                  const wardCode = fieldMapping.ward_code
+                    ? feature.properties[fieldMapping.ward_code]
+                    : null;
+
+                  const { data: existingWard } = await supabase
+                    .from('wards')
+                    .select('id')
+                    .eq('name', wardName)
+                    .eq('district_id', districtId)
+                    .maybeSingle();
+
+                  if (!existingWard) {
+                    const { error: wardError } = await supabase
+                      .from('wards')
+                      .insert({
+                        name: wardName,
+                        code: wardCode,
+                        district_id: districtId,
+                        geometry: feature.geometry,
+                      });
+
+                    if (wardError) {
+                      console.error('Error inserting ward:', wardError);
+                      errors++;
+                    } else {
+                      wardsInserted++;
+                    }
+                  }
+                } catch (err) {
+                  console.error('Error processing ward:', err);
+                  errors++;
+                }
+              }
+            } catch (err) {
+              console.error('Error processing district:', err);
+              errors++;
+            }
+          }
+        } catch (err) {
+          console.error('Error processing region:', err);
           errors++;
         }
       }
 
+      setStats({ regions: regionsInserted, districts: districtsInserted, wards: wardsInserted, errors });
+      
       toast({
         title: 'Upload complete',
-        description: `Successfully imported ${inserted} boundaries${errors > 0 ? `. ${errors} failed.` : ''}`,
+        description: `Inserted ${regionsInserted} regions, ${districtsInserted} districts, ${wardsInserted} wards${errors > 0 ? `. ${errors} errors occurred.` : ''}`,
       });
 
       // Reset form
       setFile(null);
+      setStep('upload');
+      setFieldMapping({
+        region_name: '',
+        district_name: '',
+        ward_name: '',
+        region_code: '',
+        district_code: '',
+        ward_code: '',
+      });
       if (document.getElementById('file-upload') as HTMLInputElement) {
         (document.getElementById('file-upload') as HTMLInputElement).value = '';
       }
@@ -180,7 +268,7 @@ export default function AdminGeoDataUpload() {
       console.error('Upload error:', error);
       toast({
         title: 'Upload failed',
-        description: error.message || 'Failed to process GeoJSON file',
+        description: error.message || 'Failed to process TopoJSON file',
         variant: 'destructive',
       });
     } finally {
@@ -209,159 +297,248 @@ export default function AdminGeoDataUpload() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Geographic Data Upload</h1>
           <p className="text-muted-foreground">
-            Upload GeoJSON files to populate administrative boundaries
+            Upload a single TopoJSON file containing hierarchical administrative boundaries (Regions → Districts → Wards)
           </p>
         </div>
 
         <div className="grid gap-6 max-w-2xl">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                Upload Administrative Boundaries
-              </CardTitle>
-              <CardDescription>
-                Import GeoJSON data for regions, districts, wards, and streets/villages
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Boundary Level Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="boundary-level">Boundary Level</Label>
-                <Select
-                  value={boundaryLevel}
-                  onValueChange={(value) => handleBoundaryLevelChange(value as BoundaryLevel)}
-                >
-                  <SelectTrigger id="boundary-level">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="regions">Regions</SelectItem>
-                    <SelectItem value="districts">Districts</SelectItem>
-                    <SelectItem value="wards">Wards</SelectItem>
-                    <SelectItem value="streets_villages">Streets/Villages</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Parent Selection (for child levels) */}
-              {boundaryLevel !== 'regions' && (
+          {/* Step 1: File Upload */}
+          {step === 'upload' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Upload TopoJSON File
+                </CardTitle>
+                <CardDescription>
+                  Select a TopoJSON file containing administrative boundaries with hierarchical data
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="parent-boundary">
-                    Parent {boundaryLevel === 'districts' ? 'Region' : 
-                            boundaryLevel === 'wards' ? 'District' : 'Ward'}
-                  </Label>
-                  <Select
-                    value={parentId}
-                    onValueChange={setParentId}
-                    disabled={loadingParents}
-                  >
-                    <SelectTrigger id="parent-boundary">
-                      <SelectValue placeholder={loadingParents ? 'Loading...' : 'Select parent boundary'} />
+                  <Label htmlFor="file-upload">TopoJSON File</Label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept=".json,.topojson"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                      className="w-full"
+                    >
+                      <FileJson className="mr-2 h-4 w-4" />
+                      {file ? file.name : 'Choose TopoJSON file'}
+                    </Button>
+                  </div>
+                  {file && (
+                    <p className="text-sm text-muted-foreground">
+                      File size: {(file.size / 1024).toFixed(2)} KB
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 2: Field Mapping */}
+          {step === 'mapping' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ArrowRight className="h-5 w-5 text-primary" />
+                  Map Fields
+                </CardTitle>
+                <CardDescription>
+                  Map the TopoJSON properties to database fields
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="region-name">Region Name Field *</Label>
+                  <Select value={fieldMapping.region_name} onValueChange={(value) => setFieldMapping({...fieldMapping, region_name: value})}>
+                    <SelectTrigger id="region-name">
+                      <SelectValue placeholder="Select property for region name" />
                     </SelectTrigger>
                     <SelectContent>
-                      {parents.map((parent) => (
-                        <SelectItem key={parent.id} value={parent.id}>
-                          {parent.name}
-                        </SelectItem>
+                      {fileProperties.map((prop) => (
+                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              {/* File Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="file-upload">GeoJSON File</Label>
-                <div className="flex items-center gap-4">
-                  <input
-                    id="file-upload"
-                    type="file"
-                    accept=".json,.geojson"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="district-name">District Name Field *</Label>
+                  <Select value={fieldMapping.district_name} onValueChange={(value) => setFieldMapping({...fieldMapping, district_name: value})}>
+                    <SelectTrigger id="district-name">
+                      <SelectValue placeholder="Select property for district name" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fileProperties.map((prop) => (
+                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ward-name">Ward Name Field *</Label>
+                  <Select value={fieldMapping.ward_name} onValueChange={(value) => setFieldMapping({...fieldMapping, ward_name: value})}>
+                    <SelectTrigger id="ward-name">
+                      <SelectValue placeholder="Select property for ward name" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fileProperties.map((prop) => (
+                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <p className="text-sm font-medium mb-2">Optional Code Fields</p>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="region-code">Region Code Field</Label>
+                    <Select value={fieldMapping.region_code || ''} onValueChange={(value) => setFieldMapping({...fieldMapping, region_code: value})}>
+                      <SelectTrigger id="region-code">
+                        <SelectValue placeholder="Select property for region code (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {fileProperties.map((prop) => (
+                          <SelectItem key={prop} value={prop}>{prop}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="district-code">District Code Field</Label>
+                    <Select value={fieldMapping.district_code || ''} onValueChange={(value) => setFieldMapping({...fieldMapping, district_code: value})}>
+                      <SelectTrigger id="district-code">
+                        <SelectValue placeholder="Select property for district code (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {fileProperties.map((prop) => (
+                          <SelectItem key={prop} value={prop}>{prop}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ward-code">Ward Code Field</Label>
+                    <Select value={fieldMapping.ward_code || ''} onValueChange={(value) => setFieldMapping({...fieldMapping, ward_code: value})}>
+                      <SelectTrigger id="ward-code">
+                        <SelectValue placeholder="Select property for ward code (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {fileProperties.map((prop) => (
+                          <SelectItem key={prop} value={prop}>{prop}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button variant="outline" onClick={() => { setStep('upload'); setFile(null); }}>
+                    Back
+                  </Button>
                   <Button
-                    variant="outline"
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                    className="w-full"
+                    onClick={handleUpload}
+                    disabled={!fieldMapping.region_name || !fieldMapping.district_name || !fieldMapping.ward_name || uploading}
+                    className="flex-1"
                   >
-                    <FileJson className="mr-2 h-4 w-4" />
-                    {file ? file.name : 'Choose GeoJSON file'}
+                    <Upload className="mr-2 h-4 w-4" />
+                    Process and Upload
                   </Button>
                 </div>
-                {file && (
-                  <p className="text-sm text-muted-foreground">
-                    File size: {(file.size / 1024).toFixed(2)} KB
-                  </p>
-                )}
-              </div>
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Upload Button */}
-              <Button
-                onClick={handleUpload}
-                disabled={!file || uploading || (boundaryLevel !== 'regions' && !parentId)}
-                className="w-full"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload GeoJSON
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Step 3: Processing */}
+          {step === 'processing' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  {uploading ? (
+                    <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  )}
+                  {uploading ? 'Processing...' : 'Complete'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Regions inserted:</span>
+                    <span className="font-medium">{stats.regions}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Districts inserted:</span>
+                    <span className="font-medium">{stats.districts}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Wards inserted:</span>
+                    <span className="font-medium">{stats.wards}</span>
+                  </div>
+                  {stats.errors > 0 && (
+                    <div className="flex justify-between text-destructive">
+                      <span>Errors:</span>
+                      <span className="font-medium">{stats.errors}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Instructions Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Upload Instructions</CardTitle>
+              <CardTitle>File Requirements</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-semibold mb-2">GeoJSON Format Requirements:</h4>
+                <h4 className="font-semibold mb-2">TopoJSON Format:</h4>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>File must be valid GeoJSON format</li>
-                  <li>Each feature should have a "name" property</li>
-                  <li>Optional "code" property for administrative codes</li>
-                  <li>Geometry can be Polygon or MultiPolygon</li>
+                  <li>File must be valid TopoJSON format</li>
+                  <li>Each feature must have properties for region, district, and ward names</li>
+                  <li>Optional code properties for administrative codes</li>
+                  <li>Ward geometries will be stored; regions and districts won't have geometries</li>
                 </ul>
               </div>
               
               <div>
-                <h4 className="font-semibold mb-2">Upload Order:</h4>
+                <h4 className="font-semibold mb-2">How It Works:</h4>
                 <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>Upload Regions first (top level)</li>
-                  <li>Upload Districts (select parent region)</li>
-                  <li>Upload Wards (select parent district)</li>
-                  <li>Upload Streets/Villages (select parent ward)</li>
+                  <li>Upload a single TopoJSON file containing all boundaries</li>
+                  <li>Map the property names to database fields</li>
+                  <li>System automatically creates hierarchical relationships</li>
+                  <li>Duplicate entries are skipped automatically</li>
                 </ol>
               </div>
 
               <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2 text-sm">Example GeoJSON Structure:</h4>
+                <h4 className="font-semibold mb-2 text-sm">Example Feature Properties:</h4>
                 <pre className="text-xs overflow-x-auto">
 {`{
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Dar es Salaam",
-        "code": "DSM"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [...]
-      }
-    }
-  ]
+  "Region_Name": "Dar es Salaam",
+  "District_Nam": "Ilala",
+  "Ward_Name": "Buguruni",
+  "Reg_Code": "DSM",
+  "Dstrct_Cod": "IL",
+  "Ward_Code": "BG"
 }`}
                 </pre>
               </div>
