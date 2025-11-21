@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, ExternalLink, Edit, BarChart3, FileText, Users, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { InstitutionProfileCompletion } from '@/components/InstitutionProfileCompletion';
 
 export default function InstitutionalSellerDashboard() {
   const { user, profile } = useAuth();
@@ -188,6 +189,9 @@ export default function InstitutionalSellerDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          {/* Profile Completion */}
+          <InstitutionProfileCompletion institution={institution} />
+
           <Card>
             <CardHeader>
               <CardTitle>Institution Profile</CardTitle>
