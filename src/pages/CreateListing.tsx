@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil, CheckCircle2, Search } from 'lucide-react';
 import { validatePolygon } from '@/lib/polygonValidation';
 import { PolygonValidationPanel } from '@/components/PolygonValidationPanel';
 import { logAuditAction } from '@/lib/auditLog';
@@ -97,6 +97,9 @@ export default function CreateListing() {
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [existingMedia, setExistingMedia] = useState<any[]>([]);
+  const [addressSearch, setAddressSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const isLandProperty = formData.property_type === 'land';
 
@@ -240,6 +243,58 @@ export default function CreateListing() {
     toast({
       title: 'Cleared',
       description: 'All polygons have been removed',
+    });
+  };
+
+  const searchAddress = async () => {
+    if (!addressSearch.trim()) return;
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressSearch)}&countrycodes=tz&limit=5`
+      );
+      const data = await response.json();
+      setSearchResults(data);
+      
+      if (data.length === 0) {
+        toast({
+          title: 'No results',
+          description: 'No locations found for this search',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      toast({
+        title: 'Search failed',
+        description: 'Failed to search for address',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const selectSearchResult = (result: any) => {
+    if (!mapInstance.current) return;
+
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+    const coordinates = fromLonLat([lon, lat]);
+
+    mapInstance.current.getView().animate({
+      center: coordinates,
+      zoom: 16,
+      duration: 1000,
+    });
+
+    setSearchResults([]);
+    setAddressSearch(result.display_name);
+
+    toast({
+      title: 'Location found',
+      description: 'Map centered on the selected location',
     });
   };
 
@@ -802,6 +857,47 @@ export default function CreateListing() {
                     </div>
                   )}
                 </div>
+
+                {/* Address Search */}
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search for a location (e.g., Dar es Salaam, Tanzania)"
+                      value={addressSearch}
+                      onChange={(e) => setAddressSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          searchAddress();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={searchAddress}
+                      disabled={isSearching || !addressSearch.trim()}
+                    >
+                      {isSearching ? 'Searching...' : 'Search'}
+                    </Button>
+                  </div>
+                  
+                  {searchResults.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {searchResults.map((result, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="w-full px-4 py-2 text-left hover:bg-muted transition-colors text-sm"
+                          onClick={() => selectSearchResult(result)}
+                        >
+                          {result.display_name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div ref={mapRef} className="w-full h-[500px] rounded-lg border" />
                 {isDrawingMode && !isLandProperty && (
                   <p className="text-sm text-primary flex items-center gap-2">
