@@ -93,94 +93,102 @@ export function BuyerDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Buyer Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">Buyer Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Welcome back, {profile?.full_name}! Find your dream property.
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Saved Listings
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <Heart className="h-3 md:h-4 w-3 md:w-4" />
+              <span className="hidden sm:inline">Saved Listings</span>
+              <span className="sm:hidden">Saved</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.savedListings}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.savedListings}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Visit Requests
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <Calendar className="h-3 md:h-4 w-3 md:w-4" />
+              <span className="hidden sm:inline">Visit Requests</span>
+              <span className="sm:hidden">Visits</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.visitRequests}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.visitRequests}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Unread Messages
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <MessageSquare className="h-3 md:h-4 w-3 md:w-4" />
+              <span className="hidden sm:inline">Messages</span>
+              <span className="sm:hidden">Msgs</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.activeMessages}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.activeMessages}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Payment Proofs
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <CreditCard className="h-3 md:h-4 w-3 md:w-4" />
+              <span className="hidden sm:inline">Payments</span>
+              <span className="sm:hidden">Pays</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.paymentProofs}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.paymentProofs}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Start exploring properties</CardDescription>
+          <CardTitle className="text-lg md:text-xl">Quick Actions</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Start exploring properties</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Link to="/listings">
-            <Button>
+        <CardContent className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3">
+          <Link to="/listings" className="w-full md:w-auto">
+            <Button className="w-full h-11 md:h-10" size="sm">
               <TrendingUp className="h-4 w-4 mr-2" />
-              Browse Listings
+              <span className="hidden sm:inline">Browse Listings</span>
+              <span className="sm:hidden">Listings</span>
             </Button>
           </Link>
-          <Link to="/map">
-            <Button variant="outline">
+          <Link to="/map" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
               <MapPin className="h-4 w-4 mr-2" />
-              Explore Map
+              <span className="hidden sm:inline">Explore Map</span>
+              <span className="sm:hidden">Map</span>
             </Button>
           </Link>
-          <Link to="/visit-requests">
-            <Button variant="outline">
+          <Link to="/visit-requests" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
               <Calendar className="h-4 w-4 mr-2" />
-              My Visit Requests
+              <span className="hidden sm:inline">Visit Requests</span>
+              <span className="sm:hidden">Visits</span>
             </Button>
           </Link>
-          <Link to="/messages">
-            <Button variant="outline">
+          <Link to="/messages" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
               <MessageSquare className="h-4 w-4 mr-2" />
-              Messages
+              <span className="hidden sm:inline">Messages</span>
+              <span className="sm:hidden">Msgs</span>
             </Button>
           </Link>
         </CardContent>
@@ -215,20 +223,20 @@ export function BuyerDashboard() {
       {/* Recent Listings */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Listings</CardTitle>
-          <CardDescription>Newly available properties</CardDescription>
+          <CardTitle className="text-lg md:text-xl">Recent Listings</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Newly available properties</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {recentListings.map((listing) => (
               <Link key={listing.id} to={`/listings/${listing.id}`}>
-                <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-                  <h3 className="font-semibold mb-2">{listing.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">{listing.location_label}</p>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline">{listing.property_type}</Badge>
+                <div className="border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-300 active:scale-[0.98] md:active:scale-100 hover-lift">
+                  <h3 className="font-semibold text-sm md:text-base mb-1.5 md:mb-2 line-clamp-2">{listing.title}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2 line-clamp-1">{listing.location_label}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className="text-xs">{listing.property_type}</Badge>
                     {listing.price && (
-                      <span className="font-semibold">
+                      <span className="font-semibold text-xs md:text-sm">
                         {listing.price.toLocaleString()} {listing.currency}
                       </span>
                     )}

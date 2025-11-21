@@ -121,49 +121,55 @@ export function SellerDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Seller Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">Seller Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Manage your listings and track your performance
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Listings</CardTitle>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+              <span className="hidden sm:inline">Total Listings</span>
+              <span className="sm:hidden">Total</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.total}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Published</CardTitle>
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Published</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-success">{stats.published}</div>
+            <div className="text-2xl md:text-3xl font-bold text-success">{stats.published}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Drafts</CardTitle>
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Drafts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-muted-foreground">{stats.draft}</div>
+            <div className="text-2xl md:text-3xl font-bold text-muted-foreground">{stats.draft}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Verification</CardTitle>
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+              <span className="hidden sm:inline">Pending</span>
+              <span className="sm:hidden">Pending</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-warning">{stats.pending}</div>
+            <div className="text-2xl md:text-3xl font-bold text-warning">{stats.pending}</div>
           </CardContent>
         </Card>
       </div>
@@ -182,34 +188,38 @@ export function SellerDashboard() {
       )}
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Manage your business</CardDescription>
+          <CardTitle className="text-lg md:text-xl">Quick Actions</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Manage your business</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Link to="/listings/new">
-            <Button>
+        <CardContent className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3">
+          <Link to="/listings/new" className="w-full md:w-auto">
+            <Button className="w-full h-11 md:h-10" size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              Create Listing
+              <span className="hidden sm:inline">Create Listing</span>
+              <span className="sm:hidden">Create</span>
             </Button>
           </Link>
-          <Link to="/visit-requests">
-            <Button variant="outline">
+          <Link to="/visit-requests" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
               <Calendar className="h-4 w-4 mr-2" />
-              Visit Requests
+              <span className="hidden sm:inline">Visit Requests</span>
+              <span className="sm:hidden">Visits</span>
             </Button>
           </Link>
-          <Link to="/payment-proofs">
-            <Button variant="outline">
+          <Link to="/payment-proofs" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
               <TrendingUp className="h-4 w-4 mr-2" />
-              Payment Proofs
+              <span className="hidden sm:inline">Payments</span>
+              <span className="sm:hidden">Pay</span>
             </Button>
           </Link>
-          <Link to="/messages">
-            <Button variant="outline">
+          <Link to="/messages" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
               <MessageSquare className="h-4 w-4 mr-2" />
-              Messages
+              <span className="hidden sm:inline">Messages</span>
+              <span className="sm:hidden">Msgs</span>
             </Button>
           </Link>
         </CardContent>
@@ -248,43 +258,41 @@ export function SellerDashboard() {
       {/* My Listings */}
       <Card>
         <CardHeader>
-          <CardTitle>My Listings</CardTitle>
-          <CardDescription>View and manage all your property listings</CardDescription>
+          <CardTitle className="text-lg md:text-xl">My Listings</CardTitle>
+          <CardDescription className="text-xs md:text-sm">View and manage all your property listings</CardDescription>
         </CardHeader>
         <CardContent>
           {listings.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">You haven't created any listings yet</p>
+            <div className="text-center py-8 md:py-12">
+              <p className="text-sm md:text-base text-muted-foreground mb-4">You haven't created any listings yet</p>
               <Link to="/listings/new">
-                <Button>
+                <Button className="h-11 md:h-10">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Your First Listing
                 </Button>
               </Link>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {listings.map((listing) => (
-                <div key={listing.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                <div key={listing.id} className="border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-300 active:scale-[0.98] md:active:scale-100">
                   <Link to={`/listings/${listing.id}`}>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{listing.title}</h3>
-                        <p className="text-sm text-muted-foreground">{listing.location_label}</p>
+                    <div className="flex items-start justify-between mb-2 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm md:text-lg line-clamp-2">{listing.title}</h3>
+                        <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{listing.location_label}</p>
                       </div>
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-1.5 md:gap-2 flex-shrink-0">
                         {getStatusBadge(listing.status!)}
                         {getVerificationBadge(listing.verification_status!)}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex gap-4">
-                        <span className="text-muted-foreground">
-                          {listing.property_type} • {listing.listing_type}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between text-xs md:text-sm gap-2">
+                      <span className="text-muted-foreground truncate">
+                        {listing.property_type} • {listing.listing_type}
+                      </span>
                       {listing.price && (
-                        <span className="font-semibold">
+                        <span className="font-semibold whitespace-nowrap">
                           {listing.price.toLocaleString()} {listing.currency}
                         </span>
                       )}
@@ -295,13 +303,14 @@ export function SellerDashboard() {
                       <Button
                         size="sm"
                         onClick={(e) => handlePublishListing(listing.id, e)}
-                        className="flex-1"
+                        className="flex-1 h-10 md:h-9 text-xs md:text-sm"
                       >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Publish Listing
+                        <Upload className="h-3 md:h-4 w-3 md:w-4 mr-1.5 md:mr-2" />
+                        <span className="hidden sm:inline">Publish Listing</span>
+                        <span className="sm:hidden">Publish</span>
                       </Button>
                       <Link to={`/listings/${listing.id}/edit`} className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full">
+                        <Button size="sm" variant="outline" className="w-full h-10 md:h-9 text-xs md:text-sm">
                           Edit
                         </Button>
                       </Link>

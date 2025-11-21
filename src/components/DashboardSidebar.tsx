@@ -172,7 +172,7 @@ export function DashboardSidebar() {
 
   return (
     <aside className={cn(
-      "border-r border-border bg-card h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto transition-all duration-300",
+      "hidden md:block border-r border-border bg-card h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto transition-all duration-300",
       collapsed ? "w-16" : "w-64"
     )}>
       <div className="p-4 space-y-2">
