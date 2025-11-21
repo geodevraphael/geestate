@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Shield, Search, CheckCircle2, TrendingUp, Users, Lock, Sparkles, ArrowRight, Star } from 'lucide-react';
+import { MapPin, Shield, Search, CheckCircle2, Lock, Sparkles, ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { Card } from '@/components/ui/card';
@@ -48,28 +48,10 @@ const Index = () => {
               {' '}in Tanzania
             </h1>
             
-            <p className="text-base md:text-xl lg:text-2xl text-muted-foreground mb-6 md:mb-10 max-w-3xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <p className="text-base md:text-xl lg:text-2xl text-muted-foreground mb-10 md:mb-12 max-w-3xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               Africa's most advanced real estate marketplace. Every property is polygon-mapped, 
               AI-verified, and backed by our comprehensive fraud detection system.
             </p>
-
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap items-center gap-6 mb-12 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent ring-2 ring-background" />
-                  ))}
-                </div>
-                <span className="text-sm font-medium text-foreground">1,000+ Happy Clients</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-                ))}
-                <span className="ml-2 text-sm font-medium">4.9/5 Rating</span>
-              </div>
-            </div>
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-10 md:mb-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
@@ -88,21 +70,6 @@ const Index = () => {
                   <span className="sm:hidden">Browse Listings</span>
                 </Button>
               </Link>
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-              {[
-                { value: '500+', label: 'Properties Listed' },
-                { value: '98%', label: 'Verification Rate' },
-                { value: '24/7', label: 'Support Available' },
-                { value: '100%', label: 'Secure Transactions' },
-              ].map((stat, i) => (
-                <div key={i} className="glass-card p-3 md:p-4 rounded-xl md:rounded-2xl hover-lift">
-                  <div className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-primary">{stat.value}</div>
-                  <div className="text-xs md:text-sm text-muted-foreground mt-1">{stat.label}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -185,38 +152,17 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Social Proof Section */}
-      <section className="py-16 md:py-32 bg-gradient-to-b from-background to-secondary/30 relative overflow-hidden">
+      {/* Trust Section */}
+      <section className="py-16 md:py-24 bg-gradient-to-b from-background to-secondary/30 relative overflow-hidden">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-10 md:mb-16 animate-in">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="animate-in">
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-                Trusted by <span className="text-gradient">Thousands</span> Across Tanzania
+                Trusted Across <span className="text-gradient">Tanzania</span>
               </h2>
-              <p className="text-base md:text-xl text-muted-foreground px-4">
-                Join the community of smart property investors and sellers
+              <p className="text-base md:text-xl text-muted-foreground px-4 max-w-2xl mx-auto">
+                Join the community of smart property investors and sellers using verified, polygon-mapped listings
               </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-4 md:gap-8 animate-in" style={{ animationDelay: '0.2s' }}>
-              {[
-                { icon: Users, value: '1,500+', label: 'Active Users' },
-                { icon: TrendingUp, value: '$50M+', label: 'Property Value' },
-                { icon: CheckCircle2, value: '500+', label: 'Verified Sales' },
-              ].map((stat, i) => (
-                <div 
-                  key={i} 
-                  className="glass-card p-6 md:p-8 rounded-2xl md:rounded-3xl text-center hover-lift"
-                >
-                  <div className="inline-flex items-center justify-center w-16 md:w-20 h-16 md:h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 mb-4 md:mb-6">
-                    <stat.icon className="h-8 md:h-10 w-8 md:w-10 text-primary" />
-                  </div>
-                  <div className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary mb-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-base md:text-lg text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
