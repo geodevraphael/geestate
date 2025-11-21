@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import Feature from 'ol/Feature';
 import { Style, Fill, Stroke } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import Overlay from 'ol/Overlay';
+import { getCenter } from 'ol/extent';
 import 'ol/ol.css';
 
 interface ListingWithPolygon extends ListingWithDetails {
@@ -41,6 +42,9 @@ interface ListingWithPolygon extends ListingWithDetails {
 }
 
 export default function MapBrowse() {
+  const [searchParams] = useSearchParams();
+  const listingParam = searchParams.get('listing');
+  
   const [listings, setListings] = useState<ListingWithPolygon[]>([]);
   const [loading, setLoading] = useState(true);
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
@@ -223,18 +227,49 @@ export default function MapBrowse() {
   const zoomToListing = (listing: ListingWithPolygon) => {
     if (!mapInstance.current || !listing.polygon) return;
 
-    const center = listing.polygon.centroid_lng && listing.polygon.centroid_lat
-      ? fromLonLat([listing.polygon.centroid_lng, listing.polygon.centroid_lat])
-      : fromLonLat([34.888822, -6.369028]);
+    try {
+      const geojson = typeof listing.polygon.geojson === 'string' 
+        ? JSON.parse(listing.polygon.geojson) 
+        : listing.polygon.geojson;
 
-    mapInstance.current.getView().animate({
-      center: center,
-      zoom: 16,
-      duration: 1000,
-    });
+      // Get polygon coordinates and transform them
+      const coordinates = geojson.coordinates[0].map((coord: [number, number]) => 
+        fromLonLat([coord[0], coord[1]])
+      );
 
-    setSelectedListing(listing);
-    overlayRef.current?.setPosition(center);
+      // Create polygon to get its extent
+      const polygon = new Polygon([coordinates]);
+      const extent = polygon.getExtent();
+
+      // Fit the view to the polygon extent with padding
+      mapInstance.current.getView().fit(extent, {
+        padding: [100, 100, 100, 100],
+        duration: 1000,
+        maxZoom: 18,
+      });
+
+      setSelectedListing(listing);
+      
+      // Position popup at polygon center
+      const center = getCenter(extent);
+      overlayRef.current?.setPosition(center);
+    } catch (error) {
+      console.error('Error zooming to listing:', error);
+      
+      // Fallback to centroid zoom if polygon parsing fails
+      const center = listing.polygon.centroid_lng && listing.polygon.centroid_lat
+        ? fromLonLat([listing.polygon.centroid_lng, listing.polygon.centroid_lat])
+        : fromLonLat([34.888822, -6.369028]);
+
+      mapInstance.current.getView().animate({
+        center: center,
+        zoom: 16,
+        duration: 1000,
+      });
+
+      setSelectedListing(listing);
+      overlayRef.current?.setPosition(center);
+    }
   };
 
   const getPolygonColor = (listing: ListingWithPolygon) => {
@@ -385,6 +420,19 @@ export default function MapBrowse() {
       }
     });
   }, [filteredListings]);
+
+  // Auto-zoom to selected listing from URL parameter
+  useEffect(() => {
+    if (!mapInstance.current || !listingParam || listings.length === 0) return;
+
+    const targetListing = listings.find(l => l.id === listingParam);
+    if (targetListing && targetListing.polygon) {
+      // Small delay to ensure map is fully loaded
+      setTimeout(() => {
+        zoomToListing(targetListing);
+      }, 500);
+    }
+  }, [listingParam, listings]);
 
   const FiltersContent = () => (
     <div className="space-y-4">
