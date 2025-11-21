@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -138,20 +138,17 @@ export function UploadPaymentProofDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Upload Payment Proof</DialogTitle>
-          <DialogDescription>
-            Submit proof that you've paid {new Intl.NumberFormat('en-TZ', {
-              style: 'currency',
-              currency: incomeRecord.currency,
-              minimumFractionDigits: 0,
-            }).format(incomeRecord.amount_due)} to GeoInsight
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <ResponsiveModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Upload Payment Proof"
+      description={`Submit proof that you've paid ${new Intl.NumberFormat('en-TZ', {
+        style: 'currency',
+        currency: incomeRecord.currency,
+        minimumFractionDigits: 0,
+      }).format(incomeRecord.amount_due)} to GeoInsight`}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="payment_channel">Payment Channel *</Label>
             <Select
@@ -244,9 +241,8 @@ export function UploadPaymentProofDialog({
                 </>
               )}
             </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </form>
+    </ResponsiveModal>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ResponsiveModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -136,13 +136,12 @@ export function SubscriptionPaymentDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Subscribe to {planType.charAt(0).toUpperCase() + planType.slice(1)} Plan</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6">
+    <ResponsiveModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Subscribe to ${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan`}
+    >
+      <div className="space-y-6">
           <Card className="p-4 bg-primary/5">
             <h3 className="font-semibold mb-2">Amount to Pay</h3>
             <p className="text-2xl font-bold">{amount.toLocaleString()} TZS</p>
@@ -256,11 +255,10 @@ export function SubscriptionPaymentDialog({
               </Button>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
-              </Button>
-            </div>
-          </form>
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
-  );
+      </form>
+    </div>
+  </ResponsiveModal>
+);
 }

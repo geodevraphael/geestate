@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
+import { DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -105,18 +106,18 @@ export function GeospatialServiceRequest({ listingId, sellerId }: GeospatialServ
             );
           })}
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full">Request Service</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Request Geospatial Service</DialogTitle>
-              <DialogDescription>
-                Select a service and choose from our verified providers
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 pt-4">
+        <ResponsiveModal
+          open={open}
+          onOpenChange={setOpen}
+          title="Request Geospatial Service"
+          description="Select a service and choose from our verified providers"
+          trigger={
+            <DialogTrigger asChild>
+              <Button className="w-full">Request Service</Button>
+            </DialogTrigger>
+          }
+        >
+          <div className="space-y-6 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="service-type">Service Type</Label>
                 <Select value={serviceType} onValueChange={setServiceType}>
@@ -154,12 +155,11 @@ export function GeospatialServiceRequest({ listingId, sellerId }: GeospatialServ
                   rows={4}
                 />
               </div>
-              <Button onClick={handleSubmit} disabled={loading || !serviceType || !selectedProvider} className="w-full">
-                {loading ? 'Submitting...' : 'Submit Request'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            <Button onClick={handleSubmit} disabled={loading || !serviceType || !selectedProvider} className="w-full">
+              {loading ? 'Submitting...' : 'Submit Request'}
+            </Button>
+          </div>
+        </ResponsiveModal>
       </CardContent>
     </Card>
   );
