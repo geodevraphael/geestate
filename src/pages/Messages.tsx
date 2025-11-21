@@ -36,6 +36,20 @@ export default function Messages() {
     }
   }, [user]);
 
+  // Separate effect to handle direct navigation with URL params
+  useEffect(() => {
+    if (user && listingId && sellerId && conversations.length === 0) {
+      // Wait a bit for conversations to load, then check if we need to initialize
+      const timer = setTimeout(() => {
+        const existingConv = conversations.find(c => c.listing_id === listingId);
+        if (!existingConv) {
+          initializeNewConversation();
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, listingId, sellerId, conversations]);
+
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.listing_id, selectedConversation.other_user_id);
@@ -87,6 +101,7 @@ export default function Messages() {
 
   const fetchConversations = async () => {
     try {
+      setLoading(true);
       const { data: messagesData } = await supabase
         .from('messages')
         .select(`
@@ -131,7 +146,7 @@ export default function Messages() {
           );
           if (targetConversation) {
             setSelectedConversation(targetConversation);
-          } else if (sellerId) {
+          } else if (sellerId && conversationsList.length === 0) {
             // No existing conversation, create a new one
             await initializeNewConversation();
           }
