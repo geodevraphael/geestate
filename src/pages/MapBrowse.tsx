@@ -59,12 +59,19 @@ export default function MapBrowse() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationPermissionAsked, setLocationPermissionAsked] = useState(false);
   const [dealerSearchOpen, setDealerSearchOpen] = useState(false);
+  const [regionSearchOpen, setRegionSearchOpen] = useState(false);
+  const [districtSearchOpen, setDistrictSearchOpen] = useState(false);
+  const [wardSearchOpen, setWardSearchOpen] = useState(false);
+  const [streetSearchOpen, setStreetSearchOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showPropertyList, setShowPropertyList] = useState(false);
   const [regions, setRegions] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [wards, setWards] = useState<any[]>([]);
   const [streets, setStreets] = useState<any[]>([]);
+  const [addressSearch, setAddressSearch] = useState('');
+  const [addressSearchResults, setAddressSearchResults] = useState<any[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<Map | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -81,6 +88,55 @@ export default function MapBrowse() {
   const fetchLocations = async () => {
     const { data: regionsData } = await supabase.from('regions').select('*').order('name');
     setRegions(regionsData || []);
+  };
+
+  const searchAddress = async (query: string) => {
+    if (query.length < 3) {
+      setAddressSearchResults([]);
+      return;
+    }
+
+    setIsSearchingAddress(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=tz&limit=5&addressdetails=1`
+      );
+      const data = await response.json();
+      setAddressSearchResults(data);
+    } catch (error) {
+      console.error('Error searching address:', error);
+      setAddressSearchResults([]);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  const selectAddressResult = (result: any) => {
+    if (!mapInstance.current) return;
+    
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+    
+    mapInstance.current.getView().animate({
+      center: fromLonLat([lon, lat]),
+      zoom: 16,
+      duration: 1000,
+    });
+    
+    setAddressSearch('');
+    setAddressSearchResults([]);
+  };
+
+  const clearLocationFilters = () => {
+    setRegionFilter('all');
+    setDistrictFilter('all');
+    setWardFilter('all');
+    setStreetFilter('all');
+  };
+
+  const getLocationCounts = (locationType: 'region' | 'district' | 'ward' | 'street', locationId: string) => {
+    const idField = `${locationType}_id`;
+    return listings.filter((listing) => (listing as any)[idField] === locationId).length;
   };
 
   useEffect(() => {
@@ -530,81 +586,262 @@ export default function MapBrowse() {
       </div>
 
       <div className="pt-4 border-t border-border space-y-4">
-        <h3 className="text-sm font-semibold">Location Filters</h3>
+        <div>
+          <label className="text-sm font-medium mb-2 flex items-center justify-between">
+            <span>Address Search</span>
+            {isSearchingAddress && <span className="text-xs text-muted-foreground">Searching...</span>}
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={addressSearch}
+              onChange={(e) => {
+                setAddressSearch(e.target.value);
+                searchAddress(e.target.value);
+              }}
+              placeholder="Search by address..."
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+            />
+            {addressSearchResults.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                {addressSearchResults.map((result, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => selectAddressResult(result)}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground border-b border-border last:border-0"
+                  >
+                    <div className="font-medium">{result.display_name.split(',')[0]}</div>
+                    <div className="text-xs text-muted-foreground truncate">{result.display_name}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Location Filters</h3>
+          {(regionFilter !== 'all' || districtFilter !== 'all' || wardFilter !== 'all' || streetFilter !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={clearLocationFilters} className="h-auto py-1 px-2 text-xs">
+              Clear All
+            </Button>
+          )}
+        </div>
         
         <div>
           <label className="text-sm font-medium mb-2 block">Region</label>
-          <Select value={regionFilter} onValueChange={setRegionFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="All Regions" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Regions</SelectItem>
-              {regions.map((region) => (
-                <SelectItem key={region.id} value={region.id}>
-                  {region.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={regionSearchOpen} onOpenChange={setRegionSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={regionSearchOpen}
+                className="w-full justify-between"
+              >
+                {regionFilter === 'all'
+                  ? 'All Regions'
+                  : regions.find((r) => r.id === regionFilter)?.name || 'Select region...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search region..." />
+                <CommandList>
+                  <CommandEmpty>No region found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setRegionFilter('all');
+                        setRegionSearchOpen(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", regionFilter === 'all' ? "opacity-100" : "opacity-0")} />
+                      All Regions
+                    </CommandItem>
+                    {regions.map((region) => (
+                      <CommandItem
+                        key={region.id}
+                        value={region.name}
+                        onSelect={() => {
+                          setRegionFilter(region.id);
+                          setRegionSearchOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", regionFilter === region.id ? "opacity-100" : "opacity-0")} />
+                        <span className="flex-1">{region.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('region', region.id)}</Badge>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        {regionFilter !== 'all' && districts.length > 0 && (
-          <div>
-            <label className="text-sm font-medium mb-2 block">District</label>
-            <Select value={districtFilter} onValueChange={setDistrictFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Districts" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Districts</SelectItem>
-                {districts.map((district) => (
-                  <SelectItem key={district.id} value={district.id}>
-                    {district.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div>
+          <label className="text-sm font-medium mb-2 block">District</label>
+          <Popover open={districtSearchOpen} onOpenChange={setDistrictSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={districtSearchOpen}
+                disabled={regionFilter === 'all'}
+                className="w-full justify-between"
+              >
+                {districtFilter === 'all'
+                  ? regionFilter === 'all' ? 'Select region first' : 'All Districts'
+                  : districts.find((d) => d.id === districtFilter)?.name || 'Select district...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search district..." />
+                <CommandList>
+                  <CommandEmpty>No district found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setDistrictFilter('all');
+                        setDistrictSearchOpen(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", districtFilter === 'all' ? "opacity-100" : "opacity-0")} />
+                      All Districts
+                    </CommandItem>
+                    {districts.map((district) => (
+                      <CommandItem
+                        key={district.id}
+                        value={district.name}
+                        onSelect={() => {
+                          setDistrictFilter(district.id);
+                          setDistrictSearchOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", districtFilter === district.id ? "opacity-100" : "opacity-0")} />
+                        <span className="flex-1">{district.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('district', district.id)}</Badge>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        {districtFilter !== 'all' && wards.length > 0 && (
-          <div>
-            <label className="text-sm font-medium mb-2 block">Ward</label>
-            <Select value={wardFilter} onValueChange={setWardFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Wards" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Wards</SelectItem>
-                {wards.map((ward) => (
-                  <SelectItem key={ward.id} value={ward.id}>
-                    {ward.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Ward</label>
+          <Popover open={wardSearchOpen} onOpenChange={setWardSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={wardSearchOpen}
+                disabled={districtFilter === 'all'}
+                className="w-full justify-between"
+              >
+                {wardFilter === 'all'
+                  ? districtFilter === 'all' ? 'Select district first' : 'All Wards'
+                  : wards.find((w) => w.id === wardFilter)?.name || 'Select ward...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search ward..." />
+                <CommandList>
+                  <CommandEmpty>No ward found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setWardFilter('all');
+                        setWardSearchOpen(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", wardFilter === 'all' ? "opacity-100" : "opacity-0")} />
+                      All Wards
+                    </CommandItem>
+                    {wards.map((ward) => (
+                      <CommandItem
+                        key={ward.id}
+                        value={ward.name}
+                        onSelect={() => {
+                          setWardFilter(ward.id);
+                          setWardSearchOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", wardFilter === ward.id ? "opacity-100" : "opacity-0")} />
+                        <span className="flex-1">{ward.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('ward', ward.id)}</Badge>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        {wardFilter !== 'all' && streets.length > 0 && (
-          <div>
-            <label className="text-sm font-medium mb-2 block">Street/Village</label>
-            <Select value={streetFilter} onValueChange={setStreetFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Streets" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Streets</SelectItem>
-                {streets.map((street) => (
-                  <SelectItem key={street.id} value={street.id}>
-                    {street.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Street/Village</label>
+          <Popover open={streetSearchOpen} onOpenChange={setStreetSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={streetSearchOpen}
+                disabled={wardFilter === 'all'}
+                className="w-full justify-between"
+              >
+                {streetFilter === 'all'
+                  ? wardFilter === 'all' ? 'Select ward first' : 'All Streets'
+                  : streets.find((s) => s.id === streetFilter)?.name || 'Select street...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search street..." />
+                <CommandList>
+                  <CommandEmpty>No street found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setStreetFilter('all');
+                        setStreetSearchOpen(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", streetFilter === 'all' ? "opacity-100" : "opacity-0")} />
+                      All Streets
+                    </CommandItem>
+                    {streets.map((street) => (
+                      <CommandItem
+                        key={street.id}
+                        value={street.name}
+                        onSelect={() => {
+                          setStreetFilter(street.id);
+                          setStreetSearchOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", streetFilter === street.id ? "opacity-100" : "opacity-0")} />
+                        <span className="flex-1">{street.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('street', street.id)}</Badge>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       <div>
