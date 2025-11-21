@@ -28,7 +28,7 @@ export default function InstitutionLandingPage() {
         .select('*, profiles(full_name, email)')
         .eq('slug', slug)
         .eq('is_approved', true)
-        .single();
+        .maybeSingle();
 
       if (instError) throw instError;
 
