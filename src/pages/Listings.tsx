@@ -58,18 +58,18 @@ export default function Listings() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Browse Listings</h1>
-          <p className="text-muted-foreground">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Browse Listings</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Discover verified land and properties across Tanzania
           </p>
         </div>
 
         {/* Filters */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="mb-6 md:mb-8 rounded-xl md:rounded-2xl">
+          <CardContent className="pt-4 md:pt-6 px-3 md:px-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -128,10 +128,10 @@ export default function Listings() {
         </div>
 
         {/* Listings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           {filteredListings.map((listing) => (
             <Link key={listing.id} to={`/listings/${listing.id}`}>
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
+              <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full rounded-xl md:rounded-2xl active:scale-[0.98] md:active:scale-100">
                 {/* Image */}
                 <div className="aspect-video bg-muted relative">
                   {listing.media && listing.media.length > 0 ? (
@@ -153,24 +153,24 @@ export default function Listings() {
                   )}
                 </div>
 
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg mb-2 line-clamp-1">{listing.title}</h3>
+                <CardContent className="p-3 md:p-4">
+                  <h3 className="font-semibold text-base md:text-lg mb-2 line-clamp-2 md:line-clamp-1">{listing.title}</h3>
                   
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                    <MapPin className="h-4 w-4 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
+                    <MapPin className="h-3 md:h-4 w-3 md:w-4 flex-shrink-0" />
                     <span className="line-clamp-1">{listing.location_label}</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Badge variant="outline" className="capitalize">
+                  <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
+                    <Badge variant="outline" className="capitalize text-xs">
                       {listing.property_type}
                     </Badge>
-                    <Badge variant="outline" className="capitalize">
+                    <Badge variant="outline" className="capitalize text-xs">
                       For {listing.listing_type}
                     </Badge>
                   </div>
 
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="text-lg md:text-2xl font-bold text-primary">
                     {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
                   </div>
                 </CardContent>

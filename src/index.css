@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile App Specific Styles */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    @apply overscroll-none;
+  }
+  
+  /* Safe area support for mobile */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
