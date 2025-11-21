@@ -71,29 +71,37 @@ export default function InstitutionalSellers() {
     }
   };
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: string, institutionName: string) => {
     try {
+      // First, generate the slug using the database function
+      const { data: slugData, error: slugError } = await supabase
+        .rpc('generate_institution_slug', { institution_name: institutionName });
+      
+      if (slugError) throw slugError;
+
+      // Update with approval and slug
       const { error } = await supabase
         .from('institutional_sellers')
         .update({
           is_approved: true,
           approved_by_admin_id: user?.id,
           approved_at: new Date().toISOString(),
+          slug: slugData,
         })
         .eq('id', id);
 
       if (error) throw error;
 
       toast({
-        title: 'Success',
-        description: 'Institution approved successfully. Notification sent to the applicant.',
+        title: 'Institution Approved',
+        description: `Landing page: /institution/${slugData}`,
       });
       fetchSellers();
     } catch (error) {
       console.error('Error approving institution:', error);
       toast({
         title: 'Error',
-        description: 'Failed to approve institutional seller. Please check RLS policies.',
+        description: 'Failed to approve institutional seller.',
         variant: 'destructive',
       });
     }
@@ -183,7 +191,7 @@ export default function InstitutionalSellers() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleApprove(seller.id)}
+                        onClick={() => handleApprove(seller.id, seller.institution_name)}
                         className="flex items-center gap-2"
                       >
                         <Check className="h-4 w-4" />

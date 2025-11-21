@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { AdminTodoPopup } from '@/components/AdminTodoPopup';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface MainLayoutProps {
@@ -25,6 +26,7 @@ export function MainLayout({ children, hideSidebar = false }: MainLayoutProps) {
         </main>
       </div>
       <MobileBottomNav />
+      <AdminTodoPopup />
     </div>
   );
 }
