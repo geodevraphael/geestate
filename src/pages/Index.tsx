@@ -1,10 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Shield, Search, CheckCircle2, Lock, Sparkles, ArrowRight } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   return (
@@ -78,92 +76,6 @@ const Index = () => {
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
           <div className="w-6 h-10 rounded-full border-2 border-primary/30 flex items-start justify-center p-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-glow" />
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section - Redesigned */}
-      <section className="py-16 md:py-32 relative">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-12 md:mb-20 animate-in">
-            <Badge className="mb-4 px-4 py-2 bg-primary/10 text-primary border-primary/20">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Platform Features
-            </Badge>
-            <h2 className="text-2xl md:text-4xl lg:text-6xl font-display font-bold mb-4 md:mb-6">
-              Why Choose <span className="text-gradient">GeoEstate</span>?
-            </h2>
-            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
-              Combining cutting-edge geospatial technology with rigorous verification 
-              to create Africa's most trusted property marketplace.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4 md:gap-8 max-w-7xl mx-auto">
-            {[
-              {
-                icon: MapPin,
-                title: 'Precision Mapping',
-                description: 'Every property mapped with exact GeoJSON polygon boundaries. See the true size and location with satellite accuracy.',
-                color: 'from-primary/20 to-primary/5',
-                badge: 'Geospatial AI'
-              },
-              {
-                icon: Shield,
-                title: 'Verified Listings',
-                description: 'Multi-layer verification by GeoInsight experts. AI-powered fraud detection protects your investment.',
-                color: 'from-success/20 to-success/5',
-                badge: 'Enterprise Grade'
-              },
-              {
-                icon: Lock,
-                title: 'Secure Transactions',
-                description: 'Bank-grade security with escrow protection. Every transaction is monitored and fully traceable.',
-                color: 'from-accent/20 to-accent/5',
-                badge: 'SSL Protected'
-              },
-            ].map((feature, i) => (
-              <Card 
-                key={i} 
-                className="relative group p-8 glass-card hover-lift border-2 hover:border-primary/30 transition-all duration-500 overflow-hidden animate-in"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              >
-                {/* Gradient Background */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                
-                <div className="relative">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform duration-300">
-                      <feature.icon className="h-8 w-8 text-primary" />
-                    </div>
-                    <Badge variant="outline" className="text-xs">{feature.badge}</Badge>
-                  </div>
-                  
-                  <h3 className="text-2xl font-display font-semibold mb-4 group-hover:text-primary transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Section */}
-      <section className="py-16 md:py-24 bg-gradient-to-b from-background to-secondary/30 relative overflow-hidden">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="animate-in">
-              <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-                Trusted Across <span className="text-gradient">Tanzania</span>
-              </h2>
-              <p className="text-base md:text-xl text-muted-foreground px-4 max-w-2xl mx-auto">
-                Join the community of smart property investors and sellers using verified, polygon-mapped listings
-              </p>
-            </div>
           </div>
         </div>
       </section>
