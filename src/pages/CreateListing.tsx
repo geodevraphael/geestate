@@ -22,9 +22,7 @@ import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Draw from 'ol/interaction/Draw';
-import { defaults as defaultControls, FullScreen, ScaleLine, ZoomToExtent, Rotate, MousePosition, OverviewMap, Zoom } from 'ol/control';
-import { Snap, Modify } from 'ol/interaction';
-import { createStringXY } from 'ol/coordinate';
+import { defaults as defaultControls, FullScreen, ScaleLine, ZoomToExtent } from 'ol/control';
 import { Polygon } from 'ol/geom';
 import Feature from 'ol/Feature';
 import { Style, Fill, Stroke, Text } from 'ol/style';
@@ -74,8 +72,6 @@ export default function CreateListing() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<Map | null>(null);
   const drawInteraction = useRef<Draw | null>(null);
-  const snapInteraction = useRef<Snap | null>(null);
-  const modifyInteraction = useRef<Modify | null>(null);
   const vectorSource = useRef<VectorSource | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -85,7 +81,6 @@ export default function CreateListing() {
   const [polygons, setPolygons] = useState<any[]>([]);
   const [jsonFileName, setJsonFileName] = useState<string>('');
   const [isDrawingMode, setIsDrawingMode] = useState(false);
-  const [canUndo, setCanUndo] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -156,44 +151,11 @@ export default function CreateListing() {
 
     mapInstance.current = new Map({
       target: mapRef.current!,
-      controls: defaultControls({
-        zoom: false, // We'll add custom zoom control
-        rotate: false, // We'll add custom rotate control
-      }).extend([
-        new Zoom({
-          className: 'ol-zoom',
-          zoomInTipLabel: 'Zoom in',
-          zoomOutTipLabel: 'Zoom out',
-        }),
-        new Rotate({
-          autoHide: false,
-          tipLabel: 'Reset rotation',
-        }),
-        new FullScreen({
-          tipLabel: 'Toggle full-screen',
-        }),
-        new ScaleLine({
-          units: 'metric',
-        }),
-        new MousePosition({
-          coordinateFormat: createStringXY(4),
-          projection: 'EPSG:4326',
-          className: 'ol-mouse-position',
-          placeholder: 'Move mouse to see coordinates',
-        }),
+      controls: defaultControls().extend([
+        new FullScreen(),
+        new ScaleLine(),
         new ZoomToExtent({
-          extent: fromLonLat([29.0, -12.0]).concat(fromLonLat([41.0, -1.0])),
-          tipLabel: 'Fit to Tanzania',
-        }),
-        new OverviewMap({
-          collapsed: true,
-          layers: [
-            new TileLayer({
-              source: new XYZ({
-                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-              }),
-            }),
-          ],
+          extent: fromLonLat([29.0, -12.0]).concat(fromLonLat([41.0, -1.0]))
         }),
       ]),
       layers: [
@@ -219,55 +181,21 @@ export default function CreateListing() {
       }),
     });
 
-    // Enable mouse wheel zoom with smooth zooming
+    // Enable mouse wheel zoom
     mapInstance.current.getView().setConstrainResolution(false);
-    
-    // Enable keyboard navigation
-    mapInstance.current.getTargetElement()?.setAttribute('tabindex', '1');
   };
 
   const enableDrawingMode = () => {
     if (!mapInstance.current || !vectorSource.current) return;
 
-    // Remove existing interactions
+    // Remove existing draw interaction
     if (drawInteraction.current) {
       mapInstance.current.removeInteraction(drawInteraction.current);
     }
-    if (snapInteraction.current) {
-      mapInstance.current.removeInteraction(snapInteraction.current);
-    }
-    if (modifyInteraction.current) {
-      mapInstance.current.removeInteraction(modifyInteraction.current);
-    }
 
-    // Create draw interaction with better UX
     drawInteraction.current = new Draw({
       source: vectorSource.current,
       type: 'Polygon',
-      snapTolerance: 12, // Pixels to snap
-      freehand: false, // Disable freehand drawing
-    });
-
-    // Add snap for precision
-    snapInteraction.current = new Snap({
-      source: vectorSource.current,
-    });
-
-    // Add modify interaction to edit existing polygons
-    modifyInteraction.current = new Modify({
-      source: vectorSource.current,
-    });
-
-    let currentSketch: any = null;
-
-    drawInteraction.current.on('drawstart', (event) => {
-      currentSketch = event.feature;
-      setCanUndo(false);
-      
-      toast({
-        title: 'Drawing started',
-        description: 'Click to add points. Double-click to finish.',
-      });
     });
 
     drawInteraction.current.on('drawend', (event) => {
@@ -284,70 +212,24 @@ export default function CreateListing() {
       feature.set('label', `Parcel ${polygons.length + 1}`);
 
       setPolygons(prev => [...prev, geojson]);
-      setCanUndo(false);
-      currentSketch = null;
 
       toast({
         title: 'Polygon drawn',
-        description: 'Property boundary has been added. You can modify it by clicking and dragging.',
+        description: 'Property boundary has been added',
       });
     });
 
     mapInstance.current.addInteraction(drawInteraction.current);
-    mapInstance.current.addInteraction(snapInteraction.current);
-    mapInstance.current.addInteraction(modifyInteraction.current);
     setIsDrawingMode(true);
-
-    toast({
-      title: 'Drawing mode enabled',
-      description: 'Click on the map to start drawing. Press ESC to cancel.',
-    });
   };
 
   const disableDrawingMode = () => {
-    if (mapInstance.current) {
-      if (drawInteraction.current) {
-        mapInstance.current.removeInteraction(drawInteraction.current);
-        drawInteraction.current = null;
-      }
-      if (snapInteraction.current) {
-        mapInstance.current.removeInteraction(snapInteraction.current);
-        snapInteraction.current = null;
-      }
-      if (modifyInteraction.current) {
-        mapInstance.current.removeInteraction(modifyInteraction.current);
-        modifyInteraction.current = null;
-      }
+    if (mapInstance.current && drawInteraction.current) {
+      mapInstance.current.removeInteraction(drawInteraction.current);
+      drawInteraction.current = null;
     }
     setIsDrawingMode(false);
-    setCanUndo(false);
   };
-
-  const undoLastPoint = () => {
-    if (drawInteraction.current) {
-      drawInteraction.current.removeLastPoint();
-    }
-  };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isDrawingMode) {
-        disableDrawingMode();
-        toast({
-          title: 'Drawing cancelled',
-          description: 'Drawing mode has been disabled',
-        });
-      }
-      if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey) && isDrawingMode) {
-        e.preventDefault();
-        undoLastPoint();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isDrawingMode]);
 
   const clearAllPolygons = () => {
     if (vectorSource.current) {
@@ -869,17 +751,7 @@ export default function CreateListing() {
                 <Alert>
                   <MapIcon className="h-4 w-4" />
                   <AlertDescription>
-                    <div className="space-y-2">
-                      <p className="font-semibold">Drawing Tips:</p>
-                      <ul className="text-sm space-y-1 ml-4 list-disc">
-                        <li>Click to add points on the map</li>
-                        <li>Double-click to complete the polygon</li>
-                        <li>Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">ESC</kbd> to cancel drawing</li>
-                        <li>Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Z</kbd> to undo last point</li>
-                        <li>Use mouse wheel to zoom, click and drag to pan</li>
-                        <li>After drawing, click and drag points to modify</li>
-                      </ul>
-                    </div>
+                    Draw the property boundary by clicking points on the map. Double-click the last point to complete the polygon.
                   </AlertDescription>
                 </Alert>
               )}
@@ -930,53 +802,17 @@ export default function CreateListing() {
                     </div>
                   )}
                 </div>
-                
-                <div className="relative">
-                  <div ref={mapRef} className="w-full h-[500px] rounded-lg border" />
-                  
-                  {/* Drawing Mode Indicator */}
-                  {!isLandProperty && isDrawingMode && (
-                    <div className="absolute top-4 left-4 bg-background/95 backdrop-blur border rounded-lg p-3 shadow-lg space-y-2 max-w-xs z-10">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-sm font-semibold">Drawing Mode Active</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Click to add points. Double-click to finish.
-                      </p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={disableDrawingMode}
-                        className="w-full"
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        Cancel Drawing
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Ready to Draw Hint */}
-                  {!isLandProperty && !isDrawingMode && polygons.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="bg-background/95 backdrop-blur border rounded-lg p-6 shadow-lg text-center max-w-sm">
-                        <MapIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                        <h3 className="font-semibold mb-2">Ready to Draw</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Click on the map to start drawing your property boundary
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
+                <div ref={mapRef} className="w-full h-[500px] rounded-lg border" />
+                {isDrawingMode && !isLandProperty && (
+                  <p className="text-sm text-primary flex items-center gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Drawing mode active - Click on the map to draw boundary
+                  </p>
+                )}
                 {polygons.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600 font-medium">
-                      {polygons.length} polygon(s) loaded
-                    </span>
-                  </div>
+                  <p className="text-sm text-success">
+                    ✓ {polygons.length} polygon(s) loaded
+                  </p>
                 )}
               </div>
 

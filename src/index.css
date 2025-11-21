@@ -210,40 +210,4 @@ All colors MUST be HSL.
     width: 100%;
     height: 100%;
   }
-
-  /* OpenLayers custom control styling */
-  .ol-mouse-position {
-    @apply absolute bottom-2 right-2 bg-background/95 backdrop-blur text-xs py-1 px-2 rounded border border-border;
-    font-family: monospace;
-    pointer-events: none;
-  }
-
-  .ol-control button {
-    @apply bg-background hover:bg-accent text-foreground transition-colors;
-  }
-
-  .ol-zoom {
-    @apply top-2 left-2;
-  }
-
-  .ol-rotate {
-    @apply top-20 left-2;
-  }
-
-  .ol-full-screen {
-    @apply top-2 right-2;
-  }
-
-  .ol-scale-line {
-    @apply left-2 bottom-2 bg-background/95 backdrop-blur;
-  }
-
-  .ol-attribution {
-    @apply text-xs bg-background/80 backdrop-blur;
-  }
-
-  /* Drawing cursor */
-  .ol-viewport.ol-cursor-crosshair {
-    cursor: crosshair !important;
-  }
 }
