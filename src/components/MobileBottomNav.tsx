@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, MapPin, MessageSquare, User, LogOut, Menu } from 'lucide-react';
+import { Home, Search, MapPin, MessageSquare, User, LogOut, Menu, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -9,11 +9,19 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Notification } from '@/types/database';
+import { format } from 'date-fns';
 
 export function MobileBottomNav() {
   const location = useLocation();
@@ -21,6 +29,8 @@ export function MobileBottomNav() {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -58,6 +68,66 @@ export function MobileBottomNav() {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchNotifications = async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (data) {
+        setNotifications(data);
+        setNotificationUnreadCount(data.filter(n => !n.is_read).length);
+      }
+    };
+
+    fetchNotifications();
+
+    const channel = supabase
+      .channel('notifications-mobile')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications(prev => [payload.new as Notification, ...prev.slice(0, 9)]);
+          setNotificationUnreadCount(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const markAsRead = async (notificationId: string) => {
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+
+    setNotifications(prev =>
+      prev.map(n => (n.id === notificationId ? { ...n, is_read: true } : n))
+    );
+    setNotificationUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+    if (notification.link_url) {
+      navigate(notification.link_url);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -112,6 +182,67 @@ export function MobileBottomNav() {
             </Link>
           );
         })}
+
+        {/* Notification Bell */}
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 min-w-[60px] relative",
+                  "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                <div className="relative">
+                  <Bell className="h-5 w-5" />
+                  {notificationUnreadCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                      {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs font-medium">Alerts</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 mb-2">
+              <div className="p-2 border-b">
+                <h3 className="font-semibold">Notifications</h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    No notifications yet
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`p-3 cursor-pointer ${
+                        !notification.is_read ? 'bg-muted/50' : ''
+                      }`}
+                    >
+                      <div className="flex flex-col gap-1 w-full">
+                        <div className="flex items-start justify-between">
+                          <p className="font-medium text-sm">{notification.title}</p>
+                          {!notification.is_read && (
+                            <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(notification.created_at), 'MMM dd, HH:mm')}
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* User Menu */}
         <Sheet open={open} onOpenChange={setOpen}>
