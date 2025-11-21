@@ -36,6 +36,8 @@ export default function AdminGeoDataUpload() {
   });
   const [step, setStep] = useState<'upload' | 'mapping' | 'processing'>('upload');
   const [stats, setStats] = useState({ regions: 0, districts: 0, wards: 0, errors: 0 });
+  const [assigningBoundaries, setAssigningBoundaries] = useState(false);
+  const [boundaryStats, setBoundaryStats] = useState({ total: 0, updated: 0, failed: 0 });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -276,6 +278,103 @@ export default function AdminGeoDataUpload() {
     }
   };
 
+  const assignBoundariesToExistingListings = async () => {
+    setAssigningBoundaries(true);
+    setBoundaryStats({ total: 0, updated: 0, failed: 0 });
+
+    try {
+      // Get all listings with polygons but missing boundary data
+      const { data: listings, error: fetchError } = await supabase
+        .from('listings')
+        .select('id, listing_polygons(geojson)')
+        .or('region_id.is.null,district_id.is.null,ward_id.is.null')
+        .not('listing_polygons', 'is', null);
+
+      if (fetchError) throw fetchError;
+
+      if (!listings || listings.length === 0) {
+        toast({
+          title: 'No listings to update',
+          description: 'All listings already have administrative boundaries assigned',
+        });
+        setAssigningBoundaries(false);
+        return;
+      }
+
+      setBoundaryStats(prev => ({ ...prev, total: listings.length }));
+      let updated = 0;
+      let failed = 0;
+
+      // Process each listing
+      for (const listing of listings) {
+        try {
+          const listingPolygons = listing.listing_polygons as any;
+          if (!listingPolygons || (Array.isArray(listingPolygons) && listingPolygons.length === 0)) {
+            failed++;
+            continue;
+          }
+
+          const polygon = Array.isArray(listingPolygons) ? listingPolygons[0].geojson : listingPolygons.geojson;
+
+          // Call edge function to detect boundaries
+          const { data: boundariesData, error: boundariesError } = await supabase.functions.invoke(
+            'detect-admin-boundaries',
+            {
+              body: { polygon: { type: 'Feature', geometry: polygon } },
+            }
+          );
+
+          if (boundariesError || !boundariesData?.success) {
+            console.error(`Failed to detect boundaries for listing ${listing.id}:`, boundariesError);
+            failed++;
+            setBoundaryStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+            continue;
+          }
+
+          const { boundaries } = boundariesData;
+
+          // Update listing with detected boundaries
+          const { error: updateError } = await supabase
+            .from('listings')
+            .update({
+              region_id: boundaries.region_id,
+              district_id: boundaries.district_id,
+              ward_id: boundaries.ward_id,
+              street_village_id: boundaries.street_village_id,
+            })
+            .eq('id', listing.id);
+
+          if (updateError) {
+            console.error(`Failed to update listing ${listing.id}:`, updateError);
+            failed++;
+            setBoundaryStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+          } else {
+            updated++;
+            setBoundaryStats(prev => ({ ...prev, updated: prev.updated + 1 }));
+          }
+        } catch (error) {
+          console.error(`Error processing listing ${listing.id}:`, error);
+          failed++;
+          setBoundaryStats(prev => ({ ...prev, failed: prev.failed + 1 }));
+        }
+      }
+
+      toast({
+        title: 'Boundary Assignment Complete',
+        description: `Updated ${updated} of ${listings.length} listings. ${failed} failed.`,
+      });
+    } catch (error) {
+      console.error('Error assigning boundaries:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to assign boundaries to listings',
+        variant: 'destructive',
+      });
+    } finally {
+      setAssigningBoundaries(false);
+    }
+  };
+
   if (!hasRole('admin')) {
     return (
       <MainLayout>
@@ -302,6 +401,59 @@ export default function AdminGeoDataUpload() {
         </div>
 
         <div className="grid gap-6 max-w-2xl">
+          {/* Assign Boundaries to Existing Listings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Assign Boundaries to Existing Listings
+              </CardTitle>
+              <CardDescription>
+                Automatically detect and assign region, district, and ward to all existing listings based on their spatial location
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                onClick={assignBoundariesToExistingListings}
+                disabled={assigningBoundaries}
+                className="w-full sm:w-auto"
+              >
+                {assigningBoundaries ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Assigning Boundaries...
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Assign Boundaries to Listings
+                  </>
+                )}
+              </Button>
+
+              {boundaryStats.total > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">
+                    Processing {boundaryStats.total} listings
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="font-semibold text-foreground">{boundaryStats.total}</div>
+                      <div className="text-muted-foreground">Total</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-green-600">{boundaryStats.updated}</div>
+                      <div className="text-muted-foreground">Updated</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-red-600">{boundaryStats.failed}</div>
+                      <div className="text-muted-foreground">Failed</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           {/* Step 1: File Upload */}
           {step === 'upload' && (
             <Card>
