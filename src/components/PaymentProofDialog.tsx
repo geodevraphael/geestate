@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
+import { DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,22 +143,21 @@ export function PaymentProofDialog({ listing, onSuccess }: PaymentProofDialogPro
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="w-full" size="lg">
-          <DollarSign className="mr-2 h-5 w-5" />
-          I Have Paid the Seller
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Submit Payment Proof</DialogTitle>
-          <DialogDescription>
-            Upload proof of payment to the seller. This can be a mobile money screenshot, bank receipt, or any payment confirmation.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <ResponsiveModal
+      open={open}
+      onOpenChange={setOpen}
+      title="Submit Payment Proof"
+      description="Upload proof of payment to the seller. This can be a mobile money screenshot, bank receipt, or any payment confirmation."
+      trigger={
+        <DialogTrigger asChild>
+          <Button className="w-full" size="lg">
+            <DollarSign className="mr-2 h-5 w-5" />
+            I Have Paid the Seller
+          </Button>
+        </DialogTrigger>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="amount">Amount Paid ({listing.currency})</Label>
             <Input
@@ -252,8 +245,7 @@ export function PaymentProofDialog({ listing, onSuccess }: PaymentProofDialogPro
               {loading ? 'Submitting...' : 'Submit Payment Proof'}
             </Button>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </ResponsiveModal>
   );
 }
