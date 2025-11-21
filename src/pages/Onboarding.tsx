@@ -48,22 +48,27 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      // Insert role into user_roles table
-      const { error } = await (supabase as any)
-        .from('user_roles')
-        .insert({
-          user_id: user.id,
-          role: selectedRole,
-          assigned_by: user.id, // Self-assigned during onboarding
-        });
+      if (selectedRole === 'buyer') {
+        // Buyers get role immediately
+        const { error } = await (supabase as any)
+          .from('user_roles')
+          .insert({
+            user_id: user.id,
+            role: selectedRole,
+            assigned_by: user.id,
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      await refreshProfile();
-      toast.success('Welcome to GeoEstate Tanzania!');
-      navigate('/dashboard');
+        await refreshProfile();
+        toast.success('Welcome to GeoEstate Tanzania!');
+        navigate('/dashboard');
+      } else {
+        // Sellers and brokers need to submit a request
+        navigate('/apply-for-role', { state: { preselectedRole: selectedRole } });
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to set role');
+      toast.error(error.message || 'Failed to process role selection');
     } finally {
       setLoading(false);
     }
