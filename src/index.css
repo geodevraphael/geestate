@@ -6,10 +6,21 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
     @apply overscroll-none;
+    touch-action: pan-y;
+  }
+  
+  /* Mobile-optimized touch targets */
+  @media (max-width: 768px) {
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
   
   /* Safe area support for mobile */
@@ -17,6 +28,11 @@
     body {
       padding-bottom: env(safe-area-inset-bottom);
     }
+  }
+  
+  /* Smooth scrolling for mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -171,6 +187,17 @@ All colors MUST be HSL.
 
   .animate-in {
     animation: fade-in-up 0.8s ease-out forwards;
+  }
+  
+  /* Mobile touch feedback */
+  @media (max-width: 768px) {
+    .touch-feedback {
+      @apply active:scale-95 transition-transform duration-100;
+    }
+    
+    .mobile-card {
+      @apply active:scale-[0.98] transition-transform duration-150;
+    }
   }
 
   /* OpenLayers map fixes - ensure proper rendering */

@@ -91,120 +91,125 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Admin Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             System overview and administrative controls
           </p>
         </div>
-        <GenerateSampleDataButton />
+        <div className="w-full sm:w-auto">
+          <GenerateSampleDataButton />
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Total Users
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <Users className="h-3 md:h-4 w-3 md:w-4" />
+              <span className="hidden sm:inline">Total Users</span>
+              <span className="sm:hidden">Users</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.totalUsers}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <FileText className="h-3 md:h-4 w-3 md:w-4" />
               Listings
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalListings}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.totalListings}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" />
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <CheckCircle2 className="h-3 md:h-4 w-3 md:w-4" />
               Pending
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{stats.pendingVerifications}</div>
+            <div className="text-xl md:text-2xl font-bold text-warning">{stats.pendingVerifications}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <AlertTriangle className="h-3 md:h-4 w-3 md:w-4" />
               Flags
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.activeFlags}</div>
+            <div className="text-xl md:text-2xl font-bold text-destructive">{stats.activeFlags}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Shield className="h-4 w-4" />
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <Shield className="h-3 md:h-4 w-3 md:w-4" />
               Disputes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeDisputes}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.activeDisputes}</div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
+        <Card className="hover-lift">
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1.5 md:gap-2">
+              <TrendingUp className="h-3 md:h-4 w-3 md:w-4" />
               Today
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">{stats.todaySignups}</div>
+            <div className="text-xl md:text-2xl font-bold text-success">{stats.todaySignups}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Administrative Actions</CardTitle>
-          <CardDescription>Manage platform operations</CardDescription>
+          <CardTitle className="text-lg md:text-xl">Administrative Actions</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Manage platform operations</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link to="/admin/verification">
-            <Button variant="outline" className="w-full">
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Verify Listings
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+          <Link to="/admin/verification" className="w-full">
+            <Button variant="outline" className="w-full h-11 md:h-10 text-xs md:text-sm">
+              <CheckCircle2 className="h-3 md:h-4 w-3 md:w-4 mr-1.5 md:mr-2" />
+              <span className="hidden sm:inline">Verify Listings</span>
+              <span className="sm:hidden">Verify</span>
             </Button>
           </Link>
-          <Link to="/compliance-flags">
-            <Button variant="outline" className="w-full">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Compliance Flags
+          <Link to="/compliance-flags" className="w-full">
+            <Button variant="outline" className="w-full h-11 md:h-10 text-xs md:text-sm">
+              <AlertTriangle className="h-3 md:h-4 w-3 md:w-4 mr-1.5 md:mr-2" />
+              <span className="hidden sm:inline">Compliance</span>
+              <span className="sm:hidden">Flags</span>
             </Button>
           </Link>
-          <Link to="/disputes">
-            <Button variant="outline" className="w-full">
-              <Shield className="h-4 w-4 mr-2" />
+          <Link to="/disputes" className="w-full">
+            <Button variant="outline" className="w-full h-11 md:h-10 text-xs md:text-sm">
+              <Shield className="h-3 md:h-4 w-3 md:w-4 mr-1.5 md:mr-2" />
               Disputes
             </Button>
           </Link>
-          <Link to="/admin/analytics">
-            <Button variant="outline" className="w-full">
-              <Activity className="h-4 w-4 mr-2" />
+          <Link to="/admin/analytics" className="w-full">
+            <Button variant="outline" className="w-full h-11 md:h-10 text-xs md:text-sm">
+              <Activity className="h-3 md:h-4 w-3 md:w-4 mr-1.5 md:mr-2" />
               Analytics
             </Button>
           </Link>

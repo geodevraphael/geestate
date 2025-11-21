@@ -18,8 +18,10 @@ export function MainLayout({ children, hideSidebar = false }: MainLayoutProps) {
       <Navbar />
       <div className="flex flex-1 w-full">
         {showSidebar && <DashboardSidebar />}
-        <main className={showSidebar ? "flex-1 overflow-auto pb-20 md:pb-0" : "flex-1 w-full pb-20 md:pb-0"}>
-          {children}
+        <main className="flex-1 w-full overflow-auto pb-20 md:pb-0">
+          <div className="w-full h-full">
+            {children}
+          </div>
         </main>
       </div>
       <MobileBottomNav />
