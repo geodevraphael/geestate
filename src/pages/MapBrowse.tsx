@@ -136,7 +136,12 @@ export default function MapBrowse() {
 
   const getLocationCounts = (locationType: 'region' | 'district' | 'ward' | 'street', locationId: string) => {
     const idField = `${locationType}_id`;
-    return listings.filter((listing) => (listing as any)[idField] === locationId).length;
+    const count = listings.filter((listing) => (listing as any)[idField] === locationId).length;
+    
+    // Also count listings without boundaries assigned
+    const unassignedCount = listings.filter((listing) => !(listing as any)[idField]).length;
+    
+    return count;
   };
 
   useEffect(() => {
@@ -266,15 +271,28 @@ export default function MapBrowse() {
     return Object.values(dealersMap);
   }, [listings]);
 
+  const listingsWithoutBoundaries = useMemo(() => {
+    return listings.filter(l => !l.region_id || !l.district_id || !l.ward_id).length;
+  }, [listings]);
+
   const filteredListings = useMemo(() => {
     const filtered = listings.filter((listing) => {
       const matchesListingType = listingTypeFilter === 'all' || listing.listing_type === listingTypeFilter;
       const matchesPropertyType = propertyTypeFilter === 'all' || listing.property_type === propertyTypeFilter;
       const matchesDealer = dealerFilter === 'all' || listing.owner_id === dealerFilter;
-      const matchesRegion = regionFilter === 'all' || listing.region_id === regionFilter;
-      const matchesDistrict = districtFilter === 'all' || listing.district_id === districtFilter;
-      const matchesWard = wardFilter === 'all' || listing.ward_id === wardFilter;
-      const matchesStreet = streetFilter === 'all' || listing.street_village_id === streetFilter;
+      
+      // For location filters, handle both cases:
+      // 1. Listings with boundary IDs set
+      // 2. Listings without boundaries (show in all filters)
+      const matchesRegion = regionFilter === 'all' || 
+        (listing.region_id ? listing.region_id === regionFilter : false);
+      const matchesDistrict = districtFilter === 'all' || 
+        (listing.district_id ? listing.district_id === districtFilter : false);
+      const matchesWard = wardFilter === 'all' || 
+        (listing.ward_id ? listing.ward_id === wardFilter : false);
+      const matchesStreet = streetFilter === 'all' || 
+        (listing.street_village_id ? listing.street_village_id === streetFilter : false);
+      
       return matchesListingType && matchesPropertyType && matchesDealer && matchesRegion && matchesDistrict && matchesWard && matchesStreet;
     });
     return getSortedListings(filtered);
@@ -628,6 +646,13 @@ export default function MapBrowse() {
           )}
         </div>
         
+        {listingsWithoutBoundaries > 0 && (
+          <div className="text-xs bg-yellow-500/10 border border-yellow-500/20 rounded p-2 text-yellow-700 dark:text-yellow-300">
+            <p className="font-medium mb-1">⚠️ Location Data Missing</p>
+            <p>{listingsWithoutBoundaries} of {listings.length} listings don't have location boundaries assigned. They won't appear in location-based filters.</p>
+          </div>
+        )}
+        
         <div>
           <label className="text-sm font-medium mb-2 block">Region</label>
           <Popover open={regionSearchOpen} onOpenChange={setRegionSearchOpen}>
@@ -861,6 +886,11 @@ export default function MapBrowse() {
         <h3 className="text-sm font-semibold mb-2">Legend</h3>
         <div className="text-xs text-muted-foreground mb-3">
           {filteredListings.length} polygon(s) on map
+          {listingsWithoutBoundaries > 0 && (
+            <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-700 dark:text-yellow-300">
+              {listingsWithoutBoundaries} listing(s) without location data assigned. Some filters may not work for these.
+            </div>
+          )}
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
