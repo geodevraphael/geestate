@@ -12,10 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp } from 'lucide-react';
 import { ListingWithDetails, ListingPolygon, ListingMedia, Profile, SpatialRiskProfile, LandUseProfile, ValuationEstimate } from '@/types/database';
 import { useListingCalculations } from '@/hooks/useListingCalculations';
-import { useProximityAnalysis } from '@/hooks/useProximityAnalysis';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
@@ -41,7 +40,6 @@ export default function ListingDetail() {
   const [landUse, setLandUse] = useState<LandUseProfile | null>(null);
   const [valuation, setValuation] = useState<ValuationEstimate | null>(null);
   const [serviceRequests, setServiceRequests] = useState<any[]>([]);
-  const [proximityAnalysis, setProximityAnalysis] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
@@ -55,17 +53,10 @@ export default function ListingDetail() {
     geojson: polygon?.geojson,
   });
 
-  // Trigger proximity analysis
-  useProximityAnalysis({
-    listingId: id || '',
-    geojson: polygon?.geojson,
-  });
-
   useEffect(() => {
     if (id) {
       fetchListing();
       fetchServiceRequests();
-      fetchProximityAnalysis();
     }
   }, [id]);
 
@@ -176,7 +167,7 @@ export default function ListingDetail() {
 
   const fetchServiceRequests = async () => {
     try {
-      const { data, error} = await supabase
+      const { data, error } = await supabase
         .from('service_requests')
         .select(`
           *,
@@ -192,21 +183,6 @@ export default function ListingDetail() {
       setServiceRequests(data || []);
     } catch (error) {
       console.error('Error fetching service requests:', error);
-    }
-  };
-
-  const fetchProximityAnalysis = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('proximity_analysis')
-        .select('*')
-        .eq('listing_id', id)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      setProximityAnalysis(data);
-    } catch (error) {
-      console.error('Error fetching proximity analysis:', error);
     }
   };
 
@@ -645,190 +621,6 @@ export default function ListingDetail() {
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       Automated estimate for reference only. Not an official valuation.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Proximity Analysis */}
-            {proximityAnalysis && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Navigation className="h-5 w-5 text-primary" />
-                    Proximity & Location Analysis
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Distances to nearby amenities and infrastructure
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Roads */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <Navigation className="h-4 w-4 text-primary" />
-                      Roads & Transportation
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {proximityAnalysis.nearest_road_name && (
-                        <div className="p-3 border rounded-lg space-y-1">
-                          <p className="text-xs text-muted-foreground">Nearest Road</p>
-                          <p className="font-medium">{proximityAnalysis.nearest_road_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {(proximityAnalysis.nearest_road_distance_m / 1000).toFixed(2)} km away
-                          </p>
-                        </div>
-                      )}
-                      {proximityAnalysis.nearest_major_road_name && (
-                        <div className="p-3 border rounded-lg space-y-1">
-                          <p className="text-xs text-muted-foreground">Nearest Major Road</p>
-                          <p className="font-medium">{proximityAnalysis.nearest_major_road_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {(proximityAnalysis.nearest_major_road_distance_m / 1000).toFixed(2)} km away
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Hospitals */}
-                  {proximityAnalysis.nearest_hospital_name && (
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        <Hospital className="h-4 w-4 text-primary" />
-                        Healthcare Facilities
-                      </h3>
-                      <div className="p-3 border rounded-lg space-y-1">
-                        <p className="text-xs text-muted-foreground">Nearest Hospital</p>
-                        <p className="font-medium">{proximityAnalysis.nearest_hospital_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(proximityAnalysis.nearest_hospital_distance_m / 1000).toFixed(2)} km away
-                        </p>
-                      </div>
-                      {proximityAnalysis.hospitals_within_5km?.length > 1 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">
-                            {proximityAnalysis.hospitals_within_5km.length} hospitals within 5km:
-                          </p>
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {proximityAnalysis.hospitals_within_5km.slice(1).map((hospital: any, idx: number) => (
-                              <div key={idx} className="text-xs p-2 bg-muted/50 rounded flex justify-between">
-                                <span>{hospital.name}</span>
-                                <span className="text-muted-foreground">
-                                  {(hospital.distance / 1000).toFixed(2)} km
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Schools */}
-                  {proximityAnalysis.nearest_school_name && (
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        <School className="h-4 w-4 text-primary" />
-                        Educational Institutions
-                      </h3>
-                      <div className="p-3 border rounded-lg space-y-1">
-                        <p className="text-xs text-muted-foreground">Nearest School</p>
-                        <p className="font-medium">{proximityAnalysis.nearest_school_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(proximityAnalysis.nearest_school_distance_m / 1000).toFixed(2)} km away
-                        </p>
-                      </div>
-                      {proximityAnalysis.schools_within_5km?.length > 1 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">
-                            {proximityAnalysis.schools_within_5km.length} schools within 5km:
-                          </p>
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {proximityAnalysis.schools_within_5km.slice(1).map((school: any, idx: number) => (
-                              <div key={idx} className="text-xs p-2 bg-muted/50 rounded flex justify-between items-center">
-                                <span className="flex-1">{school.name}</span>
-                                <Badge variant="outline" className="mr-2 capitalize">
-                                  {school.type}
-                                </Badge>
-                                <span className="text-muted-foreground">
-                                  {(school.distance / 1000).toFixed(2)} km
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Marketplaces */}
-                  {proximityAnalysis.nearest_marketplace_name && (
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        <ShoppingCart className="h-4 w-4 text-primary" />
-                        Shopping & Markets
-                      </h3>
-                      <div className="p-3 border rounded-lg space-y-1">
-                        <p className="text-xs text-muted-foreground">Nearest Marketplace</p>
-                        <p className="font-medium">{proximityAnalysis.nearest_marketplace_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(proximityAnalysis.nearest_marketplace_distance_m / 1000).toFixed(2)} km away
-                        </p>
-                      </div>
-                      {proximityAnalysis.marketplaces_within_5km?.length > 1 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">
-                            {proximityAnalysis.marketplaces_within_5km.length} markets within 5km:
-                          </p>
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {proximityAnalysis.marketplaces_within_5km.slice(1).map((market: any, idx: number) => (
-                              <div key={idx} className="text-xs p-2 bg-muted/50 rounded flex justify-between">
-                                <span>{market.name}</span>
-                                <span className="text-muted-foreground">
-                                  {(market.distance / 1000).toFixed(2)} km
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Public Transport */}
-                  {proximityAnalysis.public_transport_nearby?.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        <Bus className="h-4 w-4 text-primary" />
-                        Public Transportation
-                      </h3>
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">
-                          {proximityAnalysis.public_transport_nearby.length} transport stops within 1km:
-                        </p>
-                        <div className="space-y-1 max-h-40 overflow-y-auto">
-                          {proximityAnalysis.public_transport_nearby.map((transport: any, idx: number) => (
-                            <div key={idx} className="text-xs p-2 bg-muted/50 rounded flex justify-between items-center">
-                              <span className="flex-1">{transport.name}</span>
-                              <Badge variant="outline" className="mr-2 capitalize">
-                                {transport.type}
-                              </Badge>
-                              <span className="text-muted-foreground">
-                                {(transport.distance).toFixed(0)} m
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      Data sourced from OpenStreetMap. Last updated: {new Date(proximityAnalysis.calculated_at).toLocaleDateString()}
                     </p>
                   </div>
                 </CardContent>
