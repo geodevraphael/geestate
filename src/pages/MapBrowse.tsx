@@ -10,7 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
-import { MapPin, CheckCircle2, Check, ChevronsUpDown, SlidersHorizontal, List, Navigation2, X } from 'lucide-react';
+import { MapPin, CheckCircle2, Check, ChevronsUpDown, SlidersHorizontal, List, Navigation2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
@@ -39,7 +39,6 @@ interface ListingWithPolygon extends ListingWithDetails {
   district_id?: string | null;
   ward_id?: string | null;
   street_village_id?: string | null;
-  distance?: number;
 }
 
 export default function MapBrowse() {
@@ -228,7 +227,7 @@ export default function MapBrowse() {
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371;
+    const R = 6371; // Radius of the Earth in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -236,7 +235,7 @@ export default function MapBrowse() {
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+    return R * c; // Distance in km
   };
 
   const getSortedListings = (listings: ListingWithPolygon[]): ListingWithPolygon[] => {
@@ -276,7 +275,6 @@ export default function MapBrowse() {
       const matchesDistrict = districtFilter === 'all' || listing.district_id === districtFilter;
       const matchesWard = wardFilter === 'all' || listing.ward_id === wardFilter;
       const matchesStreet = streetFilter === 'all' || listing.street_village_id === streetFilter;
-      
       return matchesListingType && matchesPropertyType && matchesDealer && matchesRegion && matchesDistrict && matchesWard && matchesStreet;
     });
     return getSortedListings(filtered);
@@ -290,13 +288,16 @@ export default function MapBrowse() {
         ? JSON.parse(listing.polygon.geojson) 
         : listing.polygon.geojson;
 
+      // Get polygon coordinates and transform them
       const coordinates = geojson.coordinates[0].map((coord: [number, number]) => 
         fromLonLat([coord[0], coord[1]])
       );
 
+      // Create polygon to get its extent
       const polygon = new Polygon([coordinates]);
       const extent = polygon.getExtent();
 
+      // Fit the view to the polygon extent with padding
       mapInstance.current.getView().fit(extent, {
         padding: [100, 100, 100, 100],
         duration: 1000,
@@ -305,11 +306,13 @@ export default function MapBrowse() {
 
       setSelectedListing(listing);
       
+      // Position popup at polygon center
       const center = getCenter(extent);
       overlayRef.current?.setPosition(center);
     } catch (error) {
       console.error('Error zooming to listing:', error);
       
+      // Fallback to centroid zoom if polygon parsing fails
       const center = listing.polygon.centroid_lng && listing.polygon.centroid_lat
         ? fromLonLat([listing.polygon.centroid_lng, listing.polygon.centroid_lat])
         : fromLonLat([34.888822, -6.369028]);
@@ -474,11 +477,13 @@ export default function MapBrowse() {
     });
   }, [filteredListings]);
 
+  // Auto-zoom to selected listing from URL parameter
   useEffect(() => {
     if (!mapInstance.current || !listingParam || listings.length === 0) return;
 
     const targetListing = listings.find(l => l.id === listingParam);
     if (targetListing && targetListing.polygon) {
+      // Small delay to ensure map is fully loaded
       setTimeout(() => {
         zoomToListing(targetListing);
       }, 500);
@@ -486,14 +491,14 @@ export default function MapBrowse() {
   }, [listingParam, listings]);
 
   const FiltersContent = () => (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <label className="text-sm font-semibold text-foreground">Listing Type</label>
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium mb-2 block">Listing Type</label>
         <Select value={listingTypeFilter} onValueChange={setListingTypeFilter}>
-          <SelectTrigger className="h-11">
+          <SelectTrigger>
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
-          <SelectContent className="bg-popover/95 backdrop-blur-sm">
+          <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="sale">For Sale</SelectItem>
             <SelectItem value="rent">For Rent</SelectItem>
@@ -501,13 +506,13 @@ export default function MapBrowse() {
         </Select>
       </div>
 
-      <div className="space-y-3">
-        <label className="text-sm font-semibold text-foreground">Property Type</label>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Property Type</label>
         <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
-          <SelectTrigger className="h-11">
-            <SelectValue placeholder="All Property Types" />
+          <SelectTrigger>
+            <SelectValue placeholder="All Properties" />
           </SelectTrigger>
-          <SelectContent className="bg-popover/95 backdrop-blur-sm">
+          <SelectContent>
             <SelectItem value="all">All Properties</SelectItem>
             <SelectItem value="land">Land</SelectItem>
             <SelectItem value="house">House</SelectItem>
@@ -518,15 +523,15 @@ export default function MapBrowse() {
         </Select>
       </div>
 
-      <div className="space-y-3">
-        <label className="text-sm font-semibold text-foreground">Dealer/Seller</label>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Dealer/Seller</label>
         <Popover open={dealerSearchOpen} onOpenChange={setDealerSearchOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
               aria-expanded={dealerSearchOpen}
-              className="w-full justify-between h-11 font-normal"
+              className="w-full justify-between"
             >
               {dealerFilter === 'all'
                 ? 'All Dealers'
@@ -534,9 +539,9 @@ export default function MapBrowse() {
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0 bg-popover/95 backdrop-blur-sm border-border" align="start">
-            <Command className="bg-transparent">
-              <CommandInput placeholder="Search dealer..." className="h-11" />
+          <PopoverContent className="w-[280px] p-0">
+            <Command>
+              <CommandInput placeholder="Search dealer..." />
               <CommandList>
                 <CommandEmpty>No dealer found.</CommandEmpty>
                 <CommandGroup>
@@ -580,61 +585,58 @@ export default function MapBrowse() {
         </Popover>
       </div>
 
-      <div className="pt-6 border-t space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-foreground">Location Filters</label>
-          {(regionFilter !== 'all' || districtFilter !== 'all' || wardFilter !== 'all' || streetFilter !== 'all') && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearLocationFilters}
-              className="text-xs h-8 hover:bg-destructive/10 hover:text-destructive"
-            >
-              Clear All
-            </Button>
-          )}
-        </div>
-
-        <div className="space-y-3">
+      <div className="pt-4 border-t border-border space-y-4">
+        <div>
+          <label className="text-sm font-medium mb-2 flex items-center justify-between">
+            <span>Address Search</span>
+            {isSearchingAddress && <span className="text-xs text-muted-foreground">Searching...</span>}
+          </label>
           <div className="relative">
             <input
               type="text"
-              placeholder="🔍 Search by address..."
               value={addressSearch}
               onChange={(e) => {
                 setAddressSearch(e.target.value);
                 searchAddress(e.target.value);
               }}
-              className="w-full h-11 px-4 py-2 bg-background border border-input rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Search by address..."
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
             />
             {addressSearchResults.length > 0 && (
-              <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-lg shadow-xl max-h-60 overflow-auto backdrop-blur-sm">
+              <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                 {addressSearchResults.map((result, idx) => (
                   <button
                     key={idx}
                     onClick={() => selectAddressResult(result)}
-                    className="w-full px-4 py-3 text-left text-sm hover:bg-accent/50 transition-colors border-b border-border/50 last:border-b-0 first:rounded-t-lg last:rounded-b-lg"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground border-b border-border last:border-0"
                   >
-                    <div className="font-medium text-foreground flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span className="line-clamp-1">{result.display_name}</span>
-                    </div>
+                    <div className="font-medium">{result.display_name.split(',')[0]}</div>
+                    <div className="text-xs text-muted-foreground truncate">{result.display_name}</div>
                   </button>
                 ))}
               </div>
             )}
           </div>
         </div>
+
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Location Filters</h3>
+          {(regionFilter !== 'all' || districtFilter !== 'all' || wardFilter !== 'all' || streetFilter !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={clearLocationFilters} className="h-auto py-1 px-2 text-xs">
+              Clear All
+            </Button>
+          )}
+        </div>
         
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-foreground">Region</label>
+        <div>
+          <label className="text-sm font-medium mb-2 block">Region</label>
           <Popover open={regionSearchOpen} onOpenChange={setRegionSearchOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 role="combobox"
                 aria-expanded={regionSearchOpen}
-                className="w-full justify-between h-11 font-normal"
+                className="w-full justify-between"
               >
                 {regionFilter === 'all'
                   ? 'All Regions'
@@ -642,9 +644,9 @@ export default function MapBrowse() {
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0 bg-popover/95 backdrop-blur-sm border-border" align="start">
-              <Command className="bg-transparent">
-                <CommandInput placeholder="Search region..." className="h-11" />
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search region..." />
                 <CommandList>
                   <CommandEmpty>No region found.</CommandEmpty>
                   <CommandGroup>
@@ -679,439 +681,400 @@ export default function MapBrowse() {
           </Popover>
         </div>
 
-        {regionFilter !== 'all' && (
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-foreground">District</label>
-            <Popover open={districtSearchOpen} onOpenChange={setDistrictSearchOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={districtSearchOpen}
-                  className="w-full justify-between h-11 font-normal"
-                >
-                  {districtFilter === 'all'
-                    ? 'All Districts'
-                    : districts.find((d) => d.id === districtFilter)?.name || 'Select district...'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0 bg-popover/95 backdrop-blur-sm border-border" align="start">
-                <Command className="bg-transparent">
-                  <CommandInput placeholder="Search district..." className="h-11" />
-                  <CommandList>
-                    <CommandEmpty>No district found.</CommandEmpty>
-                    <CommandGroup>
+        <div>
+          <label className="text-sm font-medium mb-2 block">District</label>
+          <Popover open={districtSearchOpen} onOpenChange={setDistrictSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={districtSearchOpen}
+                disabled={regionFilter === 'all'}
+                className="w-full justify-between"
+              >
+                {districtFilter === 'all'
+                  ? regionFilter === 'all' ? 'Select region first' : 'All Districts'
+                  : districts.find((d) => d.id === districtFilter)?.name || 'Select district...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search district..." />
+                <CommandList>
+                  <CommandEmpty>No district found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setDistrictFilter('all');
+                        setDistrictSearchOpen(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", districtFilter === 'all' ? "opacity-100" : "opacity-0")} />
+                      All Districts
+                    </CommandItem>
+                    {districts.map((district) => (
                       <CommandItem
-                        value="all"
+                        key={district.id}
+                        value={district.name}
                         onSelect={() => {
-                          setDistrictFilter('all');
+                          setDistrictFilter(district.id);
                           setDistrictSearchOpen(false);
                         }}
                       >
-                        <Check className={cn("mr-2 h-4 w-4", districtFilter === 'all' ? "opacity-100" : "opacity-0")} />
-                        All Districts
+                        <Check className={cn("mr-2 h-4 w-4", districtFilter === district.id ? "opacity-100" : "opacity-0")} />
+                        <span className="flex-1">{district.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('district', district.id)}</Badge>
                       </CommandItem>
-                      {districts.map((district) => (
-                        <CommandItem
-                          key={district.id}
-                          value={district.name}
-                          onSelect={() => {
-                            setDistrictFilter(district.id);
-                            setDistrictSearchOpen(false);
-                          }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", districtFilter === district.id ? "opacity-100" : "opacity-0")} />
-                          <span className="flex-1">{district.name}</span>
-                          <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('district', district.id)}</Badge>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        {districtFilter !== 'all' && (
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-foreground">Ward</label>
-            <Popover open={wardSearchOpen} onOpenChange={setWardSearchOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={wardSearchOpen}
-                  className="w-full justify-between h-11 font-normal"
-                >
-                  {wardFilter === 'all'
-                    ? 'All Wards'
-                    : wards.find((w) => w.id === wardFilter)?.name || 'Select ward...'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0 bg-popover/95 backdrop-blur-sm border-border" align="start">
-                <Command className="bg-transparent">
-                  <CommandInput placeholder="Search ward..." className="h-11" />
-                  <CommandList>
-                    <CommandEmpty>No ward found.</CommandEmpty>
-                    <CommandGroup>
+        <div>
+          <label className="text-sm font-medium mb-2 block">Ward</label>
+          <Popover open={wardSearchOpen} onOpenChange={setWardSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={wardSearchOpen}
+                disabled={districtFilter === 'all'}
+                className="w-full justify-between"
+              >
+                {wardFilter === 'all'
+                  ? districtFilter === 'all' ? 'Select district first' : 'All Wards'
+                  : wards.find((w) => w.id === wardFilter)?.name || 'Select ward...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search ward..." />
+                <CommandList>
+                  <CommandEmpty>No ward found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setWardFilter('all');
+                        setWardSearchOpen(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", wardFilter === 'all' ? "opacity-100" : "opacity-0")} />
+                      All Wards
+                    </CommandItem>
+                    {wards.map((ward) => (
                       <CommandItem
-                        value="all"
+                        key={ward.id}
+                        value={ward.name}
                         onSelect={() => {
-                          setWardFilter('all');
+                          setWardFilter(ward.id);
                           setWardSearchOpen(false);
                         }}
                       >
-                        <Check className={cn("mr-2 h-4 w-4", wardFilter === 'all' ? "opacity-100" : "opacity-0")} />
-                        All Wards
+                        <Check className={cn("mr-2 h-4 w-4", wardFilter === ward.id ? "opacity-100" : "opacity-0")} />
+                        <span className="flex-1">{ward.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('ward', ward.id)}</Badge>
                       </CommandItem>
-                      {wards.map((ward) => (
-                        <CommandItem
-                          key={ward.id}
-                          value={ward.name}
-                          onSelect={() => {
-                            setWardFilter(ward.id);
-                            setWardSearchOpen(false);
-                          }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", wardFilter === ward.id ? "opacity-100" : "opacity-0")} />
-                          <span className="flex-1">{ward.name}</span>
-                          <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('ward', ward.id)}</Badge>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        {wardFilter !== 'all' && (
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-foreground">Street/Village</label>
-            <Popover open={streetSearchOpen} onOpenChange={setStreetSearchOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={streetSearchOpen}
-                  className="w-full justify-between h-11 font-normal"
-                >
-                  {streetFilter === 'all'
-                    ? 'All Streets'
-                    : streets.find((s) => s.id === streetFilter)?.name || 'Select street...'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0 bg-popover/95 backdrop-blur-sm border-border" align="start">
-                <Command className="bg-transparent">
-                  <CommandInput placeholder="Search street/village..." className="h-11" />
-                  <CommandList>
-                    <CommandEmpty>No street/village found.</CommandEmpty>
-                    <CommandGroup>
+        <div>
+          <label className="text-sm font-medium mb-2 block">Street/Village</label>
+          <Popover open={streetSearchOpen} onOpenChange={setStreetSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={streetSearchOpen}
+                disabled={wardFilter === 'all'}
+                className="w-full justify-between"
+              >
+                {streetFilter === 'all'
+                  ? wardFilter === 'all' ? 'Select ward first' : 'All Streets'
+                  : streets.find((s) => s.id === streetFilter)?.name || 'Select street...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0">
+              <Command>
+                <CommandInput placeholder="Search street..." />
+                <CommandList>
+                  <CommandEmpty>No street found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setStreetFilter('all');
+                        setStreetSearchOpen(false);
+                      }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", streetFilter === 'all' ? "opacity-100" : "opacity-0")} />
+                      All Streets
+                    </CommandItem>
+                    {streets.map((street) => (
                       <CommandItem
-                        value="all"
+                        key={street.id}
+                        value={street.name}
                         onSelect={() => {
-                          setStreetFilter('all');
+                          setStreetFilter(street.id);
                           setStreetSearchOpen(false);
                         }}
                       >
-                        <Check className={cn("mr-2 h-4 w-4", streetFilter === 'all' ? "opacity-100" : "opacity-0")} />
-                        All Streets
+                        <Check className={cn("mr-2 h-4 w-4", streetFilter === street.id ? "opacity-100" : "opacity-0")} />
+                        <span className="flex-1">{street.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('street', street.id)}</Badge>
                       </CommandItem>
-                      {streets.map((street) => (
-                        <CommandItem
-                          key={street.id}
-                          value={street.name}
-                          onSelect={() => {
-                            setStreetFilter(street.id);
-                            setStreetSearchOpen(false);
-                          }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", streetFilter === street.id ? "opacity-100" : "opacity-0")} />
-                          <span className="flex-1">{street.name}</span>
-                          <Badge variant="secondary" className="ml-2 text-xs">{getLocationCounts('street', street.id)}</Badge>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium mb-2 block">Basemap</label>
+        <Select value={basemap} onValueChange={(value: 'street' | 'satellite') => setBasemap(value)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="satellite">Satellite</SelectItem>
+            <SelectItem value="street">Street Map</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="pt-4 border-t border-border">
+        <h3 className="text-sm font-semibold mb-2">Legend</h3>
+        <div className="text-xs text-muted-foreground mb-3">
+          {filteredListings.length} polygon(s) on map
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: '#22c55e' }} />
+            <span className="text-sm">Verified</span>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: '#eab308' }} />
+            <span className="text-sm">Pending</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: '#94a3b8' }} />
+            <span className="text-sm">Unverified</span>
+          </div>
+        </div>
       </div>
     </div>
   );
 
-  const PropertiesListContent = () => (
-    <div className="space-y-4">
+  const PropertyListContent = () => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between pb-2">
+        <h3 className="font-semibold">Properties ({filteredListings.length})</h3>
+        {userLocation && (
+          <span className="text-xs text-muted-foreground">Sorted by distance</span>
+        )}
+      </div>
+
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">Loading properties...</p>
         </div>
       ) : filteredListings.length === 0 ? (
-        <div className="text-center py-12 space-y-3">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
-            <MapPin className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <p className="text-muted-foreground font-medium">No properties found</p>
-          <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
+        <div className="text-center py-8">
+          <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-2" />
+          <p className="text-sm text-muted-foreground">No properties match your filters</p>
         </div>
       ) : (
-        filteredListings.map((listing) => (
-          <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] border-border bg-card/50 backdrop-blur-sm cursor-pointer" onClick={() => zoomToListing(listing)}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <h3 className="font-bold text-sm line-clamp-2 flex-1">{listing.title}</h3>
-                {listing.verification_status === 'verified' && (
-                  <Badge variant="default" className="bg-success text-success-foreground flex-shrink-0">
-                    <CheckCircle2 className="h-3 w-3" />
-                  </Badge>
-                )}
-              </div>
-              
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                  <p className="text-xs line-clamp-1">{listing.location_label}</p>
-                </div>
-                
-                {listing.distance !== undefined && listing.distance !== Infinity && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs font-normal">
-                      📍 {listing.distance.toFixed(1)} km away
-                    </Badge>
-                  </div>
-                )}
-              </div>
-              
-              {listing.price && (
-                <div className="px-3 py-2 bg-primary/5 rounded-lg mb-3">
-                  <p className="text-lg font-bold text-primary">
-                    {listing.currency || 'TZS'} {listing.price.toLocaleString()}
-                  </p>
-                </div>
+        <div className="space-y-2 max-h-[calc(100vh-20rem)] md:max-h-[50vh] overflow-y-auto">
+          {filteredListings.map((listing) => (
+            <Card
+              key={listing.id}
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md mobile-card",
+                selectedListing?.id === listing.id && "ring-2 ring-primary"
               )}
-              
-              <div className="flex gap-2">
-                <Button
-                  size="default"
-                  variant="outline"
-                  className="flex-1 h-10 hover:bg-accent"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    zoomToListing(listing);
-                  }}
-                >
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Locate
-                </Button>
-                <Link to={`/listings/${listing.id}`} className="flex-1" onClick={(e) => e.stopPropagation()}>
-                  <Button size="default" className="w-full h-10 font-medium">View Details</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        ))
+              onClick={() => {
+                zoomToListing(listing);
+                if (isMobile) setShowPropertyList(false);
+              }}
+            >
+              <CardContent className="p-3">
+                <h4 className="font-semibold text-sm mb-1 line-clamp-1">{listing.title}</h4>
+                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {listing.location_label}
+                </p>
+                {listing.price && (
+                  <p className="font-bold text-sm text-primary">
+                    {listing.price.toLocaleString()} {listing.currency || 'TZS'}
+                  </p>
+                )}
+                {userLocation && listing.polygon?.centroid_lat && listing.polygon?.centroid_lng && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {calculateDistance(
+                      userLocation.lat,
+                      userLocation.lng,
+                      listing.polygon.centroid_lat,
+                      listing.polygon.centroid_lng
+                    ).toFixed(1)}km away
+                  </p>
+                )}
+                <div className="flex items-center gap-2 mt-2">
+                  {listing.verification_status === 'verified' && (
+                    <Badge variant="default" className="text-xs bg-green-500">
+                      <Check className="h-3 w-3 mr-1" />
+                      Verified
+                    </Badge>
+                  )}
+                  {listing.verification_status === 'pending' && (
+                    <Badge variant="secondary" className="text-xs bg-orange-500 text-white">
+                      Pending
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );
 
   return (
-    <MainLayout>
-      <div className="flex flex-col h-screen bg-background">
-        <div className="flex-1 relative">
-          <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
-          
-          {/* Map Controls */}
-          <div className="absolute top-4 left-4 z-10 flex flex-col gap-3">
-            <Select value={basemap} onValueChange={(value: 'street' | 'satellite') => setBasemap(value)}>
-              <SelectTrigger className="w-44 h-11 bg-card/95 backdrop-blur-sm shadow-lg border-border hover:bg-card transition-colors">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover/95 backdrop-blur-sm border-border">
-                <SelectItem value="satellite">🛰️ Satellite View</SelectItem>
-                <SelectItem value="street">🗺️ Street View</SelectItem>
-              </SelectContent>
-            </Select>
+    <MainLayout hideSidebar>
+      <div className="relative h-[calc(100vh-4rem)] w-full">
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <div className="absolute left-0 top-0 bottom-0 w-80 border-r border-border bg-background z-10 shadow-lg overflow-hidden flex flex-col">
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-bold">Map Filters</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <FiltersContent />
+            </div>
+            <div className="border-t p-4 overflow-y-auto max-h-[40vh]">
+              <PropertyListContent />
+            </div>
+          </div>
+        )}
 
-            {userLocation && (
+        {/* Mobile Floating Controls */}
+        {isMobile && (
+          <>
+            {/* Filters Button */}
+            <Sheet open={showFilters} onOpenChange={setShowFilters}>
+              <SheetTrigger asChild>
+                <Button
+                  size="lg"
+                  className="fixed top-20 left-4 z-20 rounded-full shadow-xl touch-feedback"
+                >
+                  <SlidersHorizontal className="h-5 w-5 mr-2" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-full sm:w-96 p-0 flex flex-col">
+                <SheetHeader className="p-4 border-b">
+                  <SheetTitle>Map Filters</SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <FiltersContent />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Properties List Button */}
+            <Drawer open={showPropertyList} onOpenChange={setShowPropertyList}>
+              <DrawerTrigger asChild>
+                <Button
+                  size="lg"
+                  className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 rounded-full shadow-xl touch-feedback"
+                >
+                  <List className="h-5 w-5 mr-2" />
+                  {filteredListings.length} Properties
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="max-h-[85vh]">
+                <DrawerHeader className="border-b">
+                  <DrawerTitle>Properties on Map</DrawerTitle>
+                </DrawerHeader>
+                <div className="p-4 overflow-y-auto">
+                  <PropertyListContent />
+                </div>
+              </DrawerContent>
+            </Drawer>
+
+            {/* Location Button */}
+            {!locationPermissionAsked && (
               <Button
-                size="sm"
-                variant="secondary"
-                className="shadow-lg bg-card/95 backdrop-blur-sm hover:bg-card hover:scale-105 transition-all h-11 w-11 p-0"
-                onClick={() => {
-                  if (mapInstance.current && userLocation) {
-                    mapInstance.current.getView().animate({
-                      center: fromLonLat([userLocation.lng, userLocation.lat]),
-                      zoom: 14,
-                      duration: 1000,
-                    });
-                  }
-                }}
+                size="icon"
+                onClick={requestUserLocation}
+                className="fixed top-20 right-4 z-20 rounded-full shadow-xl touch-feedback"
               >
-                <Navigation2 className="h-5 w-5 text-primary" />
+                <Navigation2 className="h-5 w-5" />
               </Button>
             )}
-          </div>
+          </>
+        )}
 
-          {/* Legend */}
-          <Card className="absolute bottom-4 left-4 w-72 shadow-xl border-border bg-card/95 backdrop-blur-sm z-10">
-            <CardContent className="p-5">
-              <h3 className="text-sm font-bold mb-3 text-foreground">Map Legend</h3>
-              <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-lg mb-4">
-                <span className="text-2xl font-bold text-primary">{filteredListings.length}</span>
-                <span className="text-xs text-muted-foreground">properties visible</span>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 group hover:bg-accent/5 p-2 rounded-lg transition-colors">
-                  <div className="w-5 h-5 rounded bg-[#22c55e66] border-2 border-[#22c55e] flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium">Verified Listings</span>
-                    <span className="text-[10px] text-muted-foreground">Ownership confirmed</span>
-                  </div>
-                  <CheckCircle2 className="h-3 w-3 text-[#22c55e] ml-auto" />
-                </div>
-                <div className="flex items-center gap-3 group hover:bg-accent/5 p-2 rounded-lg transition-colors">
-                  <div className="w-5 h-5 rounded bg-[#eab30866] border-2 border-[#eab308] flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium">Pending Review</span>
-                    <span className="text-[10px] text-muted-foreground">Under verification</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 group hover:bg-accent/5 p-2 rounded-lg transition-colors">
-                  <div className="w-5 h-5 rounded bg-[#94a3b866] border-2 border-[#94a3b8] flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium">Unverified</span>
-                    <span className="text-[10px] text-muted-foreground">Not yet reviewed</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Map Container */}
+        <div className={cn(
+          "h-full w-full",
+          !isMobile && "pl-80"
+        )}>
+          <div ref={mapRef} className="w-full h-full" />
 
-          {/* Mobile Buttons */}
-          {isMobile && (
-            <div className="absolute bottom-4 right-4 flex flex-col gap-3 z-10">
-              <Drawer open={showFilters} onOpenChange={setShowFilters}>
-                <DrawerTrigger asChild>
-                  <Button size="lg" className="shadow-xl bg-primary hover:bg-primary/90 backdrop-blur-sm gap-2 h-12 font-medium">
-                    <SlidersHorizontal className="h-5 w-5" />
-                    Filters
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="bg-background/95 backdrop-blur-xl border-t-border">
-                  <DrawerHeader className="border-b border-border">
-                    <DrawerTitle className="text-xl font-bold">Filter Properties</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="px-4 pb-8 max-h-[75vh] overflow-y-auto">
-                    <FiltersContent />
-                  </div>
-                </DrawerContent>
-              </Drawer>
-              
-              <Drawer open={showPropertyList} onOpenChange={setShowPropertyList}>
-                <DrawerTrigger asChild>
-                  <Button size="lg" variant="secondary" className="shadow-xl bg-card/95 hover:bg-card backdrop-blur-sm gap-2 h-12 font-medium">
-                    <List className="h-5 w-5" />
-                    Properties ({filteredListings.length})
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="bg-background/95 backdrop-blur-xl border-t-border">
-                  <DrawerHeader className="border-b border-border">
-                    <DrawerTitle className="text-xl font-bold">Available Properties</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="px-4 pb-8 max-h-[75vh] overflow-y-auto">
-                    <PropertiesListContent />
-                  </div>
-                </DrawerContent>
-              </Drawer>
-            </div>
-          )}
-
-          {/* Desktop Sidebars */}
-          {!isMobile && (
-            <>
-              <Sheet open={showFilters} onOpenChange={setShowFilters}>
-                <SheetTrigger asChild>
-                  <Button size="default" className="absolute top-4 right-4 z-10 shadow-xl bg-primary hover:bg-primary/90 backdrop-blur-sm gap-2 h-11 font-medium">
-                    <SlidersHorizontal className="h-5 w-5" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-96 overflow-y-auto bg-background/95 backdrop-blur-xl border-l-border">
-                  <SheetHeader className="border-b border-border pb-4">
-                    <SheetTitle className="text-xl font-bold">Filter Properties</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    <FiltersContent />
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              <Sheet open={showPropertyList} onOpenChange={setShowPropertyList}>
-                <SheetTrigger asChild>
-                  <Button size="default" variant="secondary" className="absolute top-[4.5rem] right-4 z-10 shadow-xl bg-card/95 hover:bg-card backdrop-blur-sm gap-2 h-11 font-medium">
-                    <List className="h-5 w-5" />
-                    Properties ({filteredListings.length})
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[32rem] overflow-y-auto bg-background/95 backdrop-blur-xl border-l-border">
-                  <SheetHeader className="border-b border-border pb-4">
-                    <SheetTitle className="text-xl font-bold">Available Properties</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    <PropertiesListContent />
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </>
-          )}
-
-          {/* Popup */}
-          <div ref={popupRef} className="absolute">
+          {/* Popup Overlay */}
+          <div ref={popupRef} className="absolute bg-card border border-border rounded-lg shadow-xl p-0 min-w-[250px] max-w-[300px]" style={{ display: selectedListing ? 'block' : 'none' }}>
             {selectedListing && (
-              <Card className="w-80 shadow-2xl border-border bg-card/95 backdrop-blur-xl overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="font-bold text-base line-clamp-2 text-foreground">{selectedListing.title}</h3>
-                      {selectedListing.verification_status === 'verified' && (
-                        <Badge variant="default" className="bg-success text-success-foreground flex-shrink-0">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                      <p className="text-sm line-clamp-1">{selectedListing.location_label}</p>
-                    </div>
-                    
-                    {selectedListing.price && (
-                      <div className="px-4 py-3 bg-primary/5 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Price</p>
-                        <p className="text-xl font-bold text-primary">
-                          {selectedListing.currency || 'TZS'} {selectedListing.price.toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                    
-                    <Link to={`/listings/${selectedListing.id}`} className="block">
-                      <Button size="default" className="w-full h-11 font-medium hover:scale-[1.02] transition-transform">
-                        View Full Details
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="p-4">
+                <h3 className="font-semibold text-base mb-2 line-clamp-2">{selectedListing.title}</h3>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                  <MapPin className="h-4 w-4" />
+                  {selectedListing.location_label}
+                </div>
+                {selectedListing.verification_status === 'verified' && (
+                  <Badge className="bg-green-500 text-white mb-2">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
+                <div className="text-lg font-bold text-primary mb-3">
+                  {selectedListing.price ? `${selectedListing.price.toLocaleString()} ${selectedListing.currency}` : 'Price on request'}
+                </div>
+                <Link to={`/listings/${selectedListing.id}`}>
+                  <Button size="sm" className="w-full">
+                    View Details
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
+
+          {/* Empty State */}
+          {filteredListings.length === 0 && !loading && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <Card className="pointer-events-auto shadow-xl">
+                <CardContent className="p-6 text-center">
+                  <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-2" />
+                  <p className="text-muted-foreground">No listings with polygons found matching your criteria</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>
