@@ -1,13 +1,14 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export function MobileSellersFloatingButton() {
   const isMobile = useIsMobile();
+  const location = useLocation();
 
-  // Only show on mobile devices
-  if (!isMobile) return null;
+  // Only show on mobile devices and hide on messages page
+  if (!isMobile || location.pathname === '/messages') return null;
 
   return (
     <Link 
