@@ -32,6 +32,9 @@ export function Navbar() {
             <Link to="/listings" className="text-sm font-medium hover:text-primary transition-colors">
               {t('nav.allListings')}
             </Link>
+            <Link to="/sellers" className="text-sm font-medium hover:text-primary transition-colors">
+              Browse Sellers
+            </Link>
             <Link to="/about-us" className="text-sm font-medium hover:text-primary transition-colors">
               {t('nav.about')}
             </Link>
@@ -102,6 +105,13 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
             >
               {t('nav.allListings')}
+            </Link>
+            <Link
+              to="/sellers"
+              className="block py-2 text-sm font-medium hover:text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Browse Sellers
             </Link>
             <Link
               to="/about-us"

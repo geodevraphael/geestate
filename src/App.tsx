@@ -50,6 +50,7 @@ import GeoinsightPayments from './pages/GeoinsightPayments';
 import AdminIncomeManagement from './pages/AdminIncomeManagement';
 import AdminApprovals from './pages/AdminApprovals';
 import ApplyForRole from './pages/ApplyForRole';
+import BrowseSellers from './pages/BrowseSellers';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -109,6 +110,7 @@ const App = () => (
             <Route path="/admin/geodata-upload" element={<AdminGeoDataUpload />} />
             <Route path="/geoinsight-payments" element={<GeoinsightPayments />} />
             <Route path="/admin/income" element={<AdminIncomeManagement />} />
+            <Route path="/sellers" element={<BrowseSellers />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
