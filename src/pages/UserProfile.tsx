@@ -286,6 +286,11 @@ export default function UserProfile() {
                       </div>
                     </Link>
                   ))}
+                  <Link to={`/listings?owner=${userId}`} className="block">
+                    <Button variant="outline" className="w-full mt-2">
+                      View All Listings
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
