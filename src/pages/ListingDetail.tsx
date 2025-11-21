@@ -204,6 +204,14 @@ export default function ListingDetail() {
     }
   };
 
+  const handleAnalyzeProximity = async () => {
+    await calculateProximity();
+    // Refresh the proximity data after analysis
+    setTimeout(() => {
+      fetchProximityAnalysis();
+    }, 3000);
+  };
+
   const fetchListing = async () => {
     try {
       // Fetch listing
@@ -659,7 +667,7 @@ export default function ListingDetail() {
                     </p>
                   </div>
                   <Button 
-                    onClick={calculateProximity}
+                    onClick={handleAnalyzeProximity}
                     disabled={proximityLoading || !polygon?.geojson}
                     variant="outline"
                     size="sm"
