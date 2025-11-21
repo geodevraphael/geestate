@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Building2, User, Briefcase, MapPin, Phone, Mail, 
-  Search, ExternalLink, FileText, Award 
+  Search, ExternalLink, FileText, Award, TrendingUp, CheckCircle2, Star, Filter
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Seller {
   id: string;
@@ -49,6 +50,7 @@ export default function BrowseSellers() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [sortBy, setSortBy] = useState<'name' | 'listings'>('name');
 
   useEffect(() => {
     fetchData();
@@ -149,66 +151,100 @@ export default function BrowseSellers() {
     });
   };
 
+  const sortItems = <T extends { full_name?: string; institution_name?: string; listingsCount: number }>(items: T[]) => {
+    const sorted = [...items];
+    if (sortBy === 'name') {
+      sorted.sort((a, b) => {
+        const nameA = ('full_name' in a ? a.full_name : a.institution_name) || '';
+        const nameB = ('full_name' in b ? b.full_name : b.institution_name) || '';
+        return nameA.localeCompare(nameB);
+      });
+    } else {
+      sorted.sort((a, b) => b.listingsCount - a.listingsCount);
+    }
+    return sorted;
+  };
+
   const SellerCard = ({ seller }: { seller: Seller }) => (
-    <Card className="hover:shadow-lg transition-all">
-      <CardHeader>
+    <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/50 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <CardHeader className="relative">
         <div className="flex items-start gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={seller.profile_photo_url || ''} />
-            <AvatarFallback>
-              {seller.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <CardTitle className="text-lg mb-1 flex items-center gap-2">
-              {seller.full_name}
-              <Badge variant="secondary" className="text-xs">
-                {seller.role === 'seller' ? 'Individual Seller' : 'Broker'}
+          <div className="relative">
+            <Avatar className="h-16 w-16 ring-2 ring-background shadow-lg">
+              <AvatarImage src={seller.profile_photo_url || ''} />
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
+                {seller.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {seller.listingsCount > 5 && (
+              <div className="absolute -top-1 -right-1 bg-success text-white rounded-full p-1">
+                <Star className="h-3 w-3 fill-current" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-lg mb-1 flex items-center gap-2 flex-wrap">
+              <span className="line-clamp-1">{seller.full_name}</span>
+              <Badge variant={seller.role === 'broker' ? 'default' : 'secondary'} className="text-xs">
+                {seller.role === 'seller' ? 'Seller' : 'Broker'}
               </Badge>
             </CardTitle>
             {seller.organization_name && (
-              <p className="text-sm text-muted-foreground mb-2">{seller.organization_name}</p>
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{seller.organization_name}</p>
             )}
-            <Badge variant="outline" className="text-xs">
-              <FileText className="h-3 w-3 mr-1" />
-              {seller.listingsCount} Listing{seller.listingsCount !== 1 ? 's' : ''}
-            </Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="text-xs">
+                <FileText className="h-3 w-3 mr-1" />
+                {seller.listingsCount} {seller.listingsCount === 1 ? 'Listing' : 'Listings'}
+              </Badge>
+              {seller.listingsCount > 10 && (
+                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Top Seller
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 relative">
         {seller.bio && (
           <p className="text-sm text-muted-foreground line-clamp-2">{seller.bio}</p>
         )}
         <div className="space-y-2 text-sm">
           {seller.address && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <MapPin className="h-4 w-4 flex-shrink-0" />
+              <MapPin className="h-4 w-4 flex-shrink-0 text-primary/60" />
               <span className="line-clamp-1">{seller.address}</span>
             </div>
           )}
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Mail className="h-4 w-4 flex-shrink-0" />
-            <span className="line-clamp-1">{seller.email}</span>
+            <Mail className="h-4 w-4 flex-shrink-0 text-primary/60" />
+            <a href={`mailto:${seller.email}`} className="line-clamp-1 hover:text-primary transition-colors">
+              {seller.email}
+            </a>
           </div>
           {seller.phone && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="h-4 w-4 flex-shrink-0" />
-              <span>{seller.phone}</span>
+              <Phone className="h-4 w-4 flex-shrink-0 text-primary/60" />
+              <a href={`tel:${seller.phone}`} className="hover:text-primary transition-colors">
+                {seller.phone}
+              </a>
             </div>
           )}
         </div>
-        <div className="pt-2 flex gap-2">
+        <div className="pt-3 flex gap-2">
           <Link to={`/profile/${seller.id}`} className="flex-1">
-            <Button variant="outline" size="sm" className="w-full">
+            <Button variant="outline" size="sm" className="w-full group-hover:border-primary/50 transition-colors">
               <User className="h-4 w-4 mr-2" />
-              View Profile
+              Profile
             </Button>
           </Link>
           <Link to={`/listings?owner=${seller.id}`} className="flex-1">
             <Button size="sm" className="w-full">
               <FileText className="h-4 w-4 mr-2" />
-              View Listings
+              Listings
             </Button>
           </Link>
         </div>
@@ -217,61 +253,79 @@ export default function BrowseSellers() {
   );
 
   const InstitutionCard = ({ institution }: { institution: Institution }) => (
-    <Card className="hover:shadow-lg transition-all">
-      <CardHeader>
+    <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/50 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <CardHeader className="relative">
         <div className="flex items-start gap-4">
-          {institution.logo_url && (
-            <div className="w-16 h-16 rounded-lg overflow-hidden border bg-background flex-shrink-0">
+          {institution.logo_url ? (
+            <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-background shadow-lg flex-shrink-0 ring-2 ring-border/50">
               <img 
                 src={institution.logo_url} 
                 alt={institution.institution_name}
                 className="w-full h-full object-cover"
               />
+              {institution.listingsCount > 5 && (
+                <div className="absolute -top-1 -right-1 bg-success text-white rounded-full p-1">
+                  <CheckCircle2 className="h-3 w-3 fill-current" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-lg border-2 border-dashed border-muted flex items-center justify-center flex-shrink-0">
+              <Building2 className="h-8 w-8 text-muted-foreground" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg mb-1 line-clamp-2">{institution.institution_name}</CardTitle>
-            <Badge variant="secondary" className="text-xs mb-2">
-              {institution.institution_type.charAt(0).toUpperCase() + institution.institution_type.slice(1)}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              <FileText className="h-3 w-3 mr-1" />
-              {institution.listingsCount} Listing{institution.listingsCount !== 1 ? 's' : ''}
-            </Badge>
+            <CardTitle className="text-lg mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+              {institution.institution_name}
+            </CardTitle>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              <Badge variant="default" className="text-xs">
+                {institution.institution_type.charAt(0).toUpperCase() + institution.institution_type.slice(1)}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                <FileText className="h-3 w-3 mr-1" />
+                {institution.listingsCount} {institution.listingsCount === 1 ? 'Listing' : 'Listings'}
+              </Badge>
+            </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 relative">
         {institution.about_company && (
           <p className="text-sm text-muted-foreground line-clamp-3">{institution.about_company}</p>
         )}
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <User className="h-4 w-4 flex-shrink-0" />
-            <span>{institution.contact_person}</span>
+            <User className="h-4 w-4 flex-shrink-0 text-primary/60" />
+            <span className="line-clamp-1">{institution.contact_person}</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Mail className="h-4 w-4 flex-shrink-0" />
-            <span className="line-clamp-1">{institution.contact_email}</span>
+            <Mail className="h-4 w-4 flex-shrink-0 text-primary/60" />
+            <a href={`mailto:${institution.contact_email}`} className="line-clamp-1 hover:text-primary transition-colors">
+              {institution.contact_email}
+            </a>
           </div>
           {institution.contact_phone && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="h-4 w-4 flex-shrink-0" />
-              <span>{institution.contact_phone}</span>
+              <Phone className="h-4 w-4 flex-shrink-0 text-primary/60" />
+              <a href={`tel:${institution.contact_phone}`} className="hover:text-primary transition-colors">
+                {institution.contact_phone}
+              </a>
             </div>
           )}
         </div>
         {institution.service_areas && institution.service_areas.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {institution.service_areas.slice(0, 3).map((area, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs">
+              <Badge key={idx} variant="outline" className="text-xs bg-primary/5">
                 <MapPin className="h-3 w-3 mr-1" />
                 {area}
               </Badge>
             ))}
             {institution.service_areas.length > 3 && (
               <Badge variant="outline" className="text-xs">
-                +{institution.service_areas.length - 3} more
+                +{institution.service_areas.length - 3}
               </Badge>
             )}
           </div>
@@ -286,17 +340,17 @@ export default function BrowseSellers() {
             ))}
           </div>
         )}
-        <div className="pt-2 flex gap-2">
+        <div className="pt-3 flex gap-2">
           <Link to={`/institution/${institution.slug}`} className="flex-1">
-            <Button variant="outline" size="sm" className="w-full">
+            <Button variant="outline" size="sm" className="w-full group-hover:border-primary/50 transition-colors">
               <Building2 className="h-4 w-4 mr-2" />
-              View Page
+              Page
             </Button>
           </Link>
           <Link to={`/listings?owner=${institution.profile_id}`} className="flex-1">
             <Button size="sm" className="w-full">
               <FileText className="h-4 w-4 mr-2" />
-              View Listings
+              Listings
             </Button>
           </Link>
         </div>
@@ -308,8 +362,31 @@ export default function BrowseSellers() {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-96 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="h-12 bg-muted animate-pulse rounded" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="flex gap-4">
+                      <div className="h-16 w-16 rounded-full bg-muted" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-32 bg-muted rounded" />
+                        <div className="h-3 w-24 bg-muted rounded" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="h-3 w-full bg-muted rounded" />
+                    <div className="h-3 w-3/4 bg-muted rounded" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </MainLayout>
@@ -317,31 +394,98 @@ export default function BrowseSellers() {
   }
 
   const allSellers = [...sellers, ...brokers];
-  const filteredSellers = filterBySearch(sellers);
-  const filteredBrokers = filterBySearch(brokers);
-  const filteredInstitutions = filterBySearch(institutions);
-  const filteredAll = [...filterBySearch(allSellers), ...filteredInstitutions];
+  const filteredSellers = sortItems(filterBySearch(sellers));
+  const filteredBrokers = sortItems(filterBySearch(brokers));
+  const filteredInstitutions = sortItems(filterBySearch(institutions));
+  const filteredAll = sortItems([...filterBySearch(allSellers), ...filteredInstitutions]);
+  
+  const totalListings = [...sellers, ...brokers, ...institutions].reduce((sum, item) => sum + item.listingsCount, 0);
 
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6 md:py-8 space-y-6">
         {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-2xl md:text-3xl font-bold">Browse Sellers & Institutions</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Discover trusted property sellers, brokers, and institutional sellers
+        <div className="space-y-3">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Browse Sellers & Institutions
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground max-w-2xl">
+            Connect with trusted property sellers, experienced brokers, and verified institutional sellers across Tanzania
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <CardContent className="pt-4 md:pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl md:text-3xl font-bold">{sellers.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Sellers</p>
+                </div>
+                <User className="h-8 w-8 text-primary/60" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+            <CardContent className="pt-4 md:pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl md:text-3xl font-bold">{brokers.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Brokers</p>
+                </div>
+                <Briefcase className="h-8 w-8 text-blue-500/60" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+            <CardContent className="pt-4 md:pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl md:text-3xl font-bold">{institutions.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Institutions</p>
+                </div>
+                <Building2 className="h-8 w-8 text-purple-500/60" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
+            <CardContent className="pt-4 md:pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl md:text-3xl font-bold">{totalListings}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Listings</p>
+                </div>
+                <FileText className="h-8 w-8 text-success/60" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Search & Sort */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={(value: 'name' | 'listings') => setSortBy(value)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Sort by Name</SelectItem>
+              <SelectItem value="listings">Sort by Listings</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Tabs */}
@@ -366,9 +510,22 @@ export default function BrowseSellers() {
 
           <TabsContent value="all" className="mt-6">
             {filteredAll.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No sellers or institutions found</p>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
+                      <Search className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold mb-1">No sellers found</p>
+                    <p className="text-sm text-muted-foreground">Try adjusting your search criteria</p>
+                  </div>
+                  {searchQuery && (
+                    <Button variant="outline" onClick={() => setSearchQuery('')}>
+                      Clear Search
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -388,9 +545,17 @@ export default function BrowseSellers() {
 
           <TabsContent value="sellers" className="mt-6">
             {filteredSellers.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No individual sellers found</p>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
+                      <User className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold mb-1">No individual sellers found</p>
+                    <p className="text-sm text-muted-foreground">Try adjusting your search or check other tabs</p>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
@@ -404,9 +569,17 @@ export default function BrowseSellers() {
 
           <TabsContent value="brokers" className="mt-6">
             {filteredBrokers.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No brokers found</p>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
+                      <Briefcase className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold mb-1">No brokers found</p>
+                    <p className="text-sm text-muted-foreground">Try adjusting your search or check other tabs</p>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
@@ -420,9 +593,17 @@ export default function BrowseSellers() {
 
           <TabsContent value="institutions" className="mt-6">
             {filteredInstitutions.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No institutions found</p>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
+                      <Building2 className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold mb-1">No institutions found</p>
+                    <p className="text-sm text-muted-foreground">Try adjusting your search or check other tabs</p>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
