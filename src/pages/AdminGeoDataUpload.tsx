@@ -404,12 +404,12 @@ export default function AdminGeoDataUpload() {
                   
                   <div className="space-y-2">
                     <Label htmlFor="region-code">Region Code Field</Label>
-                    <Select value={fieldMapping.region_code || ''} onValueChange={(value) => setFieldMapping({...fieldMapping, region_code: value})}>
+                    <Select value={fieldMapping.region_code || 'none'} onValueChange={(value) => setFieldMapping({...fieldMapping, region_code: value === 'none' ? '' : value})}>
                       <SelectTrigger id="region-code">
                         <SelectValue placeholder="Select property for region code (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {fileProperties.map((prop) => (
                           <SelectItem key={prop} value={prop}>{prop}</SelectItem>
                         ))}
@@ -419,12 +419,12 @@ export default function AdminGeoDataUpload() {
 
                   <div className="space-y-2">
                     <Label htmlFor="district-code">District Code Field</Label>
-                    <Select value={fieldMapping.district_code || ''} onValueChange={(value) => setFieldMapping({...fieldMapping, district_code: value})}>
+                    <Select value={fieldMapping.district_code || 'none'} onValueChange={(value) => setFieldMapping({...fieldMapping, district_code: value === 'none' ? '' : value})}>
                       <SelectTrigger id="district-code">
                         <SelectValue placeholder="Select property for district code (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {fileProperties.map((prop) => (
                           <SelectItem key={prop} value={prop}>{prop}</SelectItem>
                         ))}
@@ -434,12 +434,12 @@ export default function AdminGeoDataUpload() {
 
                   <div className="space-y-2">
                     <Label htmlFor="ward-code">Ward Code Field</Label>
-                    <Select value={fieldMapping.ward_code || ''} onValueChange={(value) => setFieldMapping({...fieldMapping, ward_code: value})}>
+                    <Select value={fieldMapping.ward_code || 'none'} onValueChange={(value) => setFieldMapping({...fieldMapping, ward_code: value === 'none' ? '' : value})}>
                       <SelectTrigger id="ward-code">
                         <SelectValue placeholder="Select property for ward code (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {fileProperties.map((prop) => (
                           <SelectItem key={prop} value={prop}>{prop}</SelectItem>
                         ))}
