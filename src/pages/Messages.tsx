@@ -26,6 +26,7 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -225,26 +226,31 @@ export default function Messages() {
   };
 
   const fetchMessages = async (listingId: string, otherUserId: string) => {
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('listing_id', listingId)
-      .or(`and(sender_id.eq.${user?.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user?.id})`)
-      .order('timestamp', { ascending: true });
+    setMessagesLoading(true);
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('listing_id', listingId)
+        .or(`and(sender_id.eq.${user?.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user?.id})`)
+        .order('timestamp', { ascending: true });
 
-    if (data) {
-      setMessages(data);
-      
-      const unreadMessages = data.filter(
-        (m: Message) => m.receiver_id === user?.id && !m.is_read
-      );
-      
-      if (unreadMessages.length > 0) {
-        await supabase
-          .from('messages')
-          .update({ is_read: true })
-          .in('id', unreadMessages.map(m => m.id));
+      if (data) {
+        setMessages(data);
+        
+        const unreadMessages = data.filter(
+          (m: Message) => m.receiver_id === user?.id && !m.is_read
+        );
+        
+        if (unreadMessages.length > 0) {
+          await supabase
+            .from('messages')
+            .update({ is_read: true })
+            .in('id', unreadMessages.map(m => m.id));
+        }
       }
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -318,14 +324,46 @@ export default function Messages() {
     }
   };
 
-  if (loading) {
+  if (loading && !initialLoadDone) {
     return (
       <MainLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading...</p>
+        <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
+          {/* Header */}
+          <div className="hidden md:block px-4 md:px-6 py-3 md:py-4 border-b border-border/50">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">Messages</h1>
+          </div>
+
+          <div className="flex-1 flex overflow-hidden">
+            {/* Conversations Sidebar Skeleton */}
+            <div className="w-full md:w-80 lg:w-96 flex flex-col border-r border-border/50 bg-card">
+              <div className="p-3 md:p-4 border-b border-border/50">
+                <div className="h-10 bg-muted/30 rounded-full animate-pulse"></div>
+              </div>
+              <div className="overflow-y-auto flex-1 divide-y divide-border/50">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="p-3 md:p-4 animate-pulse">
+                    <div className="flex items-start gap-3">
+                      <div className="h-12 w-12 rounded-full bg-muted/30"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="h-4 bg-muted/30 rounded w-32"></div>
+                          <div className="h-3 bg-muted/30 rounded w-12"></div>
+                        </div>
+                        <div className="h-3 bg-muted/30 rounded w-24"></div>
+                        <div className="h-3 bg-muted/30 rounded w-40"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Messages Area Skeleton */}
+            <div className="hidden md:flex flex-1 items-center justify-center bg-background">
+              <div className="text-center space-y-3 p-8 animate-pulse">
+                <div className="h-20 w-20 rounded-full bg-muted/30 mx-auto"></div>
+                <div className="h-4 bg-muted/30 rounded w-48 mx-auto"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -382,7 +420,26 @@ export default function Messages() {
 
             {/* Conversations List */}
             <div className="overflow-y-auto flex-1">
-              {filteredConversations.length === 0 ? (
+              {loading && !initialLoadDone ? (
+                // Skeleton loader for conversations
+                <div className="divide-y divide-border/50">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="p-3 md:p-4 animate-pulse">
+                      <div className="flex items-start gap-3">
+                        <div className="h-12 w-12 rounded-full bg-muted/30"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="h-4 bg-muted/30 rounded w-32"></div>
+                            <div className="h-3 bg-muted/30 rounded w-12"></div>
+                          </div>
+                          <div className="h-3 bg-muted/30 rounded w-24"></div>
+                          <div className="h-3 bg-muted/30 rounded w-40"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredConversations.length === 0 ? (
                 <div className="p-8 text-center">
                   <div className="h-20 w-20 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
                     <Search className="h-10 w-10 text-muted-foreground/50" />
@@ -504,7 +561,19 @@ export default function Messages() {
                        backgroundImage: 'radial-gradient(circle at 1px 1px, hsl(var(--muted)) 1px, transparent 0)',
                        backgroundSize: '40px 40px'
                      }}>
-                  {messages.length === 0 ? (
+                  {messagesLoading ? (
+                    // Skeleton loader for messages
+                    <div className="space-y-3 animate-in fade-in duration-200">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'} animate-pulse`}>
+                          <div className={`max-w-[85%] md:max-w-[70%] ${i % 2 === 0 ? 'bg-primary/5' : 'bg-card/50'} rounded-2xl p-3 space-y-2 border border-border/30`}>
+                            <div className="h-3 bg-muted/40 rounded w-32"></div>
+                            <div className="h-3 bg-muted/40 rounded w-24"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center p-8">
                         <div className="h-20 w-20 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
