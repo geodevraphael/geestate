@@ -1440,7 +1440,7 @@ export type Database = {
           {
             foreignKeyName: "proximity_analysis_listing_id_fkey"
             columns: ["listing_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
