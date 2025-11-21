@@ -11,7 +11,7 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section with Advanced Design */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[85vh] md:min-h-screen flex items-center justify-center overflow-hidden pt-8 md:pt-0">
         {/* Animated Background Mesh */}
         <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary/20 to-background">
           <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
@@ -22,10 +22,10 @@ const Index = () => {
         {/* Grid Pattern Overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
 
-        <div className="container relative z-10 mx-auto px-4 py-20">
+        <div className="container relative z-10 mx-auto px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-5xl mx-auto">
             {/* Trust Badge */}
-            <div className="mb-8 inline-flex items-center gap-2 px-5 py-2.5 glass rounded-full animate-fade-in border border-primary/20">
+            <div className="mb-6 md:mb-8 inline-flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 glass rounded-full animate-fade-in border border-primary/20 text-xs md:text-sm">
               <div className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
@@ -35,7 +35,7 @@ const Index = () => {
             </div>
             
             {/* Main Heading */}
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-8 leading-[1.1] animate-fade-in-up">
+            <h1 className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-display font-bold mb-6 md:mb-8 leading-[1.1] animate-fade-in-up">
               Discover Premium{' '}
               <span className="relative inline-block">
                 <span className="text-gradient">Land & Property</span>
@@ -46,7 +46,7 @@ const Index = () => {
               {' '}in Tanzania
             </h1>
             
-            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <p className="text-base md:text-xl lg:text-2xl text-muted-foreground mb-6 md:mb-10 max-w-3xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               Africa's most advanced real estate marketplace. Every property is polygon-mapped, 
               AI-verified, and backed by our comprehensive fraud detection system.
             </p>
@@ -70,33 +70,35 @@ const Index = () => {
             </div>
             
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-              <Link to="/map" className="group">
-                <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg bg-primary hover:bg-primary/90 shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105">
-                  <MapPin className="mr-2 h-6 w-6 group-hover:rotate-12 transition-transform" />
-                  Explore Interactive Map
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-10 md:mb-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <Link to="/map" className="group w-full sm:w-auto">
+                <Button size="lg" className="w-full h-12 md:h-14 px-6 md:px-8 text-base md:text-lg bg-primary hover:bg-primary/90 shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105">
+                  <MapPin className="mr-2 h-5 md:h-6 w-5 md:w-6 group-hover:rotate-12 transition-transform" />
+                  <span className="hidden sm:inline">Explore Interactive Map</span>
+                  <span className="sm:hidden">Explore Map</span>
+                  <ArrowRight className="ml-2 h-4 md:h-5 w-4 md:w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link to="/listings" className="group">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg glass hover:bg-primary/10 border-2 border-border hover:border-primary/50 transition-all duration-300">
-                  <Search className="mr-2 h-6 w-6" />
-                  Browse All Listings
+              <Link to="/listings" className="group w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full h-12 md:h-14 px-6 md:px-8 text-base md:text-lg glass hover:bg-primary/10 border-2 border-border hover:border-primary/50 transition-all duration-300">
+                  <Search className="mr-2 h-5 md:h-6 w-5 md:w-6" />
+                  <span className="hidden sm:inline">Browse All Listings</span>
+                  <span className="sm:hidden">Browse Listings</span>
                 </Button>
               </Link>
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
               {[
                 { value: '500+', label: 'Properties Listed' },
                 { value: '98%', label: 'Verification Rate' },
                 { value: '24/7', label: 'Support Available' },
                 { value: '100%', label: 'Secure Transactions' },
               ].map((stat, i) => (
-                <div key={i} className="glass-card p-4 rounded-2xl hover-lift">
-                  <div className="text-2xl md:text-3xl font-display font-bold text-primary">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+                <div key={i} className="glass-card p-3 md:p-4 rounded-xl md:rounded-2xl hover-lift">
+                  <div className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-primary">{stat.value}</div>
+                  <div className="text-xs md:text-sm text-muted-foreground mt-1">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -112,23 +114,23 @@ const Index = () => {
       </section>
 
       {/* Features Section - Redesigned */}
-      <section className="py-32 relative">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-20 animate-in">
+      <section className="py-16 md:py-32 relative">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-12 md:mb-20 animate-in">
             <Badge className="mb-4 px-4 py-2 bg-primary/10 text-primary border-primary/20">
               <Sparkles className="mr-2 h-4 w-4" />
               Platform Features
             </Badge>
-            <h2 className="text-4xl md:text-6xl font-display font-bold mb-6">
+            <h2 className="text-2xl md:text-4xl lg:text-6xl font-display font-bold mb-4 md:mb-6">
               Why Choose <span className="text-gradient">GeoEstate</span>?
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
               Combining cutting-edge geospatial technology with rigorous verification 
               to create Africa's most trusted property marketplace.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-8 max-w-7xl mx-auto">
             {[
               {
                 icon: MapPin,
@@ -182,19 +184,19 @@ const Index = () => {
       </section>
 
       {/* Social Proof Section */}
-      <section className="py-32 bg-gradient-to-b from-background to-secondary/30 relative overflow-hidden">
-        <div className="container mx-auto px-4">
+      <section className="py-16 md:py-32 bg-gradient-to-b from-background to-secondary/30 relative overflow-hidden">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16 animate-in">
-              <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+            <div className="text-center mb-10 md:mb-16 animate-in">
+              <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
                 Trusted by <span className="text-gradient">Thousands</span> Across Tanzania
               </h2>
-              <p className="text-xl text-muted-foreground">
+              <p className="text-base md:text-xl text-muted-foreground px-4">
                 Join the community of smart property investors and sellers
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 animate-in" style={{ animationDelay: '0.2s' }}>
+            <div className="grid md:grid-cols-3 gap-4 md:gap-8 animate-in" style={{ animationDelay: '0.2s' }}>
               {[
                 { icon: Users, value: '1,500+', label: 'Active Users' },
                 { icon: TrendingUp, value: '$50M+', label: 'Property Value' },
@@ -202,15 +204,15 @@ const Index = () => {
               ].map((stat, i) => (
                 <div 
                   key={i} 
-                  className="glass-card p-8 rounded-3xl text-center hover-lift"
+                  className="glass-card p-6 md:p-8 rounded-2xl md:rounded-3xl text-center hover-lift"
                 >
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 mb-6">
-                    <stat.icon className="h-10 w-10 text-primary" />
+                  <div className="inline-flex items-center justify-center w-16 md:w-20 h-16 md:h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 mb-4 md:mb-6">
+                    <stat.icon className="h-8 md:h-10 w-8 md:w-10 text-primary" />
                   </div>
-                  <div className="text-4xl md:text-5xl font-display font-bold text-primary mb-2">
+                  <div className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary mb-2">
                     {stat.value}
                   </div>
-                  <div className="text-lg text-muted-foreground">{stat.label}</div>
+                  <div className="text-base md:text-lg text-muted-foreground">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -219,25 +221,25 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 relative overflow-hidden">
+      <section className="py-16 md:py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
-        <div className="container relative mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center glass-card p-12 md:p-16 rounded-3xl animate-in">
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+        <div className="container relative mx-auto px-4 md:px-6">
+          <div className="max-w-4xl mx-auto text-center glass-card p-8 md:p-12 lg:p-16 rounded-2xl md:rounded-3xl animate-in">
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
               Ready to Find Your Perfect Property?
             </h2>
-            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+            <p className="text-base md:text-xl text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto px-4">
               Start exploring verified listings today and make your property dreams a reality
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/auth" className="group">
-                <Button size="lg" className="w-full sm:w-auto h-14 px-10 text-lg bg-primary hover:bg-primary/90 shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
+              <Link to="/auth" className="group w-full sm:w-auto">
+                <Button size="lg" className="w-full h-12 md:h-14 px-8 md:px-10 text-base md:text-lg bg-primary hover:bg-primary/90 shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105">
                   Get Started Now
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link to="/how-it-works">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-10 text-lg glass hover:bg-primary/10 border-2">
+              <Link to="/how-it-works" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full h-12 md:h-14 px-8 md:px-10 text-base md:text-lg glass hover:bg-primary/10 border-2">
                   Learn More
                 </Button>
               </Link>
@@ -247,39 +249,39 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-border/50 bg-card/50">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-display font-bold text-lg mb-4">GeoEstate Tanzania</h3>
-              <p className="text-sm text-muted-foreground">
+      <footer className="py-8 md:py-12 mb-16 md:mb-0 border-t border-border/50 bg-card/50">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
+            <div className="col-span-2 md:col-span-1">
+              <h3 className="font-display font-bold text-base md:text-lg mb-3 md:mb-4">GeoEstate Tanzania</h3>
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Africa's premier verified property marketplace.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm">
+              <h4 className="font-semibold text-sm md:text-base mb-3 md:mb-4">Quick Links</h4>
+              <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
                 <li><Link to="/listings" className="text-muted-foreground hover:text-primary transition-colors">Browse Listings</Link></li>
                 <li><Link to="/map" className="text-muted-foreground hover:text-primary transition-colors">Map View</Link></li>
                 <li><Link to="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">How It Works</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
+              <h4 className="font-semibold text-sm md:text-base mb-3 md:mb-4">Company</h4>
+              <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
                 <li><Link to="/about-us" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
                 <li><Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
+              <h4 className="font-semibold text-sm md:text-base mb-3 md:mb-4">Legal</h4>
+              <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
                 <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a></li>
                 <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a></li>
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
+          <div className="pt-6 md:pt-8 border-t border-border/50 text-center text-xs md:text-sm text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} GeoEstate Tanzania. All rights reserved.</p>
           </div>
         </div>

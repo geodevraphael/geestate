@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface MainLayoutProps {
@@ -17,10 +18,11 @@ export function MainLayout({ children, hideSidebar = false }: MainLayoutProps) {
       <Navbar />
       <div className="flex flex-1 w-full">
         {showSidebar && <DashboardSidebar />}
-        <main className={showSidebar ? "flex-1 overflow-auto" : "flex-1 w-full"}>
+        <main className={showSidebar ? "flex-1 overflow-auto pb-20 md:pb-0" : "flex-1 w-full pb-20 md:pb-0"}>
           {children}
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }
