@@ -10,16 +10,47 @@ export const useProximityAnalysis = ({ listingId, geojson }: UseProximityAnalysi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const calculateProximity = async () => {
+    if (!listingId || !geojson) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Triggering proximity analysis calculation...');
+
+      const { data, error: functionError } = await supabase.functions.invoke(
+        'calculate-proximity-analysis',
+        {
+          body: {
+            listing_id: listingId,
+            geojson: geojson,
+          },
+        }
+      );
+
+      if (functionError) {
+        throw functionError;
+      }
+
+      console.log('Proximity analysis completed:', data);
+    } catch (err) {
+      console.error('Error calculating proximity analysis:', err);
+      setError(err instanceof Error ? err.message : 'Failed to calculate proximity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!listingId || !geojson) {
       return;
     }
 
-    const calculateProximity = async () => {
+    const checkAndCalculate = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
         // Check if proximity analysis already exists
         const { data: existing } = await supabase
           .from('proximity_analysis')
@@ -33,42 +64,20 @@ export const useProximityAnalysis = ({ listingId, geojson }: UseProximityAnalysi
           const daysSince = (Date.now() - calculatedAt.getTime()) / (1000 * 60 * 60 * 24);
           
           if (daysSince < 7) {
-            console.log('Proximity analysis is recent, skipping recalculation');
-            setLoading(false);
+            console.log('Proximity analysis is recent, skipping auto-calculation');
             return;
           }
         }
 
-        console.log('Triggering proximity analysis calculation...');
-
-        const { data, error: functionError } = await supabase.functions.invoke(
-          'calculate-proximity-analysis',
-          {
-            body: {
-              listing_id: listingId,
-              geojson: geojson,
-            },
-          }
-        );
-
-        if (functionError) {
-          throw functionError;
-        }
-
-        console.log('Proximity analysis completed:', data);
+        // Delay execution to avoid overwhelming the server
+        setTimeout(calculateProximity, 1000);
       } catch (err) {
-        console.error('Error calculating proximity analysis:', err);
-        setError(err instanceof Error ? err.message : 'Failed to calculate proximity');
-      } finally {
-        setLoading(false);
+        console.error('Error checking proximity analysis:', err);
       }
     };
 
-    // Delay execution to avoid overwhelming the server
-    const timeoutId = setTimeout(calculateProximity, 1000);
-
-    return () => clearTimeout(timeoutId);
+    checkAndCalculate();
   }, [listingId, geojson]);
 
-  return { loading, error };
+  return { loading, error, calculateProximity };
 };

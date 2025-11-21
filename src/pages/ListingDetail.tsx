@@ -56,7 +56,7 @@ export default function ListingDetail() {
   });
 
   // Trigger proximity analysis
-  useProximityAnalysis({
+  const { loading: proximityLoading, error: proximityError, calculateProximity } = useProximityAnalysis({
     listingId: id || '',
     geojson: polygon?.geojson,
   });
@@ -70,14 +70,8 @@ export default function ListingDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (!polygon?.geojson || !mapRef.current) {
+    if (!polygon?.geojson || !mapRef.current || mapInstanceRef.current) {
       return;
-    }
-
-    // Clean up previous map instance
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setTarget(undefined);
-      mapInstanceRef.current = null;
     }
 
     console.log('Initializing map with polygon:', polygon);
@@ -652,17 +646,29 @@ export default function ListingDetail() {
             )}
 
             {/* Proximity Analysis */}
-            {proximityAnalysis && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Navigation className="h-5 w-5 text-primary" />
-                    Proximity & Location Analysis
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Distances to nearby amenities and infrastructure
-                  </p>
-                </CardHeader>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Navigation className="h-5 w-5 text-primary" />
+                      Proximity & Location Analysis
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Distances to nearby amenities and infrastructure
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={calculateProximity}
+                    disabled={proximityLoading || !polygon?.geojson}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {proximityLoading ? 'Analyzing...' : 'Analyze Proximity'}
+                  </Button>
+                </div>
+              </CardHeader>
+              {proximityAnalysis ? (
                 <CardContent className="space-y-6">
                   {/* Roads */}
                   <div className="space-y-3">
@@ -832,8 +838,19 @@ export default function ListingDetail() {
                     </p>
                   </div>
                 </CardContent>
-              </Card>
-            )}
+              ) : (
+                <CardContent>
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">
+                      No proximity analysis data available yet.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Click "Analyze Proximity" to generate detailed location insights.
+                    </p>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
           </div>
 
           {/* Sidebar */}
