@@ -38,19 +38,15 @@ serve(async (req) => {
     // Radius for search (in meters)
     const searchRadius = 5000; // 5km
 
-    // Multiple Overpass API endpoints for failover
-    const overpassUrls = [
-      'https://overpass-api.de/api/interpreter',
-      'https://overpass.kumi.systems/api/interpreter',
-      'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
-    ];
+    // Query Overpass API for nearby amenities
+    const overpassUrl = 'https://overpass-api.de/api/interpreter';
     
-    // Build Overpass QL query with increased timeout and simplified output
+    // Build Overpass QL query for all amenities
     const query = `
-      [out:json][timeout:60];
+      [out:json][timeout:25];
       (
-        // Roads (limit to major roads to reduce load)
-        way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"](around:${searchRadius},${centerLat},${centerLng});
+        // Roads
+        way["highway"](around:${searchRadius},${centerLat},${centerLng});
         // Hospitals
         node["amenity"="hospital"](around:${searchRadius},${centerLat},${centerLng});
         way["amenity"="hospital"](around:${searchRadius},${centerLat},${centerLng});
@@ -67,102 +63,23 @@ serve(async (req) => {
         // Public transport
         node["public_transport"](around:1000,${centerLat},${centerLng});
       );
-      out center;
+      out body;
+      >;
+      out skel qt;
     `;
 
-    // Retry logic with multiple endpoints
-    let overpassData: any = null;
-    let lastError: Error | null = null;
-    
-    for (let urlIndex = 0; urlIndex < overpassUrls.length; urlIndex++) {
-      const overpassUrl = overpassUrls[urlIndex];
-      
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          console.log(`Querying Overpass API (endpoint ${urlIndex + 1}/${overpassUrls.length}, attempt ${attempt + 1}/2)...`);
-          
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
-          
-          const overpassResponse = await fetch(overpassUrl, {
-            method: 'POST',
-            body: 'data=' + encodeURIComponent(query),
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
+    console.log('Querying Overpass API...');
+    const overpassResponse = await fetch(overpassUrl, {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
 
-          if (!overpassResponse.ok) {
-            throw new Error(`HTTP ${overpassResponse.status}: ${overpassResponse.statusText}`);
-          }
-
-          overpassData = await overpassResponse.json();
-          console.log('Successfully received Overpass data, elements:', overpassData.elements?.length || 0);
-          break; // Success, exit retry loop
-          
-        } catch (error) {
-          lastError = error instanceof Error ? error : new Error(String(error));
-          console.warn(`Attempt ${attempt + 1} failed for ${overpassUrl}:`, lastError.message);
-          
-          if (attempt === 0) {
-            // Wait 2 seconds before retry
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        }
-      }
-      
-      if (overpassData) break; // Success, exit endpoint loop
+    if (!overpassResponse.ok) {
+      throw new Error(`Overpass API error: ${overpassResponse.statusText}`);
     }
 
-    // If all attempts failed, return a graceful error with empty data
-    if (!overpassData) {
-      console.error('All Overpass API attempts failed. Last error:', lastError);
-      
-      // Still save partial analysis to database
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-
-      const fallbackData = {
-        listing_id,
-        nearest_road_name: null,
-        nearest_road_distance_m: null,
-        nearest_major_road_name: null,
-        nearest_major_road_distance_m: null,
-        nearest_hospital_name: null,
-        nearest_hospital_distance_m: null,
-        hospitals_within_5km: [],
-        nearest_school_name: null,
-        nearest_school_distance_m: null,
-        schools_within_5km: [],
-        nearest_marketplace_name: null,
-        nearest_marketplace_distance_m: null,
-        marketplaces_within_5km: [],
-        public_transport_nearby: [],
-        calculated_at: new Date().toISOString(),
-      };
-
-      await supabase
-        .from('proximity_analysis')
-        .upsert(fallbackData, { 
-          onConflict: 'listing_id',
-          ignoreDuplicates: false 
-        });
-
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Overpass API is temporarily unavailable. Proximity analysis could not be completed.',
-          message: 'The proximity analysis service is experiencing high load. Please try again later.'
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 503 
-        }
-      );
-    }
+    const overpassData = await overpassResponse.json();
     console.log('Received Overpass data, elements:', overpassData.elements?.length || 0);
 
     // Helper function to calculate distance
@@ -206,7 +123,6 @@ serve(async (req) => {
 
       if (element.tags?.highway) {
         const roadType = element.tags.highway;
-        // All roads in results are already major roads due to filtered query
         roads.push({ name, distance, type: roadType });
       } else if (element.tags?.amenity === 'hospital') {
         hospitals.push({ name, distance, type: element.tags.healthcare || 'hospital' });
