@@ -129,7 +129,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear session from localStorage and server
+    await supabase.auth.signOut({ scope: 'local' });
+    
+    // Explicitly clear all auth-related state
     setUser(null);
     setSession(null);
     setProfile(null);
