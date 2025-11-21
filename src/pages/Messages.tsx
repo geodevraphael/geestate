@@ -122,6 +122,12 @@ export default function Messages() {
         const groupedConversations: any = {};
         
         messagesData.forEach((msg: any) => {
+          // Skip messages with null listings (RLS filtered) or null profiles
+          if (!msg.listing || !msg.sender || !msg.receiver) {
+            console.warn('Skipping message due to null listing or profile:', msg.id);
+            return;
+          }
+          
           const key = `${msg.listing_id}`;
           if (!groupedConversations[key]) {
             const isReceiver = msg.receiver_id === user?.id;
