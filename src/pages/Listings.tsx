@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
+import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 
 export default function Listings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,7 +34,8 @@ export default function Listings() {
         .select(`
           *,
           owner:profiles(full_name, organization_name, role),
-          media:listing_media(*)
+          media:listing_media(*),
+          polygon:listing_polygons(geojson)
         `)
         .eq('status', 'published');
 
@@ -229,14 +231,13 @@ export default function Listings() {
             {filteredListings.map((listing) => (
               <Card key={listing.id} className="group overflow-hidden hover:shadow-2xl transition-all duration-300 h-full rounded-2xl border-border/50 hover:border-primary/20">
                 <div className="relative">
-                  {/* Image */}
+                  {/* Satellite Map */}
                   <Link to={`/listings/${listing.id}`}>
                     <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
-                      {listing.media && listing.media.length > 0 ? (
-                        <img
-                          src={listing.media[0].file_url}
-                          alt={listing.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      {(listing as any).polygon?.geojson ? (
+                        <PropertyMapThumbnail 
+                          geojson={(listing as any).polygon.geojson}
+                          className="w-full h-full"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

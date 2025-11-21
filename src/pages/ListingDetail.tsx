@@ -7,6 +7,7 @@ import { PaymentProofDialog } from '@/components/PaymentProofDialog';
 import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { GeospatialServiceRequest } from '@/components/GeospatialServiceRequest';
 import { GeoInsightServices } from '@/components/GeoInsightServices';
+import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -350,26 +351,14 @@ export default function ListingDetail() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Image Gallery */}
-            {media.length > 0 && (
+            {/* Satellite Map Thumbnail */}
+            {polygon?.geojson && (
               <Card>
                 <CardContent className="p-0">
-                  <div className="aspect-video bg-muted relative overflow-hidden">
-                    <img
-                      src={media[0].file_url}
-                      alt={listing.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {media.length > 1 && (
-                    <div className="grid grid-cols-4 gap-2 p-4">
-                      {media.slice(1, 5).map((item) => (
-                        <div key={item.id} className="aspect-video bg-muted rounded overflow-hidden">
-                          <img src={item.file_url} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <PropertyMapThumbnail 
+                    geojson={polygon.geojson}
+                    className="w-full h-[400px] rounded-t-lg"
+                  />
                 </CardContent>
               </Card>
             )}
