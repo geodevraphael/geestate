@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -13,13 +13,14 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCheck, Building, Briefcase } from 'lucide-react';
 
 export default function ApplyForRole() {
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    requested_role: '',
+    requested_role: location.state?.preselectedRole || '',
     business_name: '',
     license_number: '',
     experience_years: '',
