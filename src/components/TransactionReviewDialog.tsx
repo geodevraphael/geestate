@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveModal } from "@/components/ResponsiveModal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -105,13 +105,12 @@ export function TransactionReviewDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Rate {reviewedUserName}</DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <ResponsiveModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Rate ${reviewedUserName}`}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {renderStars("rating", "Overall Rating")}
           {renderStars("communication_score", "Communication")}
           {renderStars("reliability_score", "Reliability")}
@@ -151,9 +150,8 @@ export function TransactionReviewDialog({
             >
               Cancel
             </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </form>
+    </ResponsiveModal>
   );
 }

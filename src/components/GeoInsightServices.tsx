@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
+import { DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -152,18 +153,18 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
             );
           })}
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full" size="lg">Request GeoInsight Analysis</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Request GeoInsight Professional Service</DialogTitle>
-              <DialogDescription>
-                Submit your request and our expert team will contact you within 24 hours
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 pt-4">
+        <ResponsiveModal
+          open={open}
+          onOpenChange={setOpen}
+          title="Request GeoInsight Professional Service"
+          description="Submit your request and our expert team will contact you within 24 hours"
+          trigger={
+            <DialogTrigger asChild>
+              <Button className="w-full" size="lg">Request GeoInsight Analysis</Button>
+            </DialogTrigger>
+          }
+        >
+          <div className="space-y-6 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="geoinsight-service-type">Select Analysis Service</Label>
                 <Select value={serviceType} onValueChange={setServiceType}>
@@ -198,12 +199,11 @@ export function GeoInsightServices({ listingId, sellerId }: GeoInsightServicesPr
                 </p>
               </div>
 
-              <Button onClick={handleSubmit} disabled={loading || !serviceType} className="w-full" size="lg">
-                {loading ? 'Submitting...' : 'Submit Request to GeoInsight Team'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            <Button onClick={handleSubmit} disabled={loading || !serviceType} className="w-full" size="lg">
+              {loading ? 'Submitting...' : 'Submit Request to GeoInsight Team'}
+            </Button>
+          </div>
+        </ResponsiveModal>
       </CardContent>
     </Card>
   );
