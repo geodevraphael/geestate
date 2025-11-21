@@ -56,52 +56,69 @@ export default function BrowseSellers() {
 
   const fetchData = async () => {
     try {
-      // Fetch individual sellers with their listing counts
-      const { data: sellersData } = await supabase
-        .from('profiles')
-        .select('*, user_roles!inner(role)')
-        .eq('user_roles.role', 'seller');
+      // Fetch sellers by querying user_roles
+      const { data: sellerRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'seller');
 
-      // Fetch brokers with their listing counts
-      const { data: brokersData } = await supabase
-        .from('profiles')
-        .select('*, user_roles!inner(role)')
-        .eq('user_roles.role', 'broker');
+      // Fetch brokers by querying user_roles
+      const { data: brokerRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'broker');
+
+      // Get profiles for sellers
+      if (sellerRoles && sellerRoles.length > 0) {
+        const sellerIds = sellerRoles.map(r => r.user_id);
+        const { data: sellerProfiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', sellerIds);
+
+        if (sellerProfiles) {
+          const sellersWithCounts = await Promise.all(
+            sellerProfiles.map(async (seller) => {
+              const { count } = await supabase
+                .from('listings')
+                .select('*', { count: 'exact', head: true })
+                .eq('owner_id', seller.id)
+                .eq('status', 'published');
+              return { ...seller, listingsCount: count || 0, role: 'seller' };
+            })
+          );
+          setSellers(sellersWithCounts);
+        }
+      }
+
+      // Get profiles for brokers
+      if (brokerRoles && brokerRoles.length > 0) {
+        const brokerIds = brokerRoles.map(r => r.user_id);
+        const { data: brokerProfiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', brokerIds);
+
+        if (brokerProfiles) {
+          const brokersWithCounts = await Promise.all(
+            brokerProfiles.map(async (broker) => {
+              const { count } = await supabase
+                .from('listings')
+                .select('*', { count: 'exact', head: true })
+                .eq('owner_id', broker.id)
+                .eq('status', 'published');
+              return { ...broker, listingsCount: count || 0, role: 'broker' };
+            })
+          );
+          setBrokers(brokersWithCounts);
+        }
+      }
 
       // Fetch institutions
       const { data: institutionsData } = await supabase
         .from('institutional_sellers')
         .select('*')
         .eq('is_approved', true);
-
-      // Get listing counts for each seller/broker
-      if (sellersData) {
-        const sellersWithCounts = await Promise.all(
-          sellersData.map(async (seller) => {
-            const { count } = await supabase
-              .from('listings')
-              .select('*', { count: 'exact', head: true })
-              .eq('owner_id', seller.id)
-              .eq('status', 'published');
-            return { ...seller, listingsCount: count || 0, role: 'seller' };
-          })
-        );
-        setSellers(sellersWithCounts.filter(s => s.listingsCount > 0));
-      }
-
-      if (brokersData) {
-        const brokersWithCounts = await Promise.all(
-          brokersData.map(async (broker) => {
-            const { count } = await supabase
-              .from('listings')
-              .select('*', { count: 'exact', head: true })
-              .eq('owner_id', broker.id)
-              .eq('status', 'published');
-            return { ...broker, listingsCount: count || 0, role: 'broker' };
-          })
-        );
-        setBrokers(brokersWithCounts.filter(b => b.listingsCount > 0));
-      }
 
       // Get listing counts for institutions
       if (institutionsData) {
@@ -115,7 +132,7 @@ export default function BrowseSellers() {
             return { ...inst, listingsCount: count || 0 };
           })
         );
-        setInstitutions(institutionsWithCounts.filter(i => i.listingsCount > 0));
+        setInstitutions(institutionsWithCounts);
       }
     } catch (error) {
       console.error('Error fetching sellers:', error);
