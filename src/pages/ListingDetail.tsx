@@ -25,6 +25,7 @@ import { Polygon } from 'ol/geom';
 import Feature from 'ol/Feature';
 import { Style, Fill, Stroke } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
+import { getCenter } from 'ol/extent';
 import 'ol/ol.css';
 
 export default function ListingDetail() {
@@ -109,11 +110,11 @@ export default function ListingDetail() {
         source: vectorSource,
       });
 
-      const center = polygon.centroid_lng && polygon.centroid_lat
-        ? fromLonLat([polygon.centroid_lng, polygon.centroid_lat])
-        : fromLonLat([34.888822, -6.369028]);
+      // Get the extent of the polygon for proper fitting
+      const extent = polygonGeom.getExtent();
+      const center = getCenter(extent);
 
-      console.log('Creating map with center:', center);
+      console.log('Creating map with extent:', extent);
 
       const map = new Map({
         target: mapRef.current,
@@ -129,9 +130,16 @@ export default function ListingDetail() {
         ],
         view: new View({
           center: center,
-          zoom: 16,
+          zoom: 2,
           maxZoom: 19,
         }),
+      });
+
+      // Fit the view to show the entire polygon with padding
+      map.getView().fit(extent, {
+        padding: [80, 80, 80, 80],
+        duration: 500,
+        maxZoom: 18,
       });
 
       mapInstanceRef.current = map;
