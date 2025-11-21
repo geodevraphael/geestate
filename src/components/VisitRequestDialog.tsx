@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
+import { DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -91,21 +92,21 @@ export function VisitRequestDialog({ listingId, sellerId }: VisitRequestDialogPr
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="w-full sm:w-auto flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
-          Request Site Visit
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Request Site Visit</DialogTitle>
-          <DialogDescription>
-            Schedule a visit to view this property in person
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <ResponsiveModal
+      open={open}
+      onOpenChange={setOpen}
+      title="Request Site Visit"
+      description="Schedule a visit to view this property in person"
+      trigger={
+        <DialogTrigger asChild>
+          <Button className="w-full sm:w-auto flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Request Site Visit
+          </Button>
+        </DialogTrigger>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="date">Preferred Date</Label>
             <Input
@@ -152,8 +153,7 @@ export function VisitRequestDialog({ listingId, sellerId }: VisitRequestDialogPr
               {loading ? 'Sending...' : 'Send Request'}
             </Button>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </ResponsiveModal>
   );
 }
