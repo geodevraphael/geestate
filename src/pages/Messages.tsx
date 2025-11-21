@@ -25,6 +25,7 @@ export default function Messages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,7 +102,11 @@ export default function Messages() {
 
   const fetchConversations = async () => {
     try {
-      setLoading(true);
+      // Only show loading spinner on initial load, not on refreshes
+      if (!initialLoadDone) {
+        setLoading(true);
+      }
+      
       const { data: messagesData } = await supabase
         .from('messages')
         .select(`
@@ -140,7 +145,7 @@ export default function Messages() {
         setConversations(conversationsList);
 
         // Check if we need to open a specific conversation from URL params
-        if (listingId) {
+        if (listingId && !initialLoadDone) {
           const targetConversation = conversationsList.find(
             (c: any) => c.listing_id === listingId
           );
@@ -155,7 +160,10 @@ export default function Messages() {
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
-      setLoading(false);
+      if (!initialLoadDone) {
+        setLoading(false);
+        setInitialLoadDone(true);
+      }
     }
   };
 
