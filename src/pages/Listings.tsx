@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -7,32 +7,74 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Search, CheckCircle2 } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
 
 export default function Listings() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const ownerParam = searchParams.get('owner');
+  
   const [listings, setListings] = useState<ListingWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
   const [verificationFilter, setVerificationFilter] = useState<string>('all');
+  const [ownerInfo, setOwnerInfo] = useState<{ name: string; type: 'seller' | 'institution' } | null>(null);
 
   useEffect(() => {
     fetchListings();
-  }, []);
+  }, [ownerParam]);
 
   const fetchListings = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from('listings')
         .select(`
           *,
           owner:profiles(full_name, organization_name, role),
           media:listing_media(*)
         `)
-        .eq('status', 'published')
-        .order('created_at', { ascending: false });
+        .eq('status', 'published');
+
+      // Filter by owner if parameter is present
+      if (ownerParam) {
+        query = query.eq('owner_id', ownerParam);
+        
+        // Fetch owner information
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, organization_name')
+          .eq('id', ownerParam)
+          .single();
+
+        if (profileData) {
+          setOwnerInfo({
+            name: profileData.organization_name || profileData.full_name,
+            type: 'seller'
+          });
+        } else {
+          // Check if it's an institution
+          const { data: institutionData } = await supabase
+            .from('institutional_sellers')
+            .select('institution_name')
+            .eq('profile_id', ownerParam)
+            .single();
+
+          if (institutionData) {
+            setOwnerInfo({
+              name: institutionData.institution_name,
+              type: 'institution'
+            });
+          }
+        }
+      } else {
+        setOwnerInfo(null);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setListings(data || []);
@@ -56,15 +98,49 @@ export default function Listings() {
     return matchesSearch && matchesListingType && matchesPropertyType && matchesVerification;
   });
 
+  const clearOwnerFilter = () => {
+    searchParams.delete('owner');
+    setSearchParams(searchParams);
+  };
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setListingTypeFilter('all');
+    setPropertyTypeFilter('all');
+    setVerificationFilter('all');
+    clearOwnerFilter();
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Browse Listings</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">
+            {ownerInfo ? `${ownerInfo.name}'s Listings` : 'Browse Listings'}
+          </h1>
           <p className="text-sm md:text-base text-muted-foreground">
-            Discover verified land and properties across Tanzania
+            {ownerInfo 
+              ? `Viewing all listings from ${ownerInfo.name}`
+              : 'Discover verified land and properties across Tanzania'
+            }
           </p>
         </div>
+
+        {/* Owner Filter Badge */}
+        {ownerInfo && (
+          <div className="mb-4">
+            <Badge variant="secondary" className="text-sm py-2 px-3 gap-2">
+              Filtered by: {ownerInfo.name}
+              <button 
+                onClick={clearOwnerFilter}
+                className="ml-1 hover:bg-background/50 rounded-full p-0.5 transition-colors"
+                aria-label="Clear owner filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </div>
+        )}
 
         {/* Filters */}
         <Card className="mb-6 md:mb-8 rounded-xl md:rounded-2xl">
@@ -181,14 +257,14 @@ export default function Listings() {
 
         {filteredListings.length === 0 && !loading && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No listings found matching your criteria</p>
-            <Button variant="outline" onClick={() => {
-              setSearchQuery('');
-              setListingTypeFilter('all');
-              setPropertyTypeFilter('all');
-              setVerificationFilter('all');
-            }}>
-              Clear Filters
+            <p className="text-muted-foreground mb-4">
+              {ownerInfo 
+                ? `${ownerInfo.name} has no listings matching your criteria`
+                : 'No listings found matching your criteria'
+              }
+            </p>
+            <Button variant="outline" onClick={clearAllFilters}>
+              Clear All Filters
             </Button>
           </div>
         )}
