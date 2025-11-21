@@ -64,6 +64,12 @@ export default function Messages() {
         };
         
         setSelectedConversation(newConversation);
+        setConversations(prev => [newConversation, ...prev]);
+        
+        // Auto-focus the input
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
       }
     } catch (error) {
       console.error('Error initializing conversation:', error);
@@ -127,7 +133,7 @@ export default function Messages() {
             setSelectedConversation(targetConversation);
           } else if (sellerId) {
             // No existing conversation, create a new one
-            initializeNewConversation();
+            await initializeNewConversation();
           }
         }
       }
