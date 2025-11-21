@@ -116,7 +116,7 @@ export default function Listings() {
       <div className="w-full">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
-          <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-12">
+          <div className="w-full px-4 md:px-8 lg:px-12 py-6 md:py-12">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
               <div>
                 <h1 className="text-3xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -130,12 +130,12 @@ export default function Listings() {
                 </p>
               </div>
               {!ownerInfo && (
-                <Link to="/map-browse">
-                  <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all">
-                    <Map className="h-5 w-5" />
-                    Browse on Map
-                  </Button>
-                </Link>
+              <Link to="/map">
+                <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all">
+                  <Map className="h-5 w-5" />
+                  Browse on Map
+                </Button>
+              </Link>
               )}
             </div>
 
@@ -213,7 +213,7 @@ export default function Listings() {
         </div>
 
         {/* Results Section */}
-        <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-8">
+        <div className="w-full px-4 md:px-8 lg:px-12 py-6 md:py-8">
           {/* Results Count */}
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -293,7 +293,7 @@ export default function Listings() {
                           View Details
                         </Button>
                       </Link>
-                      <Link to={`/map-browse?listing=${listing.id}`} onClick={(e) => e.stopPropagation()}>
+                      <Link to={`/map?listing=${listing.id}`} onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all">
                           <Map className="h-4 w-4" />
                         </Button>
