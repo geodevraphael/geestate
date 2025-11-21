@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Search, CheckCircle2, X } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
 
 export default function Listings() {
@@ -113,161 +113,223 @@ export default function Listings() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">
-            {ownerInfo ? `${ownerInfo.name}'s Listings` : 'Browse Listings'}
-          </h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            {ownerInfo 
-              ? `Viewing all listings from ${ownerInfo.name}`
-              : 'Discover verified land and properties across Tanzania'
-            }
-          </p>
-        </div>
-
-        {/* Owner Filter Badge */}
-        {ownerInfo && (
-          <div className="mb-4">
-            <Badge variant="secondary" className="text-sm py-2 px-3 gap-2">
-              Filtered by: {ownerInfo.name}
-              <button 
-                onClick={clearOwnerFilter}
-                className="ml-1 hover:bg-background/50 rounded-full p-0.5 transition-colors"
-                aria-label="Clear owner filter"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          </div>
-        )}
-
-        {/* Filters */}
-        <Card className="mb-6 md:mb-8 rounded-xl md:rounded-2xl">
-          <CardContent className="pt-4 md:pt-6 px-3 md:px-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by location or title..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+      <div className="w-full">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
+          <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-12">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-3xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  {ownerInfo ? `${ownerInfo.name}'s Listings` : 'Property Marketplace'}
+                </h1>
+                <p className="text-sm md:text-lg text-muted-foreground">
+                  {ownerInfo 
+                    ? `Viewing all listings from ${ownerInfo.name}`
+                    : 'Discover verified land and properties across Tanzania'
+                  }
+                </p>
               </div>
-
-              <Select value={listingTypeFilter} onValueChange={setListingTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Listing Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="sale">For Sale</SelectItem>
-                  <SelectItem value="rent">For Rent</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Property Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Properties</SelectItem>
-                  <SelectItem value="land">Land</SelectItem>
-                  <SelectItem value="house">House</SelectItem>
-                  <SelectItem value="apartment">Apartment</SelectItem>
-                  <SelectItem value="commercial">Commercial</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={verificationFilter} onValueChange={setVerificationFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Verification Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="unverified">Unverified</SelectItem>
-                </SelectContent>
-              </Select>
+              {!ownerInfo && (
+                <Link to="/map-browse">
+                  <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all">
+                    <Map className="h-5 w-5" />
+                    Browse on Map
+                  </Button>
+                </Link>
+              )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-muted-foreground">
-            {loading ? 'Loading...' : `${filteredListings.length} listing(s) found`}
-          </p>
+            {/* Owner Filter Badge */}
+            {ownerInfo && (
+              <div className="mb-4">
+                <Badge variant="secondary" className="text-sm py-2 px-4 gap-2 shadow-sm">
+                  <Filter className="h-3.5 w-3.5" />
+                  Filtered by: {ownerInfo.name}
+                  <button 
+                    onClick={clearOwnerFilter}
+                    className="ml-1 hover:bg-background/50 rounded-full p-0.5 transition-colors"
+                    aria-label="Clear owner filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              </div>
+            )}
+
+            {/* Filters */}
+            <Card className="shadow-lg border-border/50 rounded-2xl overflow-hidden backdrop-blur-sm bg-background/95">
+              <CardContent className="pt-6 px-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by location or title..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+
+                  <Select value={listingTypeFilter} onValueChange={setListingTypeFilter}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Listing Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="sale">For Sale</SelectItem>
+                      <SelectItem value="rent">For Rent</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Property Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Properties</SelectItem>
+                      <SelectItem value="land">Land</SelectItem>
+                      <SelectItem value="house">House</SelectItem>
+                      <SelectItem value="apartment">Apartment</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={verificationFilter} onValueChange={setVerificationFilter}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Verification Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="verified">Verified</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="unverified">Unverified</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* Listings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-          {filteredListings.map((listing) => (
-            <Link key={listing.id} to={`/listings/${listing.id}`}>
-              <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full rounded-xl md:rounded-2xl active:scale-[0.98] md:active:scale-100">
-                {/* Image */}
-                <div className="aspect-video bg-muted relative">
-                  {listing.media && listing.media.length > 0 ? (
-                    <img
-                      src={listing.media[0].file_url}
-                      alt={listing.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <MapPin className="h-12 w-12 text-muted-foreground" />
+        {/* Results Section */}
+        <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-8">
+          {/* Results Count */}
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <p className="text-lg font-medium">
+                {loading ? 'Loading...' : `${filteredListings.length} Properties Available`}
+              </p>
+            </div>
+          </div>
+
+          {/* Listings Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {filteredListings.map((listing) => (
+              <Card key={listing.id} className="group overflow-hidden hover:shadow-2xl transition-all duration-300 h-full rounded-2xl border-border/50 hover:border-primary/20">
+                <div className="relative">
+                  {/* Image */}
+                  <Link to={`/listings/${listing.id}`}>
+                    <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
+                      {listing.media && listing.media.length > 0 ? (
+                        <img
+                          src={listing.media[0].file_url}
+                          alt={listing.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <MapPin className="h-16 w-16 text-muted-foreground/30" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                  )}
-                  {listing.verification_status === 'verified' && (
-                    <Badge className="absolute top-3 right-3 bg-success text-success-foreground">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Verified
-                    </Badge>
-                  )}
+                  </Link>
+                  
+                  {/* Badges Overlay */}
+                  <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Badge variant="secondary" className="capitalize text-xs shadow-lg backdrop-blur-sm bg-background/90">
+                        {listing.listing_type}
+                      </Badge>
+                    </div>
+                    {listing.verification_status === 'verified' && (
+                      <Badge className="bg-success/90 text-success-foreground shadow-lg backdrop-blur-sm">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Verified
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
-                <CardContent className="p-3 md:p-4">
-                  <h3 className="font-semibold text-base md:text-lg mb-2 line-clamp-2 md:line-clamp-1">{listing.title}</h3>
+                <CardContent className="p-4 space-y-3">
+                  <Link to={`/listings/${listing.id}`}>
+                    <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                      {listing.title}
+                    </h3>
+                  </Link>
                   
-                  <div className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
-                    <MapPin className="h-3 md:h-4 w-3 md:w-4 flex-shrink-0" />
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 flex-shrink-0 text-primary/60" />
                     <span className="line-clamp-1">{listing.location_label}</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
+                  <div className="flex items-center gap-2">
                     <Badge variant="outline" className="capitalize text-xs">
                       {listing.property_type}
                     </Badge>
-                    <Badge variant="outline" className="capitalize text-xs">
-                      For {listing.listing_type}
-                    </Badge>
                   </div>
 
-                  <div className="text-lg md:text-2xl font-bold text-primary">
-                    {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
+                  <div className="pt-2 border-t border-border/50">
+                    <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-4">
+                      {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Link to={`/listings/${listing.id}`} className="flex-1">
+                        <Button size="sm" className="w-full gap-2 shadow-md hover:shadow-lg transition-all">
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Button>
+                      </Link>
+                      <Link to={`/map-browse?listing=${listing.id}`} onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" variant="outline" className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all">
+                          <Map className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </Link>
-          ))}
-        </div>
-
-        {filteredListings.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              {ownerInfo 
-                ? `${ownerInfo.name} has no listings matching your criteria`
-                : 'No listings found matching your criteria'
-              }
-            </p>
-            <Button variant="outline" onClick={clearAllFilters}>
-              Clear All Filters
-            </Button>
+            ))}
           </div>
-        )}
+
+          {filteredListings.length === 0 && !loading && (
+            <Card className="text-center py-16 rounded-2xl border-dashed">
+              <CardContent>
+                <div className="flex flex-col items-center gap-4">
+                  <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
+                    <Search className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">No Properties Found</h3>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      {ownerInfo 
+                        ? `${ownerInfo.name} has no listings matching your criteria`
+                        : 'No listings found matching your criteria. Try adjusting your filters.'
+                      }
+                    </p>
+                    <Button onClick={clearAllFilters} className="gap-2">
+                      <X className="h-4 w-4" />
+                      Clear All Filters
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </MainLayout>
   );
