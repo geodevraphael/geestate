@@ -34,8 +34,60 @@ export default function Messages() {
   useEffect(() => {
     if (user) {
       fetchConversations();
+      
+      // Subscribe to all messages for real-time updates to conversations list
+      const channel = supabase
+        .channel('all-user-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+          },
+          (payload) => {
+            const newMessage = payload.new as any;
+            // Only refresh if this message involves the current user
+            if (newMessage.sender_id === user.id || newMessage.receiver_id === user.id) {
+              fetchConversations();
+              
+              // If the message is for the currently selected conversation, add it to messages
+              if (selectedConversation && newMessage.listing_id === selectedConversation.listing_id) {
+                setMessages(prev => [...prev, newMessage as Message]);
+              }
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messages',
+          },
+          (payload) => {
+            const updatedMessage = payload.new as any;
+            // Update read status in real-time
+            if (updatedMessage.receiver_id === user.id || updatedMessage.sender_id === user.id) {
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === updatedMessage.id 
+                    ? { ...msg, is_read: updatedMessage.is_read }
+                    : msg
+                )
+              );
+              // Refresh conversations to update unread counts
+              fetchConversations();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user]);
+  }, [user, selectedConversation]);
 
   // Separate effect to handle direct navigation with URL params
   useEffect(() => {
@@ -54,7 +106,6 @@ export default function Messages() {
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.listing_id, selectedConversation.other_user_id);
-      subscribeToMessages(selectedConversation.listing_id);
     }
   }, [selectedConversation]);
 
@@ -197,6 +248,8 @@ export default function Messages() {
     }
   };
 
+  // Note: Real-time subscription is now handled in the main useEffect above
+  // This function is kept for reference but no longer used
   const subscribeToMessages = (listingId: string) => {
     const channel = supabase
       .channel(`messages-${listingId}`)
