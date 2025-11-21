@@ -3,6 +3,7 @@ import { Navbar } from '@/components/Navbar';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { AdminTodoPopup } from '@/components/AdminTodoPopup';
+import { MobileSellersFloatingButton } from '@/components/MobileSellersFloatingButton';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface MainLayoutProps {
@@ -26,6 +27,7 @@ export function MainLayout({ children, hideSidebar = false }: MainLayoutProps) {
         </main>
       </div>
       <MobileBottomNav />
+      <MobileSellersFloatingButton />
       <AdminTodoPopup />
     </div>
   );
