@@ -956,22 +956,27 @@ export type Database = {
       }
       listings: {
         Row: {
+          block_number: string | null
           created_at: string
           currency: string | null
           description: string | null
           description_sw: string | null
           district: string | null
           district_id: string | null
+          has_title: boolean | null
           id: string
           is_polygon_verified: boolean | null
           listing_type: Database["public"]["Enums"]["listing_type"]
           location_label: string
           owner_id: string
+          planned_use: string | null
+          plot_number: string | null
           price: number | null
           property_type: Database["public"]["Enums"]["property_type"]
           region: string | null
           region_id: string | null
           status: Database["public"]["Enums"]["listing_status"] | null
+          street_name: string | null
           street_village_id: string | null
           title: string
           title_sw: string | null
@@ -984,22 +989,27 @@ export type Database = {
           ward_id: string | null
         }
         Insert: {
+          block_number?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           description_sw?: string | null
           district?: string | null
           district_id?: string | null
+          has_title?: boolean | null
           id?: string
           is_polygon_verified?: boolean | null
           listing_type: Database["public"]["Enums"]["listing_type"]
           location_label: string
           owner_id: string
+          planned_use?: string | null
+          plot_number?: string | null
           price?: number | null
           property_type: Database["public"]["Enums"]["property_type"]
           region?: string | null
           region_id?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
+          street_name?: string | null
           street_village_id?: string | null
           title: string
           title_sw?: string | null
@@ -1012,22 +1022,27 @@ export type Database = {
           ward_id?: string | null
         }
         Update: {
+          block_number?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           description_sw?: string | null
           district?: string | null
           district_id?: string | null
+          has_title?: boolean | null
           id?: string
           is_polygon_verified?: boolean | null
           listing_type?: Database["public"]["Enums"]["listing_type"]
           location_label?: string
           owner_id?: string
+          planned_use?: string | null
+          plot_number?: string | null
           price?: number | null
           property_type?: Database["public"]["Enums"]["property_type"]
           region?: string | null
           region_id?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
+          street_name?: string | null
           street_village_id?: string | null
           title?: string
           title_sw?: string | null
