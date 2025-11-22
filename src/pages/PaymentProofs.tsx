@@ -224,10 +224,12 @@ export default function PaymentProofs() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(proof.proof_file_url, '_blank')}
+                        asChild
                       >
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Proof
+                        <a href={proof.proof_file_url} target="_blank" rel="noopener noreferrer">
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Proof
+                        </a>
                       </Button>
 
                       {proof.status === 'pending_seller_confirmation' && (
@@ -312,10 +314,12 @@ export default function PaymentProofs() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(proof.proof_file_url, '_blank')}
+                      asChild
                     >
-                      <FileText className="mr-2 h-4 w-4" />
-                      View My Proof
+                      <a href={proof.proof_file_url} target="_blank" rel="noopener noreferrer">
+                        <FileText className="mr-2 h-4 w-4" />
+                        View My Proof
+                      </a>
                     </Button>
                   </CardContent>
                 </Card>
