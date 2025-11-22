@@ -298,7 +298,7 @@ export function ComplianceDashboard() {
           <CardDescription>Compliance management tools</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Link to="/compliance-flags">
+          <Link to="/admin/compliance">
             <Button>
               <Flag className="h-4 w-4 mr-2" />
               Review Flags
@@ -367,7 +367,7 @@ export function ComplianceDashboard() {
                           {new Date(flag.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <Link to="/compliance-flags">
+                      <Link to="/admin/compliance">
                         <Button size="sm" variant="outline">
                           <Eye className="h-4 w-4 mr-2" />
                           Review

@@ -194,7 +194,7 @@ export function AdminDashboard() {
               <span className="sm:hidden">Verify</span>
             </Button>
           </Link>
-          <Link to="/compliance-flags" className="w-full">
+          <Link to="/admin/compliance" className="w-full">
             <Button variant="outline" className="w-full h-11 md:h-10 text-xs md:text-sm">
               <AlertTriangle className="h-3 md:h-4 w-3 md:w-4 mr-1.5 md:mr-2" />
               <span className="hidden sm:inline">Compliance</span>
@@ -261,7 +261,7 @@ export function AdminDashboard() {
             {stats.activeFlags > 0 && (
               <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
                 <span>{stats.activeFlags} unresolved compliance flags</span>
-                <Link to="/compliance-flags">
+                <Link to="/admin/compliance">
                   <Button size="sm" variant="outline">Review</Button>
                 </Link>
               </div>
