@@ -21,10 +21,15 @@ export function SpatialDashboard() {
     pendingAnalysis: 0,
     valuationsComplete: 0,
     proximityComplete: 0,
+    serviceRequests: 0,
+    pendingValidation: 0,
   });
   const [recentAnalysis, setRecentAnalysis] = useState<any[]>([]);
   const [riskDistribution, setRiskDistribution] = useState<any[]>([]);
   const [landUseData, setLandUseData] = useState<any[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<any[]>([]);
+  const [valuations, setValuations] = useState<any[]>([]);
+  const [pendingPolygons, setPendingPolygons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +69,36 @@ export function SpatialDashboard() {
       const { count: proximityCount } = await supabase
         .from('proximity_analysis')
         .select('*', { count: 'exact', head: true });
+
+      // Fetch service requests
+      const { data: requests, count: requestsCount } = await supabase
+        .from('service_requests')
+        .select('*, listings(title, location_label)', { count: 'exact' })
+        .in('service_category', ['spatial_analysis', 'valuation', 'surveying'])
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      setServiceRequests(requests || []);
+
+      // Fetch recent valuations
+      const { data: recentValuations } = await supabase
+        .from('valuation_estimates')
+        .select('*, listings(title, location_label, property_type)')
+        .order('estimated_at', { ascending: false })
+        .limit(5);
+      
+      setValuations(recentValuations || []);
+
+      // Fetch listings with unverified polygons
+      const { data: unverifiedPolygons, count: unverifiedCount } = await supabase
+        .from('listings')
+        .select('*, listing_polygons(*)', { count: 'exact' })
+        .eq('is_polygon_verified', false)
+        .not('listing_polygons', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      setPendingPolygons(unverifiedPolygons || []);
 
       // Fetch land use data
       const { data: landUse } = await supabase
@@ -110,6 +145,8 @@ export function SpatialDashboard() {
         pendingAnalysis: pending,
         valuationsComplete: valuationsCount || 0,
         proximityComplete: proximityCount || 0,
+        serviceRequests: requestsCount || 0,
+        pendingValidation: unverifiedCount || 0,
       });
     } catch (error) {
       console.error('Error fetching spatial data:', error);
@@ -157,7 +194,7 @@ export function SpatialDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -217,6 +254,21 @@ export function SpatialDashboard() {
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Service Requests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary">{stats.serviceRequests}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.pendingValidation} polygons to validate
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
@@ -238,6 +290,12 @@ export function SpatialDashboard() {
               Polygon Validation
             </Button>
           </Link>
+          <Link to="/admin/service-requests">
+            <Button variant="outline">
+              <Activity className="h-4 w-4 mr-2" />
+              Service Requests
+            </Button>
+          </Link>
           <Link to="/listings">
             <Button variant="outline">
               <Droplets className="h-4 w-4 mr-2" />
@@ -253,10 +311,13 @@ export function SpatialDashboard() {
         </CardContent>
       </Card>
 
-      {/* Analytics & Recent Data */}
+      {/* Analytics & Work Management */}
       <Tabs defaultValue="analytics" className="space-y-4">
         <TabsList>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="requests">Service Requests ({serviceRequests.length})</TabsTrigger>
+          <TabsTrigger value="valuations">Valuations ({valuations.length})</TabsTrigger>
+          <TabsTrigger value="polygons">Polygon Validation ({pendingPolygons.length})</TabsTrigger>
           <TabsTrigger value="recent">Recent Analysis</TabsTrigger>
         </TabsList>
 
@@ -322,6 +383,174 @@ export function SpatialDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="requests">
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Requests</CardTitle>
+              <CardDescription>Spatial analysis and surveying requests</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {serviceRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No service requests</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {serviceRequests.map((request) => (
+                    <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold capitalize">
+                            {request.service_type.replace(/_/g, ' ')}
+                          </h3>
+                          <Badge variant={
+                            request.status === 'completed' ? 'default' :
+                            request.status === 'in_progress' ? 'secondary' :
+                            'outline'
+                          }>
+                            {request.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-medium text-primary">
+                          {request.listings?.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {request.listings?.location_label}
+                        </p>
+                        {request.request_notes && (
+                          <p className="text-sm mt-2">{request.request_notes}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Requested {new Date(request.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Link to={`/service-requests/${request.id}`}>
+                        <Button size="sm">
+                          View Details
+                        </Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="valuations">
+          <Card>
+            <CardHeader>
+              <CardTitle>Valuation Reports</CardTitle>
+              <CardDescription>Property valuation estimates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {valuations.length === 0 ? (
+                <div className="text-center py-12">
+                  <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No valuation reports</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {valuations.map((valuation) => (
+                    <div key={valuation.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{valuation.listings?.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {valuation.listings?.location_label}
+                        </p>
+                        <div className="flex items-center gap-4 mt-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Estimated Value</p>
+                            <p className="text-lg font-bold text-primary">
+                              {valuation.estimated_value?.toLocaleString()} {valuation.currency}
+                            </p>
+                          </div>
+                          {valuation.confidence_score && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Confidence</p>
+                              <p className="text-sm font-medium">
+                                {valuation.confidence_score}%
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Estimated {new Date(valuation.estimated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {valuation.listings?.property_type}
+                        </Badge>
+                        <Link to={`/listings/${valuation.listing_id}`}>
+                          <Button size="sm" variant="outline">
+                            Edit Report
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="polygons">
+          <Card>
+            <CardHeader>
+              <CardTitle>Polygon Validation</CardTitle>
+              <CardDescription>Properties pending boundary verification</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pendingPolygons.length === 0 ? (
+                <div className="text-center py-12">
+                  <Layers className="h-12 w-12 mx-auto text-success mb-4" />
+                  <p className="text-muted-foreground">All polygons validated</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingPolygons.map((listing: any) => (
+                    <div key={listing.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{listing.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {listing.location_label}
+                        </p>
+                        {listing.listing_polygons?.[0] && (
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <span>
+                              Area: {listing.listing_polygons[0].area_m2?.toFixed(0)} m²
+                            </span>
+                            <Badge variant="secondary">Unverified</Badge>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Created {new Date(listing.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Link to={`/map?listing=${listing.id}`}>
+                          <Button size="sm" variant="outline">
+                            <MapIcon className="h-4 w-4 mr-2" />
+                            View on Map
+                          </Button>
+                        </Link>
+                        <Link to={`/admin/verification?listing=${listing.id}`}>
+                          <Button size="sm">
+                            Validate
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="recent">
