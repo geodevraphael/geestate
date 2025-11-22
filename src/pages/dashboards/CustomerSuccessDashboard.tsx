@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, MessageSquare, TrendingUp, HelpCircle, Star, Activity, UserPlus, Clock, Shield } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Users, MessageSquare, TrendingUp, HelpCircle, Star, Activity, UserPlus, Clock, Shield, Mail, Phone } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { toast } from 'sonner';
 
 export function CustomerSuccessDashboard() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -23,6 +25,17 @@ export function CustomerSuccessDashboard() {
   const [roleDistribution, setRoleDistribution] = useState<any[]>([]);
   const [activityTrend, setActivityTrend] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const startConversation = async (userId: string, userName: string) => {
+    try {
+      // Create a new message thread by navigating to messages with the user
+      navigate(`/messages?user=${userId}`);
+      toast.success(`Starting conversation with ${userName}`);
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation');
+    }
+  };
 
   useEffect(() => {
     fetchCustomerSuccessData();
@@ -154,16 +167,22 @@ export function CustomerSuccessDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Customer Success Dashboard</h1>
-        <p className="text-muted-foreground">
-          Support and engage with users
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Customer Success Dashboard</h1>
+          <p className="text-muted-foreground">
+            Support and engage with your user community
+          </p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          <Activity className="h-3 w-3 mr-1" />
+          Live Monitoring
+        </Badge>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-primary">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -172,13 +191,14 @@ export function CustomerSuccessDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-success" />
               +{stats.newUsersWeek} this week
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-success">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Activity className="h-4 w-4" />
@@ -193,7 +213,7 @@ export function CustomerSuccessDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-warning">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <HelpCircle className="h-4 w-4" />
@@ -208,17 +228,17 @@ export function CustomerSuccessDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-accent">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
-              Growth
+              Growth Rate
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">+{stats.newUsersWeek}</div>
             <p className="text-xs text-success mt-1">
-              New users this week
+              New registrations
             </p>
           </CardContent>
         </Card>
@@ -226,22 +246,25 @@ export function CustomerSuccessDashboard() {
 
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
-            <CardTitle>User Role Distribution</CardTitle>
-            <CardDescription>Platform user types</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              User Role Distribution
+            </CardTitle>
+            <CardDescription>Platform user types breakdown</CardDescription>
           </CardHeader>
           <CardContent>
             {roleDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={roleDistribution}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={80}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -250,34 +273,51 @@ export function CustomerSuccessDashboard() {
                     ))}
                   </Pie>
                   <Tooltip />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center">
+              <div className="h-[280px] flex items-center justify-center">
                 <p className="text-muted-foreground">No data available</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
-            <CardTitle>User Registration Trend</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-success" />
+              User Registration Trend
+            </CardTitle>
             <CardDescription>New user signups over last 7 days</CardDescription>
           </CardHeader>
           <CardContent>
             {activityTrend.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={activityTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="registrations" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="registrations" 
+                    stroke="hsl(var(--primary))" 
+                    fill="hsl(var(--primary))" 
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center">
+              <div className="h-[280px] flex items-center justify-center">
                 <p className="text-muted-foreground">No registration data</p>
               </div>
             )}
@@ -286,44 +326,50 @@ export function CustomerSuccessDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="hover:shadow-md transition-shadow bg-gradient-to-br from-background to-muted/20">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Customer support tools</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-warning" />
+            Quick Actions
+          </CardTitle>
+          <CardDescription>Access customer support tools instantly</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Link to="/messages">
-            <Button>
+            <Button className="shadow-sm">
               <MessageSquare className="h-4 w-4 mr-2" />
-              View Messages
+              All Messages
             </Button>
           </Link>
           <Link to="/disputes">
-            <Button variant="outline">
+            <Button variant="outline" className="shadow-sm">
               <HelpCircle className="h-4 w-4 mr-2" />
               Support Tickets
             </Button>
           </Link>
           <Link to="/admin/analytics">
-            <Button variant="outline">
+            <Button variant="outline" className="shadow-sm">
               <TrendingUp className="h-4 w-4 mr-2" />
-              Usage Analytics
+              Analytics
             </Button>
           </Link>
           <Link to="/audit-logs">
-            <Button variant="outline">
+            <Button variant="outline" className="shadow-sm">
               <Activity className="h-4 w-4 mr-2" />
-              User Activity
+              Activity Logs
             </Button>
           </Link>
         </CardContent>
       </Card>
 
       {/* Recent Users */}
-      <Card>
+      <Card className="hover:shadow-md transition-shadow">
         <CardHeader>
-          <CardTitle>Recent Registrations</CardTitle>
-          <CardDescription>New users on the platform</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" />
+            Recent Registrations
+          </CardTitle>
+          <CardDescription>Connect with new users on the platform</CardDescription>
         </CardHeader>
         <CardContent>
           {recentUsers.length === 0 ? (
@@ -334,50 +380,62 @@ export function CustomerSuccessDashboard() {
           ) : (
             <div className="space-y-3">
               {recentUsers.map((user) => (
-                <div key={user.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                <div key={user.id} className="p-4 border rounded-lg hover:shadow-sm hover:border-primary/50 transition-all">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{user.full_name}</h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{user.full_name}</h3>
                         {user.role && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs capitalize">
                             {user.role}
                           </Badge>
                         )}
                       </div>
                       {user.organization_name && (
-                        <p className="text-sm font-medium text-muted-foreground mb-1">
-                          {user.organization_name}
+                        <p className="text-sm font-medium text-muted-foreground mb-2">
+                          🏢 {user.organization_name}
                         </p>
                       )}
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <div className="space-y-1.5">
+                        <p className="text-sm text-muted-foreground flex items-center gap-2">
+                          <Mail className="h-3 w-3" />
+                          {user.email}
+                        </p>
                         {user.phone && (
-                          <p className="text-sm text-muted-foreground">{user.phone}</p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Phone className="h-3 w-3" />
+                            {user.phone}
+                          </p>
                         )}
                         {user.bio && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{user.bio}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-2 pl-5">{user.bio}</p>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Joined {new Date(user.created_at).toLocaleDateString()}
+                        Joined {new Date(user.created_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Link to={`/profile/${user.id}`}>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" className="shadow-sm">
                         <Shield className="h-4 w-4 mr-2" />
                         View Profile
                       </Button>
                     </Link>
-                    <Link to={`/messages?user=${user.id}`}>
-                      <Button size="sm">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Message
-                      </Button>
-                    </Link>
+                    <Button 
+                      size="sm" 
+                      onClick={() => startConversation(user.id, user.full_name)}
+                      className="shadow-sm"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Start Conversation
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -387,10 +445,13 @@ export function CustomerSuccessDashboard() {
       </Card>
 
       {/* Platform Activity */}
-      <Card>
+      <Card className="hover:shadow-md transition-shadow">
         <CardHeader>
-          <CardTitle>Recent Platform Activity</CardTitle>
-          <CardDescription>User actions and engagement</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-accent" />
+            Recent Platform Activity
+          </CardTitle>
+          <CardDescription>User actions and engagement insights</CardDescription>
         </CardHeader>
         <CardContent>
           {recentActivity.length === 0 ? (
@@ -401,16 +462,21 @@ export function CustomerSuccessDashboard() {
           ) : (
             <div className="space-y-2">
               {recentActivity.map((log) => (
-                <div key={log.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex-1">
-                    <p className="font-medium capitalize">
-                      {log.action_type.replace(/_/g, ' ').toLowerCase()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      by {log.profiles?.full_name || 'System'}
-                    </p>
+                <div key={log.id} className="flex items-center justify-between p-3 border rounded-lg hover:shadow-sm hover:border-accent/50 transition-all">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium capitalize text-sm">
+                        {log.action_type.replace(/_/g, ' ').toLowerCase()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        by {log.profiles?.full_name || 'System'}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {new Date(log.created_at).toLocaleTimeString([], { 
                       hour: '2-digit', 
                       minute: '2-digit' 
