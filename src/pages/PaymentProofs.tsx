@@ -53,8 +53,33 @@ export default function PaymentProofs() {
         `)
         .eq('buyer_id', profile?.id);
 
-      setSellerProofs(sellerData || []);
-      setBuyerProofs(buyerData || []);
+      // Generate signed URLs for all proofs
+      const generateSignedUrls = async (proofs: any[]) => {
+        return Promise.all(
+          proofs.map(async (proof) => {
+            if (proof.proof_file_url) {
+              const path = proof.proof_file_url.split('/payment-proofs/')[1];
+              if (path) {
+                const { data } = await supabase.storage
+                  .from('payment-proofs')
+                  .createSignedUrl(path, 3600); // 1 hour expiry
+                
+                return {
+                  ...proof,
+                  proof_file_url: data?.signedUrl || proof.proof_file_url
+                };
+              }
+            }
+            return proof;
+          })
+        );
+      };
+
+      const sellerProofsWithUrls = await generateSignedUrls(sellerData || []);
+      const buyerProofsWithUrls = await generateSignedUrls(buyerData || []);
+
+      setSellerProofs(sellerProofsWithUrls);
+      setBuyerProofs(buyerProofsWithUrls);
     } catch (error) {
       console.error('Error fetching payment proofs:', error);
     } finally {
