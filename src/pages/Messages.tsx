@@ -93,17 +93,25 @@ export default function Messages() {
 
   // Separate effect to handle direct navigation with URL params
   useEffect(() => {
-    if (user && listingId && sellerId && conversations.length === 0) {
+    if (user && ((listingId && sellerId) || userId) && conversations.length === 0) {
       // Wait a bit for conversations to load, then check if we need to initialize
       const timer = setTimeout(() => {
-        const existingConv = conversations.find(c => c.listing_id === listingId);
-        if (!existingConv) {
-          initializeNewConversation();
+        if (userId) {
+          // For direct messages, check if any conversation exists with this user
+          const existingConv = conversations.find(c => c.other_user_id === userId);
+          if (!existingConv) {
+            initializeNewConversation();
+          }
+        } else if (listingId) {
+          const existingConv = conversations.find(c => c.listing_id === listingId);
+          if (!existingConv) {
+            initializeNewConversation();
+          }
         }
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [user, listingId, sellerId, conversations]);
+  }, [user, listingId, sellerId, userId, conversations]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -112,32 +120,68 @@ export default function Messages() {
   }, [selectedConversation]);
 
   const initializeNewConversation = async () => {
-    if (!listingId || !sellerId || !user) return;
+    if ((!listingId || !sellerId) && !userId) return;
+    if (!user) return;
     
     try {
-      const [{ data: listingData }, { data: sellerData }] = await Promise.all([
-        supabase.from('listings').select('id, title').eq('id', listingId).single(),
-        supabase.from('profiles').select('id, full_name').eq('id', sellerId).single(),
-      ]);
+      if (userId) {
+        // Staff-initiated direct message
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('id', userId)
+          .single();
 
-      if (listingData && sellerData) {
-        const newConversation = {
-          listing_id: listingData.id,
-          listing_title: listingData.title,
-          other_user_id: sellerData.id,
-          other_user_name: sellerData.full_name,
-          last_message: 'Start your conversation',
-          last_message_time: new Date().toISOString(),
-          unread_count: 0,
-        };
-        
-        setSelectedConversation(newConversation);
-        setConversations(prev => [newConversation, ...prev]);
-        
-        // Auto-focus the input
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 100);
+        if (userData) {
+          const newConversation = {
+            listing_id: null, // Direct message, no listing
+            listing_title: 'Direct Message',
+            other_user_id: userData.id,
+            other_user_name: userData.full_name,
+            last_message: 'Start your conversation',
+            last_message_time: new Date().toISOString(),
+            unread_count: 0,
+          };
+          
+          setSelectedConversation(newConversation);
+          setConversations(prev => [newConversation, ...prev]);
+          
+          toast({
+            title: 'Conversation Ready',
+            description: `You can now message ${userData.full_name}`,
+          });
+          
+          // Auto-focus the input
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 100);
+        }
+      } else {
+        // Listing-based conversation
+        const [{ data: listingData }, { data: sellerData }] = await Promise.all([
+          supabase.from('listings').select('id, title').eq('id', listingId!).single(),
+          supabase.from('profiles').select('id, full_name').eq('id', sellerId!).single(),
+        ]);
+
+        if (listingData && sellerData) {
+          const newConversation = {
+            listing_id: listingData.id,
+            listing_title: listingData.title,
+            other_user_id: sellerData.id,
+            other_user_name: sellerData.full_name,
+            last_message: 'Start your conversation',
+            last_message_time: new Date().toISOString(),
+            unread_count: 0,
+          };
+          
+          setSelectedConversation(newConversation);
+          setConversations(prev => [newConversation, ...prev]);
+          
+          // Auto-focus the input
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 100);
+        }
       }
     } catch (error) {
       console.error('Error initializing conversation:', error);
@@ -331,14 +375,20 @@ export default function Messages() {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
     try {
+      const messageData: any = {
+        sender_id: user.id,
+        receiver_id: selectedConversation.other_user_id,
+        content: newMessage.trim(),
+      };
+
+      // Only include listing_id if it exists (null for direct messages)
+      if (selectedConversation.listing_id) {
+        messageData.listing_id = selectedConversation.listing_id;
+      }
+
       const { error } = await supabase
         .from('messages')
-        .insert({
-          listing_id: selectedConversation.listing_id,
-          sender_id: user.id,
-          receiver_id: selectedConversation.other_user_id,
-          content: newMessage.trim(),
-        });
+        .insert(messageData);
 
       if (error) throw error;
 
