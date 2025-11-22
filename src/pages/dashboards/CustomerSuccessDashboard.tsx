@@ -96,7 +96,7 @@ export function CustomerSuccessDashboard() {
 
       setRecentActivity(logs || []);
 
-      // Activity trend (last 7 days)
+      // User registration trend (last 7 days)
       const trend: any[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
@@ -105,14 +105,14 @@ export function CustomerSuccessDashboard() {
         const dayEnd = new Date(date.setHours(23, 59, 59, 999));
         
         const { count } = await supabase
-          .from('audit_logs')
+          .from('profiles')
           .select('*', { count: 'exact', head: true })
           .gte('created_at', dayStart.toISOString())
           .lte('created_at', dayEnd.toISOString());
         
         trend.push({
           day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }),
-          actions: count || 0,
+          registrations: count || 0,
         });
       }
       
@@ -262,8 +262,8 @@ export function CustomerSuccessDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Activity Trend</CardTitle>
-            <CardDescription>User actions over last 7 days</CardDescription>
+            <CardTitle>User Registration Trend</CardTitle>
+            <CardDescription>New user signups over last 7 days</CardDescription>
           </CardHeader>
           <CardContent>
             {activityTrend.length > 0 ? (
@@ -273,12 +273,12 @@ export function CustomerSuccessDashboard() {
                   <XAxis dataKey="day" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="actions" fill="hsl(var(--primary))" />
+                  <Bar dataKey="registrations" fill="hsl(var(--primary))" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[250px] flex items-center justify-center">
-                <p className="text-muted-foreground">No activity data</p>
+                <p className="text-muted-foreground">No registration data</p>
               </div>
             )}
           </CardContent>
