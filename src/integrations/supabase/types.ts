@@ -1083,7 +1083,7 @@ export type Database = {
           created_at: string
           id: string
           is_read: boolean
-          listing_id: string
+          listing_id: string | null
           message_type: Database["public"]["Enums"]["message_type"]
           receiver_id: string
           sender_id: string
@@ -1094,7 +1094,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
-          listing_id: string
+          listing_id?: string | null
           message_type?: Database["public"]["Enums"]["message_type"]
           receiver_id: string
           sender_id: string
@@ -1105,7 +1105,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
-          listing_id?: string
+          listing_id?: string | null
           message_type?: Database["public"]["Enums"]["message_type"]
           receiver_id?: string
           sender_id?: string
