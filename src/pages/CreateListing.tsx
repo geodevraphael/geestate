@@ -84,6 +84,13 @@ export default function CreateListing() {
   const [multipleFeatures, setMultipleFeatures] = useState<any[]>([]);
   const [availableProperties, setAvailableProperties] = useState<string[]>([]);
   const [showBatchUpload, setShowBatchUpload] = useState(false);
+  const [batchUploadStep, setBatchUploadStep] = useState<'preview' | 'mapping' | 'confirm'>('preview');
+  const [validationSummary, setValidationSummary] = useState<{
+    total: number;
+    valid: number;
+    invalid: number;
+    warnings: string[];
+  }>({ total: 0, valid: 0, invalid: 0, warnings: [] });
   const [fieldMapping, setFieldMapping] = useState<{
     blockNumber: string;
     plotNumber: string;
@@ -406,15 +413,20 @@ export default function CreateListing() {
           // Extract available property names from first feature
           const firstFeature = extractedFeatures[0];
           if (firstFeature.properties) {
-            setAvailableProperties(Object.keys(firstFeature.properties));
+            const props = Object.keys(firstFeature.properties);
+            setAvailableProperties(props);
+            
+            // Auto-detect field mappings
+            autoDetectFieldMapping(props);
           }
           
           setShowBatchUpload(true);
+          setBatchUploadStep('preview');
           setPolygons(extractedPolygons);
           displayPolygonsOnMap(extractedPolygons, true);
           toast({
             title: 'Multiple plots detected',
-            description: `Found ${extractedFeatures.length} plots. Please map the fields to create listings.`,
+            description: `Found ${extractedFeatures.length} plots. Review and map the fields.`,
           });
           setJsonFileName(file.name);
           return;
@@ -458,6 +470,74 @@ export default function CreateListing() {
         variant: 'destructive',
       });
     }
+  };
+
+  const autoDetectFieldMapping = (properties: string[]) => {
+    const mapping = {
+      blockNumber: '',
+      plotNumber: '',
+      streetName: '',
+      plannedUse: '',
+      hasTitle: ''
+    };
+
+    // Common field name patterns
+    const patterns = {
+      blockNumber: ['block', 'block_number', 'block_no', 'blk', 'block_num'],
+      plotNumber: ['plot', 'plot_number', 'plot_no', 'parcel', 'parcel_number', 'plot_num'],
+      streetName: ['street', 'street_name', 'road', 'locality', 'address', 'location'],
+      plannedUse: ['use', 'planned_use', 'land_use', 'usage', 'purpose', 'zoning'],
+      hasTitle: ['title', 'has_title', 'titled', 'deed', 'ownership', 'title_status']
+    };
+
+    properties.forEach(prop => {
+      const lowerProp = prop.toLowerCase();
+      
+      Object.entries(patterns).forEach(([field, keywords]) => {
+        if (keywords.some(keyword => lowerProp.includes(keyword))) {
+          mapping[field as keyof typeof mapping] = prop;
+        }
+      });
+    });
+
+    setFieldMapping(mapping);
+    
+    // Show toast if auto-detection found matches
+    const detected = Object.values(mapping).filter(v => v).length;
+    if (detected > 0) {
+      toast({
+        title: 'Fields auto-detected',
+        description: `Automatically mapped ${detected} field(s). Please review and adjust if needed.`,
+      });
+    }
+  };
+
+  const validateBatchData = () => {
+    let valid = 0;
+    let invalid = 0;
+    const warnings: string[] = [];
+
+    multipleFeatures.forEach((feature, index) => {
+      const props = feature.properties || {};
+      const blockNum = props[fieldMapping.blockNumber];
+      const plotNum = props[fieldMapping.plotNumber];
+
+      if (!blockNum || !plotNum) {
+        invalid++;
+        warnings.push(`Row ${index + 1}: Missing block or plot number`);
+      } else {
+        valid++;
+      }
+    });
+
+    setValidationSummary({
+      total: multipleFeatures.length,
+      valid,
+      invalid,
+      warnings: warnings.slice(0, 5) // Show first 5 warnings
+    });
+
+    return invalid === 0;
   };
 
   const handleBatchSubmit = async () => {
@@ -909,161 +989,435 @@ export default function CreateListing() {
         {showBatchUpload && (
           <Card className="mb-6 border-primary shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <List className="h-5 w-5" />
-                Batch Upload - {multipleFeatures.length} Plots Detected
-              </CardTitle>
-              <CardDescription>
-                Map the properties from your TopoJSON/GeoJSON file to Tanzania land parcel standards
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <List className="h-5 w-5" />
+                    Batch Upload - {multipleFeatures.length} Plots Detected
+                  </CardTitle>
+                  <CardDescription>
+                    Map the properties from your file to Tanzania land parcel standards
+                  </CardDescription>
+                </div>
+                <div className="flex gap-1">
+                  {['preview', 'mapping', 'confirm'].map((step, idx) => (
+                    <div
+                      key={step}
+                      className={`h-2 w-16 rounded-full transition-colors ${
+                        batchUploadStep === step ? 'bg-primary' : 'bg-muted'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Tanzania Land Standards:</strong> Each plot will be registered with Block Number, Plot Number, Street Name, Planned Use, and Title Status.
-                </AlertDescription>
-              </Alert>
+              {/* Step 1: Data Preview */}
+              {batchUploadStep === 'preview' && (
+                <div className="space-y-4">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Step 1: Preview Your Data</strong> - Review the plots from your file before mapping fields.
+                    </AlertDescription>
+                  </Alert>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="blockNumberField" className="text-sm font-medium flex items-center gap-1">
-                    Block Number Field <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={fieldMapping.blockNumber}
-                    onValueChange={(value) => setFieldMapping({...fieldMapping, blockNumber: value})}
-                  >
-                    <SelectTrigger id="blockNumberField">
-                      <SelectValue placeholder="Select field for Block Number" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProperties.map(prop => (
-                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-muted px-4 py-3 border-b">
+                      <h3 className="font-medium">Data Preview (First 5 plots)</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Total plots in file: {multipleFeatures.length}
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto max-h-96">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-2 text-left font-medium">#</th>
+                            {availableProperties.slice(0, 6).map(prop => (
+                              <th key={prop} className="px-4 py-2 text-left font-medium">
+                                {prop}
+                              </th>
+                            ))}
+                            {availableProperties.length > 6 && (
+                              <th className="px-4 py-2 text-left font-medium">
+                                +{availableProperties.length - 6} more
+                              </th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {multipleFeatures.slice(0, 5).map((feature, idx) => (
+                            <tr key={idx} className="border-b hover:bg-muted/30">
+                              <td className="px-4 py-2 font-medium">{idx + 1}</td>
+                              {availableProperties.slice(0, 6).map(prop => (
+                                <td key={prop} className="px-4 py-2 max-w-[200px] truncate">
+                                  {String(feature.properties?.[prop] || '-')}
+                                </td>
+                              ))}
+                              {availableProperties.length > 6 && (
+                                <td className="px-4 py-2 text-muted-foreground">...</td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowBatchUpload(false);
+                        setMultipleFeatures([]);
+                        clearAllPolygons();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={() => setBatchUploadStep('mapping')}>
+                      Next: Map Fields
+                    </Button>
+                  </div>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="plotNumberField" className="text-sm font-medium flex items-center gap-1">
-                    Plot Number Field <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={fieldMapping.plotNumber}
-                    onValueChange={(value) => setFieldMapping({...fieldMapping, plotNumber: value})}
-                  >
-                    <SelectTrigger id="plotNumberField">
-                      <SelectValue placeholder="Select field for Plot Number" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProperties.map(prop => (
-                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Step 2: Field Mapping */}
+              {batchUploadStep === 'mapping' && (
+                <div className="space-y-4">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Step 2: Map Fields</strong> - Match your file's columns to Tanzania land parcel standards. Fields marked with auto-detection were suggested based on column names.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="blockNumberField" className="text-sm font-medium flex items-center gap-2">
+                        Block Number <span className="text-destructive">*</span>
+                        {fieldMapping.blockNumber && (
+                          <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={fieldMapping.blockNumber}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, blockNumber: value})}
+                      >
+                        <SelectTrigger id="blockNumberField">
+                          <SelectValue placeholder="Select field for Block Number" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProperties.map(prop => (
+                            <SelectItem key={prop} value={prop}>
+                              {prop}
+                              {fieldMapping.blockNumber === prop && ' (selected)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Example: A, B, C1, Block-5
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="plotNumberField" className="text-sm font-medium flex items-center gap-2">
+                        Plot Number <span className="text-destructive">*</span>
+                        {fieldMapping.plotNumber && (
+                          <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={fieldMapping.plotNumber}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, plotNumber: value})}
+                      >
+                        <SelectTrigger id="plotNumberField">
+                          <SelectValue placeholder="Select field for Plot Number" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProperties.map(prop => (
+                            <SelectItem key={prop} value={prop}>
+                              {prop}
+                              {fieldMapping.plotNumber === prop && ' (selected)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Example: 123, 456, P-789
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="streetNameField" className="text-sm font-medium flex items-center gap-2">
+                        Street Name/Locality
+                        {fieldMapping.streetName && (
+                          <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={fieldMapping.streetName}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, streetName: value})}
+                      >
+                        <SelectTrigger id="streetNameField">
+                          <SelectValue placeholder="Optional - Select field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {availableProperties.map(prop => (
+                            <SelectItem key={prop} value={prop}>
+                              {prop}
+                              {fieldMapping.streetName === prop && ' (selected)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Optional: Masaki Street, Kinondoni Road
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="plannedUseField" className="text-sm font-medium flex items-center gap-2">
+                        Planned Use
+                        {fieldMapping.plannedUse && (
+                          <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={fieldMapping.plannedUse}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, plannedUse: value})}
+                      >
+                        <SelectTrigger id="plannedUseField">
+                          <SelectValue placeholder="Optional - Select field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {availableProperties.map(prop => (
+                            <SelectItem key={prop} value={prop}>
+                              {prop}
+                              {fieldMapping.plannedUse === prop && ' (selected)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Optional: Residential, Commercial, Mixed-Use
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="hasTitleField" className="text-sm font-medium flex items-center gap-2">
+                        Has Title Status (0 = No, 1 = Yes)
+                        {fieldMapping.hasTitle && (
+                          <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={fieldMapping.hasTitle}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, hasTitle: value})}
+                      >
+                        <SelectTrigger id="hasTitleField">
+                          <SelectValue placeholder="Optional - Select field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None (all plots default to: No Title)</SelectItem>
+                          {availableProperties.map(prop => (
+                            <SelectItem key={prop} value={prop}>
+                              {prop}
+                              {fieldMapping.hasTitle === prop && ' (selected)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Optional: Field with 1 (has title) or 0 (no title). If not mapped, all plots default to "No Title".
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between gap-3 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setBatchUploadStep('preview')}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (validateBatchData()) {
+                          setBatchUploadStep('confirm');
+                        }
+                      }}
+                      disabled={!fieldMapping.blockNumber || !fieldMapping.plotNumber}
+                    >
+                      Next: Confirm Upload
+                    </Button>
+                  </div>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="streetNameField" className="text-sm font-medium">
-                    Street Name/Locality Field
-                  </Label>
-                  <Select
-                    value={fieldMapping.streetName}
-                    onValueChange={(value) => setFieldMapping({...fieldMapping, streetName: value})}
-                  >
-                    <SelectTrigger id="streetNameField">
-                      <SelectValue placeholder="Select field for Street Name" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {availableProperties.map(prop => (
-                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Step 3: Confirmation */}
+              {batchUploadStep === 'confirm' && (
+                <div className="space-y-4">
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Step 3: Confirm & Upload</strong> - Review the summary before creating {multipleFeatures.length} listings.
+                    </AlertDescription>
+                  </Alert>
 
-                <div className="space-y-2">
-                  <Label htmlFor="plannedUseField" className="text-sm font-medium">
-                    Planned Use Field
-                  </Label>
-                  <Select
-                    value={fieldMapping.plannedUse}
-                    onValueChange={(value) => setFieldMapping({...fieldMapping, plannedUse: value})}
-                  >
-                    <SelectTrigger id="plannedUseField">
-                      <SelectValue placeholder="Select field for Planned Use" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {availableProperties.map(prop => (
-                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Validation Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-3xl font-bold text-primary">{validationSummary.total}</p>
+                          <p className="text-sm text-muted-foreground">Total Plots</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-3xl font-bold text-green-600">{validationSummary.valid}</p>
+                          <p className="text-sm text-muted-foreground">Valid</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-3xl font-bold text-destructive">{validationSummary.invalid}</p>
+                          <p className="text-sm text-muted-foreground">Issues</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="hasTitleField" className="text-sm font-medium">
-                    Has Title Field (0 = No Title, 1 = Has Title)
-                  </Label>
-                  <Select
-                    value={fieldMapping.hasTitle}
-                    onValueChange={(value) => setFieldMapping({...fieldMapping, hasTitle: value})}
-                  >
-                    <SelectTrigger id="hasTitleField">
-                      <SelectValue placeholder="Select field for Title Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None (default: No Title)</SelectItem>
-                      {availableProperties.map(prop => (
-                        <SelectItem key={prop} value={prop}>{prop}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    This field indicates if the plot has legal title documentation (1 = yes, 0 = no)
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  onClick={handleBatchSubmit}
-                  disabled={loading || !fieldMapping.blockNumber || !fieldMapping.plotNumber}
-                  className="flex-1"
-                  size="lg"
-                >
-                  {loading ? (
-                    <>Processing...</>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Create {multipleFeatures.length} Listings
-                    </>
+                  {/* Warnings */}
+                  {validationSummary.warnings.length > 0 && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <p className="font-medium mb-2">Issues found:</p>
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                          {validationSummary.warnings.map((warning, idx) => (
+                            <li key={idx}>{warning}</li>
+                          ))}
+                        </ul>
+                        {validationSummary.invalid > 5 && (
+                          <p className="text-sm mt-2">
+                            ...and {validationSummary.invalid - 5} more issues
+                          </p>
+                        )}
+                      </AlertDescription>
+                    </Alert>
                   )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowBatchUpload(false);
-                    setMultipleFeatures([]);
-                    setFieldMapping({
-                      blockNumber: '',
-                      plotNumber: '',
-                      streetName: '',
-                      plannedUse: '',
-                      hasTitle: ''
-                    });
-                    clearAllPolygons();
-                  }}
-                  disabled={loading}
-                  size="lg"
-                >
-                  Cancel
-                </Button>
-              </div>
+
+                  {/* Field Mapping Summary */}
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <h3 className="font-medium mb-3">Field Mapping Summary</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Block Number:</span>
+                        <span className="font-medium">{fieldMapping.blockNumber || 'Not mapped'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Plot Number:</span>
+                        <span className="font-medium">{fieldMapping.plotNumber || 'Not mapped'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Street Name:</span>
+                        <span className="font-medium">{fieldMapping.streetName || 'Not mapped'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Planned Use:</span>
+                        <span className="font-medium">{fieldMapping.plannedUse || 'Not mapped'}</span>
+                      </div>
+                      <div className="flex justify-between md:col-span-2">
+                        <span className="text-muted-foreground">Title Status:</span>
+                        <span className="font-medium">{fieldMapping.hasTitle || 'Not mapped (defaults to No Title)'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sample Preview */}
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-muted px-4 py-3 border-b">
+                      <h3 className="font-medium">Preview: First 3 Listings</h3>
+                    </div>
+                    <div className="divide-y">
+                      {multipleFeatures.slice(0, 3).map((feature, idx) => {
+                        const props = feature.properties || {};
+                        const blockNum = props[fieldMapping.blockNumber] || 'N/A';
+                        const plotNum = props[fieldMapping.plotNumber] || 'N/A';
+                        const street = props[fieldMapping.streetName] || 'N/A';
+                        
+                        return (
+                          <div key={idx} className="p-4">
+                            <p className="font-medium">
+                              Plot {plotNum}, Block {blockNum}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Location: {street}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between gap-3 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setBatchUploadStep('mapping')}
+                      disabled={loading}
+                    >
+                      Back
+                    </Button>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowBatchUpload(false);
+                          setMultipleFeatures([]);
+                          setBatchUploadStep('preview');
+                          setFieldMapping({
+                            blockNumber: '',
+                            plotNumber: '',
+                            streetName: '',
+                            plannedUse: '',
+                            hasTitle: ''
+                          });
+                          clearAllPolygons();
+                        }}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleBatchSubmit}
+                        disabled={loading || validationSummary.invalid > 0}
+                        size="lg"
+                      >
+                        {loading ? (
+                          <>
+                            <span className="animate-pulse">Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Create {validationSummary.valid} Listings
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
