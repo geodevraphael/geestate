@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, MessageSquare, TrendingUp, HelpCircle, Star, Activity, UserPlus, Clock, Shield } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 export function CustomerSuccessDashboard() {
   const { profile } = useAuth();
@@ -268,13 +268,13 @@ export function CustomerSuccessDashboard() {
           <CardContent>
             {activityTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={activityTrend}>
+                <AreaChart data={activityTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="registrations" fill="hsl(var(--primary))" />
-                </BarChart>
+                  <Area type="monotone" dataKey="registrations" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[250px] flex items-center justify-center">
