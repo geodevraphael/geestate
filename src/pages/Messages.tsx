@@ -297,13 +297,21 @@ export default function Messages() {
     }
   };
 
-  const fetchMessages = async (listingId: string, otherUserId: string) => {
+  const fetchMessages = async (listingId: string | null, otherUserId: string) => {
     setMessagesLoading(true);
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('messages')
-        .select('*')
-        .eq('listing_id', listingId)
+        .select('*');
+
+      // Handle null listing_id (direct messages) vs actual listing_id
+      if (listingId === null) {
+        query = query.is('listing_id', null);
+      } else {
+        query = query.eq('listing_id', listingId);
+      }
+
+      const { data } = await query
         .or(`and(sender_id.eq.${user?.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user?.id})`)
         .order('timestamp', { ascending: true });
 
