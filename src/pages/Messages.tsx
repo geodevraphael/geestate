@@ -19,6 +19,7 @@ export default function Messages() {
   const [searchParams] = useSearchParams();
   const listingId = searchParams.get('listing');
   const sellerId = searchParams.get('seller');
+  const userId = searchParams.get('user');
   
   const [conversations, setConversations] = useState<any[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<any | null>(null);
@@ -212,6 +213,33 @@ export default function Messages() {
           } else if (sellerId && conversationsList.length === 0) {
             // No existing conversation, create a new one
             await initializeNewConversation();
+          }
+        } else if (userId && !initialLoadDone) {
+          // Find conversations with this user
+          const userConversations = conversationsList.filter(
+            (c: any) => c.other_user_id === userId
+          );
+          
+          if (userConversations.length === 1) {
+            // Auto-select if there's only one conversation
+            setSelectedConversation(userConversations[0]);
+            toast({
+              title: 'Conversation Found',
+              description: 'Selected existing conversation',
+            });
+          } else if (userConversations.length > 1) {
+            // Show a toast to let them know there are multiple conversations
+            toast({
+              title: 'Multiple Conversations',
+              description: 'This user has multiple conversations. Select one to continue.',
+            });
+          } else {
+            // No conversations found
+            toast({
+              title: 'No Conversations',
+              description: 'No existing conversations with this user. They need to message you about a listing first.',
+              variant: 'destructive',
+            });
           }
         }
       }
