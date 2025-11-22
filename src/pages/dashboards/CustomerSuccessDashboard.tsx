@@ -334,26 +334,48 @@ export function CustomerSuccessDashboard() {
           ) : (
             <div className="space-y-3">
               {recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{user.full_name}</h3>
-                      {user.role && (
-                        <Badge variant="outline" className="text-xs">
-                          {user.role}
-                        </Badge>
+                <div key={user.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">{user.full_name}</h3>
+                        {user.role && (
+                          <Badge variant="outline" className="text-xs">
+                            {user.role}
+                          </Badge>
+                        )}
+                      </div>
+                      {user.organization_name && (
+                        <p className="text-sm font-medium text-muted-foreground mb-1">
+                          {user.organization_name}
+                        </p>
                       )}
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        {user.phone && (
+                          <p className="text-sm text-muted-foreground">{user.phone}</p>
+                        )}
+                        {user.bio && (
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{user.bio}</p>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Joined {new Date(user.created_at).toLocaleDateString()}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Joined {new Date(user.created_at).toLocaleDateString()}
-                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Link to={`/user-profile/${user.id}`}>
                       <Button size="sm" variant="outline">
+                        <Shield className="h-4 w-4 mr-2" />
                         View Profile
+                      </Button>
+                    </Link>
+                    <Link to={`/messages?user=${user.id}`}>
+                      <Button size="sm">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Message
                       </Button>
                     </Link>
                   </div>
