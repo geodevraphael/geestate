@@ -335,7 +335,7 @@ export function VerificationDashboard() {
               Polygon Validation
             </Button>
           </Link>
-          <Link to="/compliance-flags">
+          <Link to="/admin/compliance">
             <Button variant="outline" className="shadow-sm">
               <AlertCircle className="h-4 w-4 mr-2" />
               Compliance Flags
