@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, XCircle, Clock, Eye, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { logAuditAction } from '@/lib/auditLog';
@@ -41,6 +41,7 @@ export default function AdminVerification() {
   const { user, profile, hasRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [listings, setListings] = useState<ListingWithOwner[]>([]);
   const [selectedListing, setSelectedListing] = useState<ListingWithOwner | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +50,7 @@ export default function AdminVerification() {
 
   useEffect(() => {
     if (user) {
-      if (!hasRole('admin') && !hasRole('verification_officer')) {
+      if (!hasRole('admin') && !hasRole('verification_officer') && !hasRole('spatial_analyst')) {
         navigate('/dashboard');
         return;
       }
@@ -72,6 +73,19 @@ export default function AdminVerification() {
 
       if (error) throw error;
       setListings((data as any) || []);
+
+      // Auto-select listing from URL parameter
+      const listingId = searchParams.get('listing');
+      if (listingId && data) {
+        const listing = data.find((l: any) => l.id === listingId);
+        if (listing) {
+          setSelectedListing(listing as any);
+          toast({
+            title: 'Listing Selected',
+            description: 'Ready for polygon validation',
+          });
+        }
+      }
     } catch (error) {
       console.error('Error fetching listings:', error);
       toast({
