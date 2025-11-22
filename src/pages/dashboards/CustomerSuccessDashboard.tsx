@@ -366,7 +366,7 @@ export function CustomerSuccessDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link to={`/user-profile/${user.id}`}>
+                    <Link to={`/profile/${user.id}`}>
                       <Button size="sm" variant="outline">
                         <Shield className="h-4 w-4 mr-2" />
                         View Profile
