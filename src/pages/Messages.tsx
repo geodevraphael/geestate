@@ -54,8 +54,15 @@ export default function Messages() {
               fetchConversations();
               
               // If the message is for the currently selected conversation, add it to messages
-              if (selectedConversation && newMessage.listing_id === selectedConversation.listing_id) {
-                setMessages(prev => [...prev, newMessage as Message]);
+              if (selectedConversation) {
+                const matchesConversation = 
+                  (newMessage.listing_id === selectedConversation.listing_id) &&
+                  (newMessage.sender_id === selectedConversation.other_user_id || 
+                   newMessage.receiver_id === selectedConversation.other_user_id);
+                
+                if (matchesConversation) {
+                  setMessages(prev => [...prev, newMessage as Message]);
+                }
               }
             }
           }
@@ -78,8 +85,6 @@ export default function Messages() {
                     : msg
                 )
               );
-              // Refresh conversations to update unread counts
-              fetchConversations();
             }
           }
         )
@@ -89,7 +94,7 @@ export default function Messages() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, selectedConversation]);
+  }, [user]);
 
   // Separate effect to handle direct navigation with URL params
   useEffect(() => {
@@ -219,19 +224,29 @@ export default function Messages() {
         const groupedConversations: any = {};
         
         messagesData.forEach((msg: any) => {
-          // Skip messages with null listings (RLS filtered) or null profiles
-          if (!msg.listing || !msg.sender || !msg.receiver) {
-            console.warn('Skipping message due to null listing or profile:', msg.id);
+          // Skip messages with null profiles (these should never happen)
+          if (!msg.sender || !msg.receiver) {
+            console.warn('Skipping message due to null profile:', msg.id);
             return;
           }
           
-          const key = `${msg.listing_id}`;
+          // For direct messages, msg.listing will be null - that's valid
+          const isDirectMessage = msg.listing_id === null;
+          
+          // Create unique key for each conversation
+          // For direct messages: "direct-{other_user_id}"
+          // For listing messages: "listing-{listing_id}-{other_user_id}"
+          const isReceiver = msg.receiver_id === user?.id;
+          const otherUserId = isReceiver ? msg.sender_id : msg.receiver_id;
+          const key = isDirectMessage 
+            ? `direct-${otherUserId}`
+            : `listing-${msg.listing_id}-${otherUserId}`;
+          
           if (!groupedConversations[key]) {
-            const isReceiver = msg.receiver_id === user?.id;
             groupedConversations[key] = {
               listing_id: msg.listing_id,
-              listing_title: msg.listing.title,
-              other_user_id: isReceiver ? msg.sender_id : msg.receiver_id,
+              listing_title: isDirectMessage ? 'Direct Message' : msg.listing?.title,
+              other_user_id: otherUserId,
               other_user_name: isReceiver ? msg.sender.full_name : msg.receiver.full_name,
               last_message: msg.content,
               last_message_time: msg.timestamp,
