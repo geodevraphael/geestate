@@ -229,6 +229,188 @@ export default function BuyingProcessDetail() {
     return 'pending';
   };
 
+  const renderStepDetails = (stepId: number) => {
+    if (!processData) return null;
+
+    // Field Visit details
+    if (stepId === 0 && processData.visit_completed) {
+      return (
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span className="text-muted-foreground">Completed:</span>
+              <p className="font-medium">{new Date(processData.visit_completed_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          {processData.visit_notes && (
+            <div>
+              <span className="text-muted-foreground">Visit Notes:</span>
+              <p className="mt-1 whitespace-pre-wrap">{processData.visit_notes}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Title Verification details
+    if (stepId === 1 && processData.title_verification_completed) {
+      return (
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span className="text-muted-foreground">Title Deed Number:</span>
+              <p className="font-medium">{processData.title_deed_number}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Registry Office:</span>
+              <p className="font-medium">{processData.title_registry_office}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Verification Date:</span>
+              <p className="font-medium">{processData.title_verification_date ? new Date(processData.title_verification_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Completed:</span>
+              <p className="font-medium">{new Date(processData.title_verification_completed_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          {processData.title_verification_notes && (
+            <div>
+              <span className="text-muted-foreground">Notes:</span>
+              <p className="mt-1 whitespace-pre-wrap">{processData.title_verification_notes}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Registry Search details
+    if (stepId === 2 && processData.registry_search_completed) {
+      return (
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span className="text-muted-foreground">Search Date:</span>
+              <p className="font-medium">{processData.registry_search_date ? new Date(processData.registry_search_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Encumbrance Status:</span>
+              <p className="font-medium">{processData.encumbrance_status}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Completed:</span>
+              <p className="font-medium">{new Date(processData.registry_search_completed_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          {processData.registry_search_findings && (
+            <div>
+              <span className="text-muted-foreground">Findings:</span>
+              <p className="mt-1 whitespace-pre-wrap">{processData.registry_search_findings}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Sale Agreement details
+    if (stepId === 3 && processData.sale_agreement_completed) {
+      return (
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span className="text-muted-foreground">Lawyer Name:</span>
+              <p className="font-medium">{processData.lawyer_name}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Lawyer Contact:</span>
+              <p className="font-medium">{processData.lawyer_contact}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Agreement Date:</span>
+              <p className="font-medium">{processData.agreement_date ? new Date(processData.agreement_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Completed:</span>
+              <p className="font-medium">{new Date(processData.sale_agreement_completed_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          {processData.agreement_notes && (
+            <div>
+              <span className="text-muted-foreground">Notes:</span>
+              <p className="mt-1 whitespace-pre-wrap">{processData.agreement_notes}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Payment details
+    if (stepId === 4 && processData.payment_completed) {
+      return (
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span className="text-muted-foreground">Payment Method:</span>
+              <p className="font-medium">{processData.payment_method}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Payment Reference:</span>
+              <p className="font-medium">{processData.payment_reference}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Payment Date:</span>
+              <p className="font-medium">{processData.payment_date ? new Date(processData.payment_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Completed:</span>
+              <p className="font-medium">{new Date(processData.payment_completed_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          {processData.payment_notes && (
+            <div>
+              <span className="text-muted-foreground">Notes:</span>
+              <p className="mt-1 whitespace-pre-wrap">{processData.payment_notes}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Transfer details
+    if (stepId === 5 && processData.transfer_completed) {
+      return (
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span className="text-muted-foreground">Transfer Date:</span>
+              <p className="font-medium">{processData.transfer_date ? new Date(processData.transfer_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">New Title Deed Number:</span>
+              <p className="font-medium">{processData.new_title_deed_number}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Final Completion:</span>
+              <p className="font-medium">{processData.final_completion_date ? new Date(processData.final_completion_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Completed:</span>
+              <p className="font-medium">{new Date(processData.transfer_completed_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          {processData.transfer_notes && (
+            <div>
+              <span className="text-muted-foreground">Notes:</span>
+              <p className="mt-1 whitespace-pre-wrap">{processData.transfer_notes}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const renderStepForm = (stepId: number) => {
     // For Field Visit (step 0) - integrate with visit requests
     if (stepId === 0) {
@@ -639,9 +821,12 @@ export default function BuyingProcessDetail() {
                       <p className="text-sm md:text-base text-muted-foreground mb-3 md:mb-4">{step.description}</p>
                       
                       {status === 'completed' && (
-                        <Badge variant="outline" className="text-success border-success text-xs">
-                          Completed
-                        </Badge>
+                        <>
+                          <Badge variant="outline" className="text-success border-success text-xs mb-2">
+                            Completed
+                          </Badge>
+                          {renderStepDetails(step.id)}
+                        </>
                       )}
                     </div>
 
