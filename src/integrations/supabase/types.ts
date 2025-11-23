@@ -2367,10 +2367,9 @@ export type Database = {
       backfill_listing_fees: {
         Args: never
         Returns: {
-          amount_due: number
           income_record_id: string
-          listing_id: string
-          listing_title: string
+          listing_count: number
+          total_amount: number
           user_id: string
         }[]
       }

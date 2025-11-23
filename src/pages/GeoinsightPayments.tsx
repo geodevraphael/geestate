@@ -187,11 +187,6 @@ export default function GeoinsightPayments() {
                           <TableCell>{new Date(record.created_at).toLocaleDateString()}</TableCell>
                           <TableCell className="max-w-xs">
                             {record.description}
-                            {record.listing && (
-                              <div className="text-xs text-muted-foreground">
-                                Listing: {record.listing.title}
-                              </div>
-                            )}
                           </TableCell>
                           <TableCell className="font-medium">{formatCurrency(record.amount_due, record.currency)}</TableCell>
                           <TableCell>
