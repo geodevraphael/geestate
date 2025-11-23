@@ -8,6 +8,7 @@ import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { GeospatialServiceRequest } from '@/components/GeospatialServiceRequest';
 import { GeoInsightServices } from '@/components/GeoInsightServices';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
+import { BuyingProcessTracker } from '@/components/BuyingProcessTracker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1170,6 +1171,15 @@ export default function ListingDetail() {
             {/* GeoInsight Professional Services */}
             {user && listing.status === 'published' && (
               <GeoInsightServices listingId={id!} sellerId={listing.owner_id} />
+            )}
+
+            {/* Buying Process Tracker for Buyers */}
+            {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
+              <BuyingProcessTracker 
+                listingId={id!} 
+                sellerId={listing.owner_id}
+                approvedVisitRequestId={approvedVisitRequest?.id}
+              />
             )}
           </div>
         </div>

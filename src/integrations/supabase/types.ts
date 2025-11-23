@@ -62,6 +62,167 @@ export type Database = {
           },
         ]
       }
+      buying_process_tracker: {
+        Row: {
+          agreement_date: string | null
+          agreement_notes: string | null
+          buyer_id: string
+          created_at: string
+          current_step: number
+          encumbrance_status: string | null
+          final_completion_date: string | null
+          id: string
+          lawyer_contact: string | null
+          lawyer_name: string | null
+          listing_id: string
+          new_title_deed_number: string | null
+          payment_completed: boolean | null
+          payment_completed_at: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_notes: string | null
+          payment_reference: string | null
+          process_status: string
+          registry_search_completed: boolean | null
+          registry_search_completed_at: string | null
+          registry_search_date: string | null
+          registry_search_findings: string | null
+          sale_agreement_completed: boolean | null
+          sale_agreement_completed_at: string | null
+          seller_id: string
+          title_deed_number: string | null
+          title_registry_office: string | null
+          title_verification_completed: boolean | null
+          title_verification_completed_at: string | null
+          title_verification_date: string | null
+          title_verification_notes: string | null
+          transfer_completed: boolean | null
+          transfer_completed_at: string | null
+          transfer_date: string | null
+          transfer_notes: string | null
+          updated_at: string
+          visit_completed: boolean | null
+          visit_completed_at: string | null
+          visit_notes: string | null
+          visit_request_id: string | null
+        }
+        Insert: {
+          agreement_date?: string | null
+          agreement_notes?: string | null
+          buyer_id: string
+          created_at?: string
+          current_step?: number
+          encumbrance_status?: string | null
+          final_completion_date?: string | null
+          id?: string
+          lawyer_contact?: string | null
+          lawyer_name?: string | null
+          listing_id: string
+          new_title_deed_number?: string | null
+          payment_completed?: boolean | null
+          payment_completed_at?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_notes?: string | null
+          payment_reference?: string | null
+          process_status?: string
+          registry_search_completed?: boolean | null
+          registry_search_completed_at?: string | null
+          registry_search_date?: string | null
+          registry_search_findings?: string | null
+          sale_agreement_completed?: boolean | null
+          sale_agreement_completed_at?: string | null
+          seller_id: string
+          title_deed_number?: string | null
+          title_registry_office?: string | null
+          title_verification_completed?: boolean | null
+          title_verification_completed_at?: string | null
+          title_verification_date?: string | null
+          title_verification_notes?: string | null
+          transfer_completed?: boolean | null
+          transfer_completed_at?: string | null
+          transfer_date?: string | null
+          transfer_notes?: string | null
+          updated_at?: string
+          visit_completed?: boolean | null
+          visit_completed_at?: string | null
+          visit_notes?: string | null
+          visit_request_id?: string | null
+        }
+        Update: {
+          agreement_date?: string | null
+          agreement_notes?: string | null
+          buyer_id?: string
+          created_at?: string
+          current_step?: number
+          encumbrance_status?: string | null
+          final_completion_date?: string | null
+          id?: string
+          lawyer_contact?: string | null
+          lawyer_name?: string | null
+          listing_id?: string
+          new_title_deed_number?: string | null
+          payment_completed?: boolean | null
+          payment_completed_at?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_notes?: string | null
+          payment_reference?: string | null
+          process_status?: string
+          registry_search_completed?: boolean | null
+          registry_search_completed_at?: string | null
+          registry_search_date?: string | null
+          registry_search_findings?: string | null
+          sale_agreement_completed?: boolean | null
+          sale_agreement_completed_at?: string | null
+          seller_id?: string
+          title_deed_number?: string | null
+          title_registry_office?: string | null
+          title_verification_completed?: boolean | null
+          title_verification_completed_at?: string | null
+          title_verification_date?: string | null
+          title_verification_notes?: string | null
+          transfer_completed?: boolean | null
+          transfer_completed_at?: string | null
+          transfer_date?: string | null
+          transfer_notes?: string | null
+          updated_at?: string
+          visit_completed?: boolean | null
+          visit_completed_at?: string | null
+          visit_notes?: string | null
+          visit_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buying_process_tracker_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buying_process_tracker_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buying_process_tracker_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buying_process_tracker_visit_request_id_fkey"
+            columns: ["visit_request_id"]
+            isOneToOne: false
+            referencedRelation: "visit_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_flags: {
         Row: {
           created_at: string
