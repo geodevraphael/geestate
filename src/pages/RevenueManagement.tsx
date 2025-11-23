@@ -14,12 +14,12 @@ function RevenueManagementContent() {
   return (
     <MainLayout>
       <div className="w-full p-6 space-y-6">
-        <div className="max-w-7xl mx-auto w-full">
+        <div className="w-full">
           <h1 className="text-3xl font-bold">Revenue Management</h1>
           <p className="text-muted-foreground">Comprehensive revenue tracking, tax management, and payment monitoring</p>
         </div>
 
-        <div className="max-w-7xl mx-auto w-full">
+        <div className="w-full">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-5 h-auto">
               <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
