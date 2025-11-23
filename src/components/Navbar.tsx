@@ -33,7 +33,7 @@ export function Navbar() {
               {t('nav.allListings')}
             </Link>
             <Link to="/sellers" className="text-sm font-medium hover:text-primary transition-colors">
-              Browse Sellers
+              {t('nav.sellers')}
             </Link>
             <Link to="/about-us" className="text-sm font-medium hover:text-primary transition-colors">
               {t('nav.about')}
@@ -111,7 +111,7 @@ export function Navbar() {
               className="block py-2 text-sm font-medium hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Browse Sellers
+              {t('nav.sellers')}
             </Link>
             <Link
               to="/about-us"
