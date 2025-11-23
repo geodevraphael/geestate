@@ -13,41 +13,53 @@ function RevenueManagementContent() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div>
+      <div className="w-full p-6 space-y-6">
+        <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold">Revenue Management</h1>
-          <p className="text-muted-foreground">Manage your revenue, taxes, and payments</p>
+          <p className="text-muted-foreground">Comprehensive revenue tracking, tax management, and payment monitoring</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="geoinsight">GeoInsight Fees</TabsTrigger>
-            <TabsTrigger value="tax">Tax Settings</TabsTrigger>
-          </TabsList>
+        <div className="max-w-7xl mx-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-5 h-auto">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="transactions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Transactions
+              </TabsTrigger>
+              <TabsTrigger value="geoinsight" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                GeoInsight Fees
+              </TabsTrigger>
+              <TabsTrigger value="tax" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Tax Settings
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview">
-            <RevenueOverview />
-          </TabsContent>
+            <TabsContent value="overview" className="mt-6">
+              <RevenueOverview />
+            </TabsContent>
 
-          <TabsContent value="analytics">
-            <RevenueAnalytics />
-          </TabsContent>
+            <TabsContent value="analytics" className="mt-6">
+              <RevenueAnalytics />
+            </TabsContent>
 
-          <TabsContent value="transactions">
-            <TransactionHistory />
-          </TabsContent>
+            <TabsContent value="transactions" className="mt-6">
+              <TransactionHistory />
+            </TabsContent>
 
-          <TabsContent value="geoinsight">
-            <GeoInsightPayments />
-          </TabsContent>
+            <TabsContent value="geoinsight" className="mt-6">
+              <GeoInsightPayments />
+            </TabsContent>
 
-          <TabsContent value="tax">
-            <TaxSettings />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="tax" className="mt-6">
+              <TaxSettings />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </MainLayout>
   );
