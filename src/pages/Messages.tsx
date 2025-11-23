@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Send, CheckCheck, Check, Search, Smile, Paperclip, MoreVertical, Phone, Video } from 'lucide-react';
+import { Send, CheckCheck, Check, Search, Smile, Paperclip, MoreVertical, Phone, Video, Share2 } from 'lucide-react';
 import { Message } from '@/types/database';
 import { format, isToday, isYesterday, differenceInMinutes } from 'date-fns';
 
@@ -30,6 +30,7 @@ export default function Messages() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isUserSeller, setIsUserSeller] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -121,8 +122,29 @@ export default function Messages() {
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.listing_id, selectedConversation.other_user_id);
+      checkIfUserIsSeller();
     }
   }, [selectedConversation]);
+
+  const checkIfUserIsSeller = async () => {
+    if (!selectedConversation?.listing_id || !user?.id) {
+      setIsUserSeller(false);
+      return;
+    }
+
+    try {
+      const { data: listing } = await supabase
+        .from('listings')
+        .select('owner_id')
+        .eq('id', selectedConversation.listing_id)
+        .single();
+
+      setIsUserSeller(listing?.owner_id === user.id);
+    } catch (error) {
+      console.error('Error checking seller status:', error);
+      setIsUserSeller(false);
+    }
+  };
 
   const initializeNewConversation = async () => {
     if ((!listingId || !sellerId) && !userId) return;
@@ -392,16 +414,17 @@ export default function Messages() {
     };
   };
 
-  const sendMessage = async (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent, customMessage?: string) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !selectedConversation || !user) return;
+    const messageToSend = customMessage || newMessage.trim();
+    if (!messageToSend || !selectedConversation || !user) return;
 
     try {
       const messageData: any = {
         sender_id: user.id,
         receiver_id: selectedConversation.other_user_id,
-        content: newMessage.trim(),
+        content: messageToSend,
       };
 
       // Only include listing_id if it exists (null for direct messages)
@@ -415,7 +438,9 @@ export default function Messages() {
 
       if (error) throw error;
 
-      setNewMessage('');
+      if (!customMessage) {
+        setNewMessage('');
+      }
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -423,6 +448,20 @@ export default function Messages() {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleShareListing = async (e: React.MouseEvent) => {
+    if (!selectedConversation?.listing_id) return;
+
+    const listingUrl = `${window.location.origin}/listing/${selectedConversation.listing_id}`;
+    const shareMessage = `Check out this property: ${selectedConversation.listing_title}\n${listingUrl}`;
+    
+    await sendMessage(e as any, shareMessage);
+    
+    toast({
+      title: 'Listing Shared',
+      description: 'The listing link has been sent',
+    });
   };
 
   if (loading && !initialLoadDone) {
@@ -783,6 +822,18 @@ export default function Messages() {
                     >
                       <Paperclip className="h-5 w-5" />
                     </Button>
+                    {isUserSeller && selectedConversation?.listing_id && (
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon"
+                        onClick={handleShareListing}
+                        className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground"
+                        title="Share this listing"
+                      >
+                        <Share2 className="h-5 w-5" />
+                      </Button>
+                    )}
                     <div className="flex-1 relative">
                       <Input
                         ref={inputRef}
