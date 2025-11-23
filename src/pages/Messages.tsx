@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Send, CheckCheck, Check, Search, Smile, Paperclip, MoreVertical, Phone, Video, Share2 } from 'lucide-react';
+import { Send, CheckCheck, Check, Search, Smile, Paperclip, MoreVertical, Phone, Video, Share2, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Message } from '@/types/database';
 import { format, isToday, isYesterday, differenceInMinutes } from 'date-fns';
 
@@ -545,6 +546,39 @@ export default function Messages() {
     return timeDiff > 5;
   };
 
+  const parseMessageContent = (content: string) => {
+    // Check if message contains a listings URL
+    const listingsUrlRegex = /View all my (\d+) listings?:\n(https?:\/\/[^\s]+\/listings\?owner=[^\s]+)/;
+    const match = content.match(listingsUrlRegex);
+    
+    if (match) {
+      const [, count, url] = match;
+      return {
+        type: 'listings-share' as const,
+        count: parseInt(count),
+        url: url,
+      };
+    }
+
+    // Check if message contains a single listing URL
+    const singleListingRegex = /Check out this property: ([^\n]+)\n(https?:\/\/[^\s]+\/listing\/[^\s]+)/;
+    const singleMatch = content.match(singleListingRegex);
+    
+    if (singleMatch) {
+      const [, title, url] = singleMatch;
+      return {
+        type: 'listing-share' as const,
+        title: title,
+        url: url,
+      };
+    }
+
+    return {
+      type: 'text' as const,
+      content: content,
+    };
+  };
+
   const filteredConversations = conversations.filter(conv =>
     conv.listing_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.other_user_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -770,7 +804,46 @@ export default function Messages() {
                                   : 'bg-card border border-border/50 rounded-bl-sm'
                               }`}
                             >
-                              <p className="text-[13px] md:text-sm leading-relaxed break-words whitespace-pre-wrap">{message.content}</p>
+                              {(() => {
+                                const parsed = parseMessageContent(message.content);
+                                
+                                if (parsed.type === 'listings-share') {
+                                  return (
+                                    <div className="space-y-2">
+                                      <p className="text-[13px] md:text-sm">
+                                        View all my {parsed.count} {parsed.count === 1 ? 'listing' : 'listings'}
+                                      </p>
+                                      <Link 
+                                        to={parsed.url.replace(window.location.origin, '')}
+                                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-background/10 hover:bg-background/20 transition-colors text-[13px] font-medium"
+                                      >
+                                        <span>Browse Listings</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                      </Link>
+                                    </div>
+                                  );
+                                } else if (parsed.type === 'listing-share') {
+                                  return (
+                                    <div className="space-y-2">
+                                      <p className="text-[13px] md:text-sm">Check out this property:</p>
+                                      <p className="text-[13px] font-medium">{parsed.title}</p>
+                                      <Link 
+                                        to={parsed.url.replace(window.location.origin, '')}
+                                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-background/10 hover:bg-background/20 transition-colors text-[13px] font-medium"
+                                      >
+                                        <span>View Property</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                      </Link>
+                                    </div>
+                                  );
+                                }
+                                
+                                return (
+                                  <p className="text-[13px] md:text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                    {parsed.content}
+                                  </p>
+                                );
+                              })()}
                               <div
                                 className={`flex items-center gap-1 justify-end text-[9px] md:text-[10px] mt-1 ${
                                   isSender ? 'text-primary-foreground/70' : 'text-muted-foreground'
