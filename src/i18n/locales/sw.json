@@ -3,6 +3,19 @@
     "name": "GeoEstate Tanzania",
     "slogan": "Soko la Ardhi la Uwazi"
   },
+  "home": {
+    "verifiedBadge": "Imethibitishwa na GeoInsight Enterprise",
+    "heroTitle1": "Gundua",
+    "heroTitle2": "Ardhi na Mali Bora",
+    "heroTitle3": "Tanzania",
+    "heroSubtitle": "Soko la mali la kisasa zaidi barani Afrika. Kila mali imepimwa kwa polygon, imethibitishwa na AI, na inalindwa na mfumo wetu kamili wa kugundua ulaghai.",
+    "exploreMap": "Tazama Ramani ya Mwingiliano",
+    "exploreMapShort": "Tazama Ramani",
+    "browseListings": "Tazama Matangazo Yote",
+    "browseListingsShort": "Tazama Matangazo",
+    "viewSellers": "Tazama Wauzaji Wote",
+    "viewSellersShort": "Tazama Wauzaji"
+  },
   "nav": {
     "browseMap": "Tazama Ramani",
     "allListings": "Matangazo Yote",
@@ -130,7 +143,8 @@
     "browseOnMap": "Tazama kwenye Ramani",
     "propertiesAvailable": "Mali Zinapatikana",
     "noPropertiesFound": "Hakuna Mali Iliyopatikana",
-    "noMatchingCriteria": "Hakuna mali inayolingana na vigezo vyako",
+    "noMatchingCriteria": "Hakuna mali inayolingana na vigezo vyako. Jaribu kubadilisha vichujio",
+    "noMatchingListings": "hana matangazo yanayolingana na vigezo vyako",
     "clearFilters": "Futa Vichujio",
     "searchPlaceholder": "Tafuta kwa jina, mahali, au maelezo",
     "allTypes": "Aina Zote",
@@ -138,7 +152,15 @@
     "filterByProperty": "Chuja kwa Mali",
     "filterByVerification": "Chuja kwa Uthibitishaji",
     "allListings": "Matangazo Yote",
-    "onlyVerified": "Yaliyothibitishwa Tu"
+    "onlyVerified": "Yaliyothibitishwa Tu",
+    "allProperties": "Mali Zote",
+    "allStatuses": "Hali Zote",
+    "filteredBy": "Imechujwa na",
+    "clearFilter": "Futa Kichujio",
+    "listings": "Matangazo",
+    "viewingFrom": "Kutazama matangazo yote ya",
+    "marketValuation": "Tathmini ya Soko",
+    "linkCopied": "Kiungo cha tangazo kimenakiliwa kwenye clipboard!"
   },
   "dashboard": {
     "welcome": "Karibu",
@@ -405,6 +427,7 @@
     "register": "Jisajili",
     "welcome": "Karibu",
     "goodbye": "Kwaheri",
-    "thanks": "Asante"
+    "thanks": "Asante",
+    "other": "Nyingine"
   }
 }
