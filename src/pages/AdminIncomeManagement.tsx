@@ -6,6 +6,7 @@ import { AdminIncomeOverview } from '@/components/admin/AdminIncomeOverview';
 import { AdminIncomeRecords } from '@/components/admin/AdminIncomeRecords';
 import { AdminPaymentProofs } from '@/components/admin/AdminPaymentProofs';
 import { AdminInvoices } from '@/components/admin/AdminInvoices';
+import { BackfillListingFeesButton } from '@/components/admin/BackfillListingFeesButton';
 
 function AdminIncomeManagementContent() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -13,9 +14,12 @@ function AdminIncomeManagementContent() {
   return (
     <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Income Management</h1>
-          <p className="text-muted-foreground">Manage GeoInsight revenue and commissions</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Income Management</h1>
+            <p className="text-muted-foreground">Manage GeoInsight revenue and commissions</p>
+          </div>
+          <BackfillListingFeesButton />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

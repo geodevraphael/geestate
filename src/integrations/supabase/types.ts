@@ -2364,6 +2364,16 @@ export type Database = {
     }
     Functions: {
       approve_role_request: { Args: { request_id: string }; Returns: undefined }
+      backfill_listing_fees: {
+        Args: never
+        Returns: {
+          amount_due: number
+          income_record_id: string
+          listing_id: string
+          listing_title: string
+          user_id: string
+        }[]
+      }
       create_notification: {
         Args: {
           p_link_url?: string
