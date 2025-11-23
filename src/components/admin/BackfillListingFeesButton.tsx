@@ -30,9 +30,11 @@ export function BackfillListingFeesButton() {
       if (error) throw error;
 
       toast.success(
-        `Successfully created ${data.records_created} listing fee records`,
+        `Successfully grouped listing fees for ${data.records_created} users`,
         {
-          description: 'All published listings without fees now have pending payment records.'
+          description: data.records_created === 1 
+            ? 'Listing fees have been consolidated into a single payment.'
+            : 'All listing fees have been consolidated into grouped payments per user.'
         }
       );
 
@@ -70,8 +72,12 @@ export function BackfillListingFeesButton() {
         <AlertDialogHeader>
           <AlertDialogTitle>Backfill Listing Fees</AlertDialogTitle>
           <AlertDialogDescription>
-            This will create listing fee records for all published listings that don't have one yet.
-            Each listing will be charged 50,000 TZS with a 14-day payment deadline. Users will be notified.
+            This will consolidate all listing fees into grouped payment records (one per user).
+            Each user will have a single payment showing the total for all their published listings.
+            The fee is 50,000 TZS per listing with a 14-day payment deadline.
+            <br /><br />
+            <strong>Note:</strong> This will delete any existing pending individual listing fee records 
+            and replace them with grouped records.
             <br /><br />
             Are you sure you want to proceed?
           </AlertDialogDescription>
