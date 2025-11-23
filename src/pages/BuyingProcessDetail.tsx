@@ -7,15 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { CheckCircle2, Circle, ArrowLeft, Calendar, FileCheck, Search, FileText, CreditCard, Key, MapPin, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { PaymentProofDialog } from '@/components/PaymentProofDialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const steps = [
   { id: 0, name: 'Field Visit', icon: Calendar, description: 'Visit and inspect the property' },
@@ -30,6 +31,7 @@ export default function BuyingProcessDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [processData, setProcessData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentStepDialog, setCurrentStepDialog] = useState<number | null>(null);
@@ -537,17 +539,17 @@ export default function BuyingProcessDetail() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-8">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <Link to="/deals">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="touch-feedback">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Deals
             </Button>
           </Link>
           {processData.process_status === 'in_progress' && (
-            <Button variant="destructive" size="sm" onClick={() => setShowCancelDialog(true)}>
+            <Button variant="destructive" size="sm" onClick={() => setShowCancelDialog(true)} className="touch-feedback">
               <X className="mr-2 h-4 w-4" />
               Cancel Process
             </Button>
@@ -555,96 +557,100 @@ export default function BuyingProcessDetail() {
         </div>
 
         {/* Property Info Card */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h1 className="text-2xl font-bold mb-2">{processData.listing.title}</h1>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      {processData.listing.location_label}
+        <Card className="mb-4 md:mb-6">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-xl md:text-2xl font-bold mb-2 line-clamp-2">{processData.listing.title}</h1>
+                    <div className="flex items-center gap-2 text-sm md:text-base text-muted-foreground">
+                      <MapPin className="h-4 w-4 flex-shrink-0" />
+                      <span className="line-clamp-1">{processData.listing.location_label}</span>
                     </div>
                   </div>
                   <Badge 
                     variant={processData.process_status === 'completed' ? 'default' : 'secondary'}
-                    className="capitalize"
+                    className="capitalize whitespace-nowrap text-xs"
                   >
                     {processData.process_status.replace('_', ' ')}
                   </Badge>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs md:text-sm">
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>Seller: {processData.seller.organization_name || processData.seller.full_name}</span>
+                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="line-clamp-1">Seller: {processData.seller.organization_name || processData.seller.full_name}</span>
                   </div>
-                  <span>•</span>
+                  <span className="hidden sm:inline">•</span>
                   <span className="text-muted-foreground">
                     Started {new Date(processData.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
 
-              <div className="text-right">
-                <div className="text-3xl font-bold text-primary mb-2">
+              <div className="w-full sm:w-auto sm:text-right">
+                <div className="text-2xl md:text-3xl font-bold text-primary mb-2">
                   {processData.listing.price?.toLocaleString()} {processData.listing.currency}
                 </div>
-                <Link to={`/listings/${processData.listing_id}`}>
-                  <Button variant="outline" size="sm">
+                <Link to={`/listings/${processData.listing_id}`} className="block sm:inline-block">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto touch-feedback">
                     View Listing
                   </Button>
                 </Link>
               </div>
             </div>
 
-            <div className="mt-6">
-              <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+            <div className="mt-4 md:mt-6">
+              <div className="flex items-center justify-between text-xs md:text-sm text-muted-foreground mb-2">
                 <span>{completedSteps} of {steps.length} steps completed</span>
                 <span>{Math.round(progress)}%</span>
               </div>
-              <Progress value={progress} className="h-3" />
+              <Progress value={progress} className="h-2 md:h-3" />
             </div>
           </CardContent>
         </Card>
 
         {/* Process Steps */}
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {steps.map((step) => {
             const status = getStepStatus(step.id);
             const StepIcon = step.icon;
             
             return (
-              <Card key={step.id} className={status === 'current' ? 'border-primary shadow-md' : ''}>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
+              <Card key={step.id} className={`mobile-card ${status === 'current' ? 'border-primary shadow-md' : ''}`}>
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-start gap-3 md:gap-4">
                     <div className="flex-shrink-0 mt-1">
                       {status === 'completed' ? (
-                        <CheckCircle2 className="h-8 w-8 text-success" />
+                        <CheckCircle2 className="h-7 w-7 md:h-8 md:w-8 text-success" />
                       ) : status === 'current' ? (
-                        <Circle className="h-8 w-8 text-primary" />
+                        <Circle className="h-7 w-7 md:h-8 md:w-8 text-primary" />
                       ) : (
-                        <Circle className="h-8 w-8 text-muted-foreground" />
+                        <Circle className="h-7 w-7 md:h-8 md:w-8 text-muted-foreground" />
                       )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <StepIcon className="h-5 w-5" />
-                        <h3 className="text-xl font-semibold">{step.name}</h3>
+                      <div className="flex items-center gap-2 md:gap-3 mb-2">
+                        <StepIcon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                        <h3 className="text-lg md:text-xl font-semibold">{step.name}</h3>
                       </div>
-                      <p className="text-muted-foreground mb-4">{step.description}</p>
+                      <p className="text-sm md:text-base text-muted-foreground mb-3 md:mb-4">{step.description}</p>
                       
                       {status === 'completed' && (
-                        <Badge variant="outline" className="text-success border-success">
+                        <Badge variant="outline" className="text-success border-success text-xs">
                           Completed
                         </Badge>
                       )}
                     </div>
 
                     {status === 'current' && processData.process_status === 'in_progress' && (
-                      <Button onClick={() => setCurrentStepDialog(step.id)}>
+                      <Button 
+                        onClick={() => setCurrentStepDialog(step.id)} 
+                        size="sm"
+                        className="touch-feedback whitespace-nowrap text-sm h-10"
+                      >
                         Complete Step
                       </Button>
                     )}
@@ -656,62 +662,68 @@ export default function BuyingProcessDetail() {
         </div>
 
         {/* Step Completion Dialog */}
-        <Dialog open={currentStepDialog !== null} onOpenChange={(open) => {
-          if (!open) {
-            setCurrentStepDialog(null);
-            setStepFormData({});
-          }
-        }}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                Complete {currentStepDialog !== null && steps[currentStepDialog].name}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (currentStepDialog !== null) {
-                completeStep(currentStepDialog, stepFormData);
-              }
-            }}>
-              {currentStepDialog !== null && renderStepForm(currentStepDialog)}
-              <div className="flex gap-2 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setCurrentStepDialog(null);
-                    setStepFormData({});
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1">
-                  Complete Step
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <ResponsiveModal
+          open={currentStepDialog !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCurrentStepDialog(null);
+              setStepFormData({});
+            }
+          }}
+          title={currentStepDialog !== null ? `Complete ${steps[currentStepDialog].name}` : ''}
+        >
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (currentStepDialog !== null) {
+              completeStep(currentStepDialog, stepFormData);
+            }
+          }}>
+            {currentStepDialog !== null && renderStepForm(currentStepDialog)}
+            <div className="flex gap-2 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 touch-feedback h-11 md:h-10"
+                onClick={() => {
+                  setCurrentStepDialog(null);
+                  setStepFormData({});
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1 touch-feedback h-11 md:h-10">
+                Complete Step
+              </Button>
+            </div>
+          </form>
+        </ResponsiveModal>
 
         {/* Cancel Confirmation Dialog */}
-        <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Cancel Buying Process?</AlertDialogTitle>
-              <AlertDialogDescription>
+        <Sheet open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+          <SheetContent side={isMobile ? "bottom" : "right"} className={isMobile ? "rounded-t-3xl" : ""}>
+            <SheetHeader>
+              <SheetTitle>Cancel Buying Process?</SheetTitle>
+              <SheetDescription>
                 Are you sure you want to cancel this buying process? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>No, Keep It</AlertDialogCancel>
-              <AlertDialogAction onClick={cancelProcess} className="bg-destructive text-destructive-foreground">
+              </SheetDescription>
+            </SheetHeader>
+            <SheetFooter className="mt-6 flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelDialog(false)}
+                className="w-full touch-feedback h-11 md:h-10"
+              >
+                No, Keep It
+              </Button>
+              <Button
+                onClick={cancelProcess}
+                className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 touch-feedback h-11 md:h-10"
+              >
                 Yes, Cancel Process
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </div>
     </MainLayout>
   );
