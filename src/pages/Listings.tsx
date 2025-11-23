@@ -7,9 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2 } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, FolderOpen } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
+import { MarketplaceViewToggle } from '@/components/MarketplaceViewToggle';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -25,10 +26,15 @@ export default function Listings() {
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
   const [verificationFilter, setVerificationFilter] = useState<string>('all');
   const [ownerInfo, setOwnerInfo] = useState<{ name: string; type: 'seller' | 'institution' } | null>(null);
+  const [view, setView] = useState<'individual' | 'projects'>('individual');
+  const [projects, setProjects] = useState<any[]>([]);
 
   useEffect(() => {
     fetchListings();
-  }, [ownerParam]);
+    if (view === 'projects') {
+      fetchProjects();
+    }
+  }, [ownerParam, view]);
 
   const fetchListings = async () => {
     try {
@@ -39,7 +45,8 @@ export default function Listings() {
           owner:profiles(full_name, organization_name, role),
           media:listing_media(*),
           polygon:listing_polygons(geojson),
-          valuation:valuation_estimates(estimated_value, estimation_currency)
+          valuation:valuation_estimates(estimated_value, estimation_currency),
+          project:projects(id, name, project_type, status)
         `)
         .eq('status', 'published');
 
@@ -88,6 +95,27 @@ export default function Listings() {
       console.error('Error fetching listings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      
+      // Filter projects that have published listings
+      const projectsWithListings = data?.filter(p => {
+        const publishedCount = listings.filter((l: any) => l.project_id === p.id).length;
+        return publishedCount > 0;
+      }) || [];
+      
+      setProjects(projectsWithListings);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
     }
   };
 
@@ -144,12 +172,15 @@ export default function Listings() {
                 </p>
               </div>
               {!ownerInfo && (
-              <Link to="/map">
-                <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all">
-                  <Map className="h-5 w-5" />
-                  {t('listing.browseOnMap')}
-                </Button>
-              </Link>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <MarketplaceViewToggle view={view} onViewChange={setView} />
+                  <Link to="/map">
+                    <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all w-full sm:w-auto">
+                      <Map className="h-5 w-5" />
+                      {t('listing.browseOnMap')}
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
 
@@ -226,20 +257,64 @@ export default function Listings() {
           </div>
         </div>
 
-        {/* Results Section */}
-        <div className="w-full px-4 md:px-8 lg:px-12 py-6 md:py-8">
-          {/* Results Count */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <p className="text-lg font-medium">
-                {loading ? t('common.loading') : `${filteredListings.length} ${t('listing.propertiesAvailable')}`}
-              </p>
+          {/* Results Section */}
+          <div className="w-full px-4 md:px-8 lg:px-12 py-6 md:py-8">
+            {/* Results Count */}
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <p className="text-lg font-medium">
+                  {loading ? t('common.loading') : 
+                    view === 'projects' 
+                      ? `${projects.length} ${projects.length === 1 ? 'Project' : 'Projects'}`
+                      : `${filteredListings.length} ${t('listing.propertiesAvailable')}`
+                  }
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* Listings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {/* Projects View */}
+            {view === 'projects' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {projects.map((project) => {
+                  const projectListings = filteredListings.filter((l: any) => l.project_id === project.id);
+                  if (projectListings.length === 0) return null;
+                  
+                  return (
+                    <Card key={project.id} className="hover:shadow-xl transition-all">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-3 mb-4">
+                          <FolderOpen className="h-8 w-8 text-primary" />
+                          <div className="flex-1">
+                            <h3 className="font-bold text-xl mb-1">{project.name}</h3>
+                            <p className="text-sm text-muted-foreground capitalize">{project.project_type}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2 mb-4">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Listings:</span>
+                            <span className="font-semibold">{projectListings.length}</span>
+                          </div>
+                          {project.total_area_m2 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Total Area:</span>
+                              <span className="font-semibold">{project.total_area_m2.toLocaleString()} m²</span>
+                            </div>
+                          )}
+                        </div>
+                        <Link to={`/projects/${project.id}`}>
+                          <Button className="w-full">View Project</Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Individual Listings Grid */}
+            {view === 'individual' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {filteredListings.map((listing) => (
               <Card key={listing.id} className="group overflow-hidden hover:shadow-2xl transition-all duration-300 h-full rounded-2xl border-border/50 hover:border-primary/20">
                 <div className="relative">
@@ -330,6 +405,7 @@ export default function Listings() {
               </Card>
             ))}
           </div>
+          )}
 
           {filteredListings.length === 0 && !loading && (
             <Card className="text-center py-16 rounded-2xl border-dashed">

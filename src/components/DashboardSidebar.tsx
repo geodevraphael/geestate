@@ -49,6 +49,12 @@ const navItems: NavItem[] = [
     icon: List,
   },
   {
+    title: 'Projects',
+    href: '/projects',
+    icon: Building,
+    roles: ['seller', 'broker', 'admin'],
+  },
+  {
     title: 'Messages',
     href: '/messages',
     icon: MessageSquare,
