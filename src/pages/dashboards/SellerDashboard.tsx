@@ -201,6 +201,15 @@ export function SellerDashboard() {
               <span className="sm:hidden">Create</span>
             </Button>
           </Link>
+          {stats.draft > 0 && (
+            <Link to="/drafts" className="w-full md:w-auto">
+              <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
+                <Clock className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">View Drafts ({stats.draft})</span>
+                <span className="sm:hidden">Drafts</span>
+              </Button>
+            </Link>
+          )}
           <Link to="/visit-requests" className="w-full md:w-auto">
             <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
               <Calendar className="h-4 w-4 mr-2" />
