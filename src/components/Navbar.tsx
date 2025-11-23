@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -11,9 +11,15 @@ import { useTranslation } from 'react-i18next';
 import logo from '@/assets/geoestate-logo.png';
 
 export function Navbar() {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, signOut } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -24,9 +30,32 @@ export function Navbar() {
             <img src={logo} alt="GeoEstate" className="h-8 md:h-10 w-auto" />
           </Link>
 
-          {/* Mobile Notification Bell */}
+          {/* Mobile Top Actions */}
           <div className="md:hidden flex items-center gap-2">
-            {user && <NotificationBell />}
+            {user ? (
+              <>
+                <NotificationBell />
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <LayoutDashboard className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-9 w-9"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button size="sm" variant="default">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Desktop Navigation */}
