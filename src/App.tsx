@@ -55,6 +55,8 @@ import DraftListings from './pages/DraftListings';
 import Deals from './pages/Deals';
 import BuyingProcessDetail from './pages/BuyingProcessDetail';
 import RevenueManagement from './pages/RevenueManagement';
+import Projects from './pages/Projects';
+import ProjectDetail from './pages/ProjectDetail';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -120,6 +122,8 @@ const App = () => (
             <Route path="/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>} />
             <Route path="/buying-process/:id" element={<ProtectedRoute><BuyingProcessDetail /></ProtectedRoute>} />
             <Route path="/revenue-management" element={<RevenueManagement />} />
+            <Route path="/projects" element={<ProtectedRoute requireRole={['seller', 'broker', 'admin']}><Projects /></ProtectedRoute>} />
+            <Route path="/projects/:id" element={<ProtectedRoute requireRole={['seller', 'broker', 'admin']}><ProjectDetail /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

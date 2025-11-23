@@ -1135,6 +1135,7 @@ export type Database = {
           planned_use: string | null
           plot_number: string | null
           price: number | null
+          project_id: string | null
           property_type: Database["public"]["Enums"]["property_type"]
           region: string | null
           region_id: string | null
@@ -1171,6 +1172,7 @@ export type Database = {
           planned_use?: string | null
           plot_number?: string | null
           price?: number | null
+          project_id?: string | null
           property_type: Database["public"]["Enums"]["property_type"]
           region?: string | null
           region_id?: string | null
@@ -1207,6 +1209,7 @@ export type Database = {
           planned_use?: string | null
           plot_number?: string | null
           price?: number | null
+          project_id?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
           region?: string | null
           region_id?: string | null
@@ -1225,6 +1228,13 @@ export type Database = {
           ward_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listings_district_id_fkey"
             columns: ["district_id"]
@@ -1553,6 +1563,65 @@ export type Database = {
             columns: ["region_id"]
             isOneToOne: false
             referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          completion_date: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          location: string | null
+          name: string
+          owner_id: string
+          project_type: string | null
+          start_date: string | null
+          status: string
+          total_area_m2: number | null
+          total_plots: number | null
+          updated_at: string
+        }
+        Insert: {
+          completion_date?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          name: string
+          owner_id: string
+          project_type?: string | null
+          start_date?: string | null
+          status?: string
+          total_area_m2?: number | null
+          total_plots?: number | null
+          updated_at?: string
+        }
+        Update: {
+          completion_date?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          name?: string
+          owner_id?: string
+          project_type?: string | null
+          start_date?: string | null
+          status?: string
+          total_area_m2?: number | null
+          total_plots?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_owner"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

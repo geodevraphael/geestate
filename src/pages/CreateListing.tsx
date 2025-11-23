@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil, CheckCircle2, Search, List } from 'lucide-react';
 import { validatePolygon } from '@/lib/polygonValidation';
 import { PolygonValidationPanel } from '@/components/PolygonValidationPanel';
+import { ProjectSelector } from '@/components/ProjectSelector';
 import { logAuditAction } from '@/lib/auditLog';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -123,6 +124,7 @@ export default function CreateListing() {
     street_name: '',
     planned_use: '',
     has_title: false,
+    project_id: null as string | null,
   });
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -694,6 +696,7 @@ export default function CreateListing() {
           street_name: listingRes.data.street_name || '',
           planned_use: listingRes.data.planned_use || '',
           has_title: listingRes.data.has_title || false,
+          project_id: listingRes.data.project_id || null,
         });
       }
 
@@ -1538,6 +1541,13 @@ export default function CreateListing() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Project Selection */}
+                <ProjectSelector 
+                  value={formData.project_id}
+                  onChange={(projectId) => setFormData({ ...formData, project_id: projectId })}
+                  required
+                />
 
                 {/* Alerts */}
                 {isLandProperty ? (
