@@ -102,18 +102,24 @@ export default function Listings() {
     try {
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          listings!inner(id, status)
+        `)
+        .eq('listings.status', 'published')
         .order('name');
 
       if (error) throw error;
       
-      // Filter projects that have published listings
-      const projectsWithListings = data?.filter(p => {
-        const publishedCount = listings.filter((l: any) => l.project_id === p.id).length;
-        return publishedCount > 0;
+      // Remove duplicates caused by multiple listings per project
+      const seen = new Set<string>();
+      const uniqueProjects = data?.filter(p => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
       }) || [];
       
-      setProjects(projectsWithListings);
+      setProjects(uniqueProjects);
     } catch (error) {
       console.error('Error fetching projects:', error);
     }
@@ -281,7 +287,16 @@ export default function Listings() {
                   if (projectListings.length === 0) return null;
                   
                   return (
-                    <Card key={project.id} className="hover:shadow-xl transition-all">
+                    <Card key={project.id} className="hover:shadow-xl transition-all overflow-hidden">
+                      {project.image_url && (
+                        <div className="w-full h-48 overflow-hidden">
+                          <img 
+                            src={project.image_url} 
+                            alt={project.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                       <CardContent className="p-6">
                         <div className="flex items-start gap-3 mb-4">
                           <FolderOpen className="h-8 w-8 text-primary" />
