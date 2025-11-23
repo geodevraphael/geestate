@@ -97,12 +97,14 @@ export default function CreateListing() {
     streetName: string;
     plannedUse: string;
     hasTitle: string;
+    price: string;
   }>({
     blockNumber: '',
     plotNumber: '',
     streetName: '',
     plannedUse: '',
-    hasTitle: ''
+    hasTitle: '',
+    price: ''
   });
   
   const [formData, setFormData] = useState({
@@ -478,7 +480,8 @@ export default function CreateListing() {
       plotNumber: '',
       streetName: '',
       plannedUse: '',
-      hasTitle: ''
+      hasTitle: '',
+      price: ''
     };
 
     // Common field name patterns
@@ -487,7 +490,8 @@ export default function CreateListing() {
       plotNumber: ['plot', 'plot_number', 'plot_no', 'parcel', 'parcel_number', 'plot_num'],
       streetName: ['street', 'street_name', 'road', 'locality', 'address', 'location'],
       plannedUse: ['use', 'planned_use', 'land_use', 'usage', 'purpose', 'zoning'],
-      hasTitle: ['title', 'has_title', 'titled', 'deed', 'ownership', 'title_status']
+      hasTitle: ['title', 'has_title', 'titled', 'deed', 'ownership', 'title_status'],
+      price: ['price', 'cost', 'amount', 'value', 'rate', 'bei']
     };
 
     properties.forEach(prop => {
@@ -587,6 +591,7 @@ export default function CreateListing() {
           const plannedUse = fieldMapping.plannedUse ? props[fieldMapping.plannedUse]?.toString() || '' : '';
           const hasTitleValue = fieldMapping.hasTitle ? props[fieldMapping.hasTitle] : 0;
           const hasTitle = hasTitleValue === 1 || hasTitleValue === '1' || hasTitleValue === true;
+          const priceValue = fieldMapping.price ? parseFloat(props[fieldMapping.price]) || null : null;
 
           // Create GeoJSON for this plot
           const plotGeoJSON = {
@@ -615,6 +620,8 @@ export default function CreateListing() {
               street_name: streetName,
               planned_use: plannedUse,
               has_title: hasTitle,
+              price: priceValue,
+              currency: 'TZS',
               verification_status: 'unverified'
             })
             .select()
@@ -1232,6 +1239,35 @@ export default function CreateListing() {
                       </p>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="priceField" className="text-sm font-medium flex items-center gap-2">
+                        Price (TZS)
+                        {fieldMapping.price && fieldMapping.price !== '__none__' && (
+                          <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={fieldMapping.price || '__none__'}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, price: value === '__none__' ? '' : value})}
+                      >
+                        <SelectTrigger id="priceField">
+                          <SelectValue placeholder="Optional - Select field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">None</SelectItem>
+                          {availableProperties.map(prop => (
+                            <SelectItem key={prop} value={prop}>
+                              {prop}
+                              {fieldMapping.price === prop && ' (selected)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Optional: Numeric price value in Tanzanian Shillings
+                      </p>
+                    </div>
+
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="hasTitleField" className="text-sm font-medium flex items-center gap-2">
                         Has Title Status (0 = No, 1 = Yes)
@@ -1416,7 +1452,8 @@ export default function CreateListing() {
                             plotNumber: '',
                             streetName: '',
                             plannedUse: '',
-                            hasTitle: ''
+                            hasTitle: '',
+                            price: ''
                           });
                           clearAllPolygons();
                         }}
