@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { ListingWithDetails, ListingPolygon, ListingMedia, Profile, SpatialRiskProfile, LandUseProfile, ValuationEstimate } from '@/types/database';
 import { useListingCalculations } from '@/hooks/useListingCalculations';
 import { useProximityAnalysis } from '@/hooks/useProximityAnalysis';
@@ -36,6 +37,7 @@ export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const { profile, user, hasRole } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [listing, setListing] = useState<ListingWithDetails | null>(null);
   const [polygon, setPolygon] = useState<ListingPolygon | null>(null);
   const [media, setMedia] = useState<ListingMedia[]>([]);
@@ -307,17 +309,17 @@ export default function ListingDetail() {
   const handleShareListing = () => {
     const listingUrl = `${window.location.origin}/listings/${id}`;
     navigator.clipboard.writeText(listingUrl);
-    toast.success('Listing link copied to clipboard!');
+    toast.success(t('listing.linkCopied'));
   };
 
   const getVerificationBadge = () => {
     if (!listing) return null;
 
     const config: Record<string, { className: string; icon: React.ReactNode; label: string }> = {
-      verified: { className: 'bg-success text-success-foreground', icon: <CheckCircle2 className="h-4 w-4" />, label: 'Verified' },
-      pending: { className: 'bg-warning text-warning-foreground', icon: <AlertCircle className="h-4 w-4" />, label: 'Pending Verification' },
-      rejected: { className: 'bg-destructive text-destructive-foreground', icon: <AlertCircle className="h-4 w-4" />, label: 'Rejected' },
-      unverified: { className: 'bg-muted text-muted-foreground', icon: <AlertCircle className="h-4 w-4" />, label: 'Unverified' },
+      verified: { className: 'bg-success text-success-foreground', icon: <CheckCircle2 className="h-4 w-4" />, label: t('verificationStatus.verified') },
+      pending: { className: 'bg-warning text-warning-foreground', icon: <AlertCircle className="h-4 w-4" />, label: t('verificationStatus.pending') },
+      rejected: { className: 'bg-destructive text-destructive-foreground', icon: <AlertCircle className="h-4 w-4" />, label: t('verificationStatus.rejected') },
+      unverified: { className: 'bg-muted text-muted-foreground', icon: <AlertCircle className="h-4 w-4" />, label: t('verificationStatus.unverified') },
     };
 
     const c = config[listing.verification_status];
@@ -336,7 +338,7 @@ export default function ListingDetail() {
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('common.loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -349,10 +351,10 @@ export default function ListingDetail() {
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <Card>
             <CardContent className="p-8 text-center">
-              <h2 className="text-2xl font-bold mb-2">Listing Not Found</h2>
-              <p className="text-muted-foreground mb-4">This listing may have been removed or doesn't exist.</p>
+              <h2 className="text-2xl font-bold mb-2">{t('listing.listingNotFound')}</h2>
+              <p className="text-muted-foreground mb-4">{t('listing.mayBeRemoved')}</p>
               <Link to="/listings">
-                <Button>Browse All Listings</Button>
+                <Button>{t('listing.browseAllListings')}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -368,21 +370,21 @@ export default function ListingDetail() {
           <Link to="/listings">
             <Button variant="outline" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Listings
+              {t('listing.backToListings')}
             </Button>
           </Link>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleShareListing}>
               <Share2 className="mr-2 h-4 w-4" />
-              Share
+              {t('listing.share')}
             </Button>
             {canEdit && (
               <Link to={`/listings/${id}/edit`}>
                 <Button size="sm" className="relative">
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit Listing
+                  {t('listing.editListing')}
                   {editingAsAdmin && (
-                    <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>
+                    <Badge variant="secondary" className="ml-2 text-xs">{t('roles.admin')}</Badge>
                   )}
                 </Button>
               </Link>
@@ -412,30 +414,30 @@ export default function ListingDetail() {
                   {listing.price 
                     ? `${listing.price.toLocaleString()} ${listing.currency}` 
                     : valuation?.estimated_value 
-                      ? `${valuation.estimated_value.toLocaleString()} ${valuation.estimation_currency || listing.currency} (Market Valuation Estimate)` 
-                      : 'Price on request'}
+                      ? `${valuation.estimated_value.toLocaleString()} ${valuation.estimation_currency || listing.currency} (${t('listing.marketValuation')})` 
+                      : t('listing.priceOnRequest')}
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-6">
                   <Badge variant="outline" className="capitalize">
                     <Building2 className="mr-1 h-3 w-3" />
-                    {listing.property_type}
+                    {t(`propertyTypes.${listing.property_type}`)}
                   </Badge>
                   <Badge variant="outline" className="capitalize">
                     <DollarSign className="mr-1 h-3 w-3" />
-                    For {listing.listing_type}
+                    {t(`listingTypes.${listing.listing_type}`)}
                   </Badge>
                   <Badge variant="outline" className="capitalize">
-                    {listing.status}
+                    {t(`listingStatus.${listing.status}`)}
                   </Badge>
                 </div>
 
                 <Separator className="my-6" />
 
                 <div>
-                  <h2 className="text-xl font-semibold mb-3">Description</h2>
+                  <h2 className="text-xl font-semibold mb-3">{t('listing.description')}</h2>
                   <p className="text-muted-foreground whitespace-pre-wrap">
-                    {listing.description || 'No description provided.'}
+                    {listing.description || t('listing.noDescription')}
                   </p>
                 </div>
 
@@ -443,7 +445,7 @@ export default function ListingDetail() {
                   <>
                     <Separator className="my-6" />
                     <div>
-                      <h2 className="text-xl font-semibold mb-3">Verification Notes</h2>
+                      <h2 className="text-xl font-semibold mb-3">{t('detail.verificationNotes')}</h2>
                       <p className="text-muted-foreground">{listing.verification_notes}</p>
                     </div>
                   </>
@@ -455,7 +457,7 @@ export default function ListingDetail() {
             {polygon?.geojson && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Property Location & Boundaries</CardTitle>
+                  <CardTitle>{t('detail.propertyLocation')}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
                   <PropertyMapThumbnail 
@@ -464,7 +466,7 @@ export default function ListingDetail() {
                   />
                   {polygon.area_m2 && (
                     <div className="mt-4 flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total Area</span>
+                      <span className="text-muted-foreground">{t('detail.totalArea')}</span>
                       <span className="font-semibold">{polygon.area_m2.toLocaleString()} m²</span>
                     </div>
                   )}
@@ -480,12 +482,12 @@ export default function ListingDetail() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Droplets className="h-5 w-5 text-primary" />
-                      Flood Risk Analysis
+                      {t('detail.floodRiskAnalysis')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Risk Level</span>
+                      <span className="text-sm font-medium">{t('detail.riskLevel')}</span>
                       <Badge variant={
                         spatialRisk.flood_risk_level === 'low' ? 'default' :
                         spatialRisk.flood_risk_level === 'medium' ? 'secondary' : 'destructive'
@@ -495,7 +497,7 @@ export default function ListingDetail() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Risk Score</span>
+                        <span className="text-muted-foreground">{t('detail.riskScore')}</span>
                         <span className="font-medium">{spatialRisk.flood_risk_score}/100</span>
                       </div>
                       <Progress value={spatialRisk.flood_risk_score} className="h-2" />
@@ -522,23 +524,23 @@ export default function ListingDetail() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <TreePine className="h-5 w-5 text-primary" />
-                      Land Use & Zoning
+                      {t('detail.landUseZoning')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Land Use</p>
+                        <p className="text-sm text-muted-foreground mb-1">{t('detail.landUse')}</p>
                         <p className="font-medium capitalize">{landUse.dominant_land_use}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Zoning</p>
+                        <p className="text-sm text-muted-foreground mb-1">{t('detail.zoning')}</p>
                         <p className="font-medium">{landUse.zoning_code || 'N/A'}</p>
                       </div>
                     </div>
                     {landUse.allowed_uses && landUse.allowed_uses.length > 0 && (
                       <div className="pt-2 border-t">
-                        <p className="text-sm text-muted-foreground mb-2">Allowed Uses</p>
+                        <p className="text-sm text-muted-foreground mb-2">{t('detail.allowedUses')}</p>
                         <div className="flex flex-wrap gap-2">
                           {landUse.allowed_uses.map((use) => (
                             <Badge key={use} variant="outline" className="capitalize text-xs">
