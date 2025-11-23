@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.backfill-listing-fees]
 verify_jwt = true
+
+[functions.generate-monthly-fees]
+verify_jwt = false
