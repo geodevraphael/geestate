@@ -368,7 +368,11 @@ export default function ListingDetail() {
                 </div>
 
                 <div className="text-3xl font-bold text-primary mb-6">
-                  {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
+                  {listing.price 
+                    ? `${listing.price.toLocaleString()} ${listing.currency}` 
+                    : valuation?.estimated_value 
+                      ? `${valuation.estimated_value.toLocaleString()} ${valuation.estimation_currency || listing.currency} (Market Valuation Estimate)` 
+                      : 'Price on request'}
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-6">

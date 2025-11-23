@@ -816,7 +816,7 @@ export default function MapBrowse() {
                   </Badge>
                 )}
                 <div className="text-lg font-bold text-primary mb-3">
-                  {selectedListing.price ? `${selectedListing.price.toLocaleString()} ${selectedListing.currency}` : 'Price on request'}
+                  {selectedListing.price ? `${selectedListing.price.toLocaleString()} ${selectedListing.currency}` : 'Market Valuation Estimate'}
                 </div>
                 <Link to={`/listings/${selectedListing.id}`}>
                   <Button size="sm" className="w-full">

@@ -284,7 +284,7 @@ export default function Listings() {
 
                   <div className="pt-2 border-t border-border/50">
                     <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-4">
-                      {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Price on request'}
+                      {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Market Valuation Estimate'}
                     </div>
 
                     <div className="flex gap-2">
