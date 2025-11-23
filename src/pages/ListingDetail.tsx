@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink } from 'lucide-react';
 import { ListingWithDetails, ListingPolygon, ListingMedia, Profile, SpatialRiskProfile, LandUseProfile, ValuationEstimate } from '@/types/database';
 import { useListingCalculations } from '@/hooks/useListingCalculations';
 import { useProximityAnalysis } from '@/hooks/useProximityAnalysis';
@@ -44,6 +44,7 @@ export default function ListingDetail() {
   const [valuation, setValuation] = useState<ValuationEstimate | null>(null);
   const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [proximityAnalysis, setProximityAnalysis] = useState<any | null>(null);
+  const [approvedVisitRequest, setApprovedVisitRequest] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
@@ -68,8 +69,9 @@ export default function ListingDetail() {
       fetchListing();
       fetchServiceRequests();
       fetchProximityAnalysis();
+      fetchApprovedVisitRequest();
     }
-  }, [id]);
+  }, [id, user?.id]);
 
   useEffect(() => {
     if (!polygon?.geojson || !mapRef.current || mapInstanceRef.current) {
@@ -203,6 +205,32 @@ export default function ListingDetail() {
       setProximityAnalysis(data);
     } catch (error) {
       console.error('Error fetching proximity analysis:', error);
+    }
+  };
+
+  const fetchApprovedVisitRequest = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('visit_requests')
+        .select('*')
+        .eq('listing_id', id)
+        .eq('buyer_id', user.id)
+        .eq('status', 'accepted')
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setApprovedVisitRequest(data);
+    } catch (error) {
+      console.error('Error fetching approved visit request:', error);
+    }
+  };
+
+  const handleGetDirections = () => {
+    if (polygon?.centroid_lat && polygon?.centroid_lng) {
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${polygon.centroid_lat},${polygon.centroid_lng}`;
+      window.open(googleMapsUrl, '_blank');
     }
   };
 
@@ -942,7 +970,19 @@ export default function ListingDetail() {
                 {/* Payment Proof Button for Buyers */}
                 {user && profile?.id !== listing.owner_id && listing.status === 'published' && (
                   <div className="mt-4 space-y-2">
-                    <VisitRequestDialog listingId={id!} sellerId={listing.owner_id} />
+                    {approvedVisitRequest && polygon?.centroid_lat && polygon?.centroid_lng ? (
+                      <Button 
+                        onClick={handleGetDirections}
+                        className="w-full flex items-center gap-2"
+                        variant="default"
+                      >
+                        <Navigation className="h-4 w-4" />
+                        Get Directions
+                        <ExternalLink className="h-3 w-3 ml-auto" />
+                      </Button>
+                    ) : (
+                      <VisitRequestDialog listingId={id!} sellerId={listing.owner_id} />
+                    )}
                     <PaymentProofDialog listing={listing} />
                   </div>
                 )}
