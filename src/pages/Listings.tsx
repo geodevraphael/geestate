@@ -11,10 +11,12 @@ import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2 }
 import { ListingWithDetails } from '@/types/database';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function Listings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const ownerParam = searchParams.get('owner');
+  const { t } = useTranslation();
   
   const [listings, setListings] = useState<ListingWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +121,7 @@ export default function Listings() {
     e.stopPropagation();
     const listingUrl = `${window.location.origin}/listings/${listingId}`;
     navigator.clipboard.writeText(listingUrl);
-    toast.success('Listing link copied to clipboard!');
+    toast.success(t('listing.linkCopied'));
   };
 
   return (
@@ -131,12 +133,12 @@ export default function Listings() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
               <div>
                 <h1 className="text-3xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                  {ownerInfo ? `${ownerInfo.name}'s Listings` : 'Property Marketplace'}
+                  {ownerInfo ? `${ownerInfo.name}'s ${t('listing.listings')}` : t('listing.propertyMarketplace')}
                 </h1>
                 <p className="text-sm md:text-lg text-muted-foreground">
                   {ownerInfo 
-                    ? `Viewing all listings from ${ownerInfo.name}`
-                    : 'Discover verified land and properties across Tanzania'
+                    ? `${t('listing.viewingFrom')} ${ownerInfo.name}`
+                    : t('listing.discoverProperties')
                   }
                 </p>
               </div>
@@ -144,7 +146,7 @@ export default function Listings() {
               <Link to="/map">
                 <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all">
                   <Map className="h-5 w-5" />
-                  Browse on Map
+                  {t('listing.browseOnMap')}
                 </Button>
               </Link>
               )}
@@ -155,11 +157,11 @@ export default function Listings() {
               <div className="mb-4">
                 <Badge variant="secondary" className="text-sm py-2 px-4 gap-2 shadow-sm">
                   <Filter className="h-3.5 w-3.5" />
-                  Filtered by: {ownerInfo.name}
+                  {t('listing.filteredBy')}: {ownerInfo.name}
                   <button 
                     onClick={clearOwnerFilter}
                     className="ml-1 hover:bg-background/50 rounded-full p-0.5 transition-colors"
-                    aria-label="Clear owner filter"
+                    aria-label={t('listing.clearFilter')}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -174,7 +176,7 @@ export default function Listings() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search by location or title..."
+                      placeholder={t('listing.searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10 bg-background"
@@ -183,38 +185,38 @@ export default function Listings() {
 
                   <Select value={listingTypeFilter} onValueChange={setListingTypeFilter}>
                     <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Listing Type" />
+                      <SelectValue placeholder={t('listing.listingType')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="sale">For Sale</SelectItem>
-                      <SelectItem value="rent">For Rent</SelectItem>
+                      <SelectItem value="all">{t('listing.allTypes')}</SelectItem>
+                      <SelectItem value="sale">{t('listingTypes.sale')}</SelectItem>
+                      <SelectItem value="rent">{t('listingTypes.rent')}</SelectItem>
                     </SelectContent>
                   </Select>
 
                   <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
                     <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Property Type" />
+                      <SelectValue placeholder={t('listing.propertyType')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Properties</SelectItem>
-                      <SelectItem value="land">Land</SelectItem>
-                      <SelectItem value="house">House</SelectItem>
-                      <SelectItem value="apartment">Apartment</SelectItem>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="all">{t('listing.allProperties')}</SelectItem>
+                      <SelectItem value="land">{t('propertyTypes.land')}</SelectItem>
+                      <SelectItem value="house">{t('propertyTypes.residential')}</SelectItem>
+                      <SelectItem value="apartment">{t('propertyTypes.residential')}</SelectItem>
+                      <SelectItem value="commercial">{t('propertyTypes.commercial')}</SelectItem>
+                      <SelectItem value="other">{t('common.other')}</SelectItem>
                     </SelectContent>
                   </Select>
 
                   <Select value={verificationFilter} onValueChange={setVerificationFilter}>
                     <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Verification Status" />
+                      <SelectValue placeholder={t('listing.verificationStatus')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="verified">Verified</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="unverified">Unverified</SelectItem>
+                      <SelectItem value="all">{t('listing.allStatuses')}</SelectItem>
+                      <SelectItem value="verified">{t('verificationStatus.verified')}</SelectItem>
+                      <SelectItem value="pending">{t('verificationStatus.pending')}</SelectItem>
+                      <SelectItem value="unverified">{t('verificationStatus.unverified')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -230,7 +232,7 @@ export default function Listings() {
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
               <p className="text-lg font-medium">
-                {loading ? 'Loading...' : `${filteredListings.length} Properties Available`}
+                {loading ? t('common.loading') : `${filteredListings.length} ${t('listing.propertiesAvailable')}`}
               </p>
             </div>
           </div>
@@ -261,13 +263,13 @@ export default function Listings() {
                   <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
                     <div className="flex flex-col gap-1.5">
                       <Badge variant="secondary" className="capitalize text-xs shadow-lg backdrop-blur-sm bg-background/90">
-                        {listing.listing_type}
+                        {t(`listingTypes.${listing.listing_type}`)}
                       </Badge>
                     </div>
                     {listing.verification_status === 'verified' && (
                       <Badge className="bg-success/90 text-success-foreground shadow-lg backdrop-blur-sm">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Verified
+                        {t('verificationStatus.verified')}
                       </Badge>
                     )}
                   </div>
@@ -287,20 +289,20 @@ export default function Listings() {
 
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="capitalize text-xs">
-                      {listing.property_type}
+                      {t(`propertyTypes.${listing.property_type}`)}
                     </Badge>
                   </div>
 
                   <div className="pt-2 border-t border-border/50">
                     <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-4">
-                      {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : 'Market Valuation Estimate'}
+                      {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : t('listing.marketValuation')}
                     </div>
 
                     <div className="flex gap-2">
                       <Link to={`/listings/${listing.id}`} className="flex-1">
                         <Button size="sm" className="w-full gap-2 shadow-md hover:shadow-lg transition-all">
                           <Eye className="h-4 w-4" />
-                          View Details
+                          {t('listing.viewDetails')}
                         </Button>
                       </Link>
                       <Button 
@@ -331,16 +333,16 @@ export default function Listings() {
                     <Search className="h-10 w-10 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">No Properties Found</h3>
+                    <h3 className="text-xl font-semibold mb-2">{t('listing.noPropertiesFound')}</h3>
                     <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                       {ownerInfo 
-                        ? `${ownerInfo.name} has no listings matching your criteria`
-                        : 'No listings found matching your criteria. Try adjusting your filters.'
+                        ? `${ownerInfo.name} ${t('listing.noMatchingListings')}`
+                        : t('listing.noMatchingCriteria')
                       }
                     </p>
                     <Button onClick={clearAllFilters} className="gap-2">
                       <X className="h-4 w-4" />
-                      Clear All Filters
+                      {t('listing.clearFilters')}
                     </Button>
                   </div>
                 </div>

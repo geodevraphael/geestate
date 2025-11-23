@@ -3,6 +3,19 @@
     "name": "GeoEstate Tanzania",
     "slogan": "Transparent Land Marketplace"
   },
+  "home": {
+    "verifiedBadge": "Verified by GeoInsight Enterprise",
+    "heroTitle1": "Discover Premium",
+    "heroTitle2": "Land & Property",
+    "heroTitle3": "in Tanzania",
+    "heroSubtitle": "Africa's most advanced real estate marketplace. Every property is polygon-mapped, AI-verified, and backed by our comprehensive fraud detection system.",
+    "exploreMap": "Explore Interactive Map",
+    "exploreMapShort": "Explore Map",
+    "browseListings": "Browse All Listings",
+    "browseListingsShort": "Browse Listings",
+    "viewSellers": "View All Sellers",
+    "viewSellersShort": "View Sellers"
+  },
   "nav": {
     "browseMap": "Browse Map",
     "allListings": "All Listings",
@@ -130,7 +143,8 @@
     "browseOnMap": "Browse on Map",
     "propertiesAvailable": "Properties Available",
     "noPropertiesFound": "No Properties Found",
-    "noMatchingCriteria": "No properties match your criteria",
+    "noMatchingCriteria": "No properties match your criteria. Try adjusting your filters.",
+    "noMatchingListings": "has no listings matching your criteria",
     "clearFilters": "Clear Filters",
     "searchPlaceholder": "Search by title, location, or description",
     "allTypes": "All Types",
@@ -138,7 +152,15 @@
     "filterByProperty": "Filter by Property",
     "filterByVerification": "Filter by Verification",
     "allListings": "All Listings",
-    "onlyVerified": "Verified Only"
+    "onlyVerified": "Verified Only",
+    "allProperties": "All Properties",
+    "allStatuses": "All Statuses",
+    "filteredBy": "Filtered by",
+    "clearFilter": "Clear filter",
+    "listings": "Listings",
+    "viewingFrom": "Viewing all listings from",
+    "marketValuation": "Market Valuation Estimate",
+    "linkCopied": "Listing link copied to clipboard!"
   },
   "dashboard": {
     "welcome": "Welcome",
@@ -405,6 +427,7 @@
     "register": "Register",
     "welcome": "Welcome",
     "goodbye": "Goodbye",
-    "thanks": "Thank you"
+    "thanks": "Thank you",
+    "other": "Other"
   }
 }
