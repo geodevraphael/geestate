@@ -1176,19 +1176,19 @@ export default function CreateListing() {
                     <div className="space-y-2">
                       <Label htmlFor="streetNameField" className="text-sm font-medium flex items-center gap-2">
                         Street Name/Locality
-                        {fieldMapping.streetName && (
+                        {fieldMapping.streetName && fieldMapping.streetName !== '__none__' && (
                           <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
                         )}
                       </Label>
                       <Select
-                        value={fieldMapping.streetName}
-                        onValueChange={(value) => setFieldMapping({...fieldMapping, streetName: value})}
+                        value={fieldMapping.streetName || '__none__'}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, streetName: value === '__none__' ? '' : value})}
                       >
                         <SelectTrigger id="streetNameField">
                           <SelectValue placeholder="Optional - Select field" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="__none__">None</SelectItem>
                           {availableProperties.map(prop => (
                             <SelectItem key={prop} value={prop}>
                               {prop}
@@ -1205,19 +1205,19 @@ export default function CreateListing() {
                     <div className="space-y-2">
                       <Label htmlFor="plannedUseField" className="text-sm font-medium flex items-center gap-2">
                         Planned Use
-                        {fieldMapping.plannedUse && (
+                        {fieldMapping.plannedUse && fieldMapping.plannedUse !== '__none__' && (
                           <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
                         )}
                       </Label>
                       <Select
-                        value={fieldMapping.plannedUse}
-                        onValueChange={(value) => setFieldMapping({...fieldMapping, plannedUse: value})}
+                        value={fieldMapping.plannedUse || '__none__'}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, plannedUse: value === '__none__' ? '' : value})}
                       >
                         <SelectTrigger id="plannedUseField">
                           <SelectValue placeholder="Optional - Select field" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="__none__">None</SelectItem>
                           {availableProperties.map(prop => (
                             <SelectItem key={prop} value={prop}>
                               {prop}
@@ -1234,19 +1234,19 @@ export default function CreateListing() {
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="hasTitleField" className="text-sm font-medium flex items-center gap-2">
                         Has Title Status (0 = No, 1 = Yes)
-                        {fieldMapping.hasTitle && (
+                        {fieldMapping.hasTitle && fieldMapping.hasTitle !== '__none__' && (
                           <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
                         )}
                       </Label>
                       <Select
-                        value={fieldMapping.hasTitle}
-                        onValueChange={(value) => setFieldMapping({...fieldMapping, hasTitle: value})}
+                        value={fieldMapping.hasTitle || '__none__'}
+                        onValueChange={(value) => setFieldMapping({...fieldMapping, hasTitle: value === '__none__' ? '' : value})}
                       >
                         <SelectTrigger id="hasTitleField">
                           <SelectValue placeholder="Optional - Select field" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None (all plots default to: No Title)</SelectItem>
+                          <SelectItem value="__none__">None (all plots default to: No Title)</SelectItem>
                           {availableProperties.map(prop => (
                             <SelectItem key={prop} value={prop}>
                               {prop}
