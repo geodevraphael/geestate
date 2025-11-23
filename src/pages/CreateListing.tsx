@@ -1086,12 +1086,35 @@ export default function CreateListing() {
               {/* Step 2: Field Mapping */}
               {batchUploadStep === 'mapping' && (
                 <div className="space-y-4">
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Step 2: Map Fields</strong> - Match your file's columns to Tanzania land parcel standards. Fields marked with auto-detection were suggested based on column names.
-                    </AlertDescription>
-                  </Alert>
+                  {availableProperties.length === 0 ? (
+                    <>
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>No properties found in GeoJSON</strong> - Your file contains geometry but no attribute data. Each feature needs properties like block_number, plot_number, etc. Please upload a GeoJSON file with feature properties, or create listings one at a time.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowBatchUpload(false);
+                            setMultipleFeatures([]);
+                            clearAllPolygons();
+                          }}
+                        >
+                          Cancel & Start Over
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Step 2: Map Fields</strong> - Match your file's columns to Tanzania land parcel standards. Fields marked with auto-detection were suggested based on column names.
+                        </AlertDescription>
+                      </Alert>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -1256,6 +1279,8 @@ export default function CreateListing() {
                       Next: Confirm Upload
                     </Button>
                   </div>
+                    </>
+                  )}
                 </div>
               )}
 
