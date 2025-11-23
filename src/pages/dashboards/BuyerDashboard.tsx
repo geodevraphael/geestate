@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Calendar, MessageSquare, CreditCard, TrendingUp, MapPin, User } from 'lucide-react';
+import { Heart, Calendar, MessageSquare, CreditCard, TrendingUp, MapPin, User, ShoppingBag } from 'lucide-react';
 
 export function BuyerDashboard() {
   const { profile } = useAuth();
@@ -196,6 +196,13 @@ export function BuyerDashboard() {
               <MessageSquare className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Messages</span>
               <span className="sm:hidden">Msgs</span>
+            </Button>
+          </Link>
+          <Link to="/deals" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">My Deals</span>
+              <span className="sm:hidden">Deals</span>
             </Button>
           </Link>
         </CardContent>

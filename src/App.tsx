@@ -52,6 +52,8 @@ import AdminApprovals from './pages/AdminApprovals';
 import ApplyForRole from './pages/ApplyForRole';
 import BrowseSellers from './pages/BrowseSellers';
 import DraftListings from './pages/DraftListings';
+import Deals from './pages/Deals';
+import BuyingProcessDetail from './pages/BuyingProcessDetail';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -114,6 +116,8 @@ const App = () => (
             <Route path="/admin/income" element={<AdminIncomeManagement />} />
             <Route path="/sellers" element={<BrowseSellers />} />
             <Route path="/drafts" element={<DraftListings />} />
+            <Route path="/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>} />
+            <Route path="/buying-process/:id" element={<ProtectedRoute><BuyingProcessDetail /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
