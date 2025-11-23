@@ -307,16 +307,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Standing Water Bodies Risk (0-20 points)
-    if (water_bodies_nearby > 0) {
-      if (nearest_lake_distance !== null && nearest_lake_distance < 200) {
+    // 2. Standing Water Bodies Risk (0-25 points) - Lakes, Ponds, Reservoirs
+    if (water_bodies_nearby > 0 && nearest_lake_distance !== null) {
+      if (nearest_lake_distance < 100) {
+        flood_risk_score += 25;
+        riskFactors.push(`${water_bodies_nearby} water body/bodies extremely close (${nearest_lake_distance}m) - High flood risk`);
+      } else if (nearest_lake_distance < 200) {
         flood_risk_score += 20;
-        riskFactors.push(`${water_bodies_nearby} water bodies nearby, closest at ${nearest_lake_distance}m`);
-      } else if (nearest_lake_distance !== null && nearest_lake_distance < 500) {
+        riskFactors.push(`${water_bodies_nearby} water body/bodies very close (${nearest_lake_distance}m) - Moderate flood risk`);
+      } else if (nearest_lake_distance < 500) {
         flood_risk_score += 12;
-        riskFactors.push(`${water_bodies_nearby} water bodies within 500m`);
-      } else {
-        flood_risk_score += 5;
+        riskFactors.push(`${water_bodies_nearby} water body/bodies within 500m`);
+      } else if (nearest_lake_distance < 1000) {
+        flood_risk_score += 6;
+        riskFactors.push(`${water_bodies_nearby} water body/bodies within 1km`);
+      } else if (nearest_lake_distance < 2000) {
+        flood_risk_score += 3;
       }
     }
 
