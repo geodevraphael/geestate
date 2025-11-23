@@ -65,21 +65,20 @@ Deno.serve(async (req) => {
     let drainage_systems_nearby = 0;
 
     try {
-      // Query ALL water-related features within 5km
+      // Query water features with better structure to avoid duplicates
       const overpassQuery = `
         [out:json][timeout:30];
         (
           way["waterway"="river"](around:5000,${lat},${lng});
-          way["waterway"="stream"](around:5000,${lat},${lng});
-          way["natural"="water"](around:5000,${lat},${lng});
-          way["water"="lake"](around:5000,${lat},${lng});
-          way["water"="pond"](around:5000,${lat},${lng});
-          way["water"="reservoir"](around:5000,${lat},${lng});
-          way["natural"="wetland"](around:3000,${lat},${lng});
-          way["landuse"="basin"](around:3000,${lat},${lng});
-          way["waterway"="drain"](around:2000,${lat},${lng});
-          way["waterway"="ditch"](around:2000,${lat},${lng});
-          node["natural"="spring"](around:1000,${lat},${lng});
+          relation["waterway"="river"](around:5000,${lat},${lng});
+          way["waterway"="stream"](around:3000,${lat},${lng});
+          way["natural"="water"]["water"!="pond"]["water"!="basin"](around:3000,${lat},${lng});
+          relation["natural"="water"](around:3000,${lat},${lng});
+          way["water"="lake"](around:3000,${lat},${lng});
+          way["water"="reservoir"](around:3000,${lat},${lng});
+          way["natural"="wetland"](around:2000,${lat},${lng});
+          way["waterway"="drain"](around:1500,${lat},${lng});
+          way["waterway"="ditch"](around:1500,${lat},${lng});
         );
         out center;
       `;
@@ -95,7 +94,12 @@ Deno.serve(async (req) => {
         const waterData = await overpassResponse.json();
         console.log('✅ Found water features:', waterData.elements.length);
 
-        // Categorize water features
+        // Use Sets to track unique features and avoid double-counting
+        const processedRivers = new Set<number>();
+        const processedLakes = new Set<number>();
+        const processedWetlands = new Set<number>();
+        const processedDrainage = new Set<number>();
+
         let minRiverDistance = Infinity;
         let minLakeDistance = Infinity;
 
@@ -109,10 +113,10 @@ Deno.serve(async (req) => {
             const waterway = element.tags?.waterway;
             const natural = element.tags?.natural;
             const water = element.tags?.water;
-            const landuse = element.tags?.landuse;
 
-            // Rivers and streams
-            if (waterway === 'river' || waterway === 'stream') {
+            // Rivers and streams - only count significant ones
+            if ((waterway === 'river' || waterway === 'stream') && !processedRivers.has(element.id)) {
+              processedRivers.add(element.id);
               if (distance < minRiverDistance) {
                 minRiverDistance = distance;
                 nearest_river_name = element.tags?.name || `Unnamed ${waterway}`;
@@ -120,25 +124,35 @@ Deno.serve(async (req) => {
               }
             }
 
-            // Lakes and ponds
-            if (natural === 'water' || water === 'lake' || water === 'pond' || water === 'reservoir') {
-              water_bodies_nearby++;
-              if (distance < minLakeDistance) {
-                minLakeDistance = distance;
-                dataAvailability.lakes = true;
+            // Lakes, reservoirs, and significant water bodies - deduplicated
+            if ((natural === 'water' || water === 'lake' || water === 'reservoir') && !processedLakes.has(element.id)) {
+              // Only count if within 3km and significant
+              if (distance <= 3000) {
+                processedLakes.add(element.id);
+                water_bodies_nearby++;
+                if (distance < minLakeDistance) {
+                  minLakeDistance = distance;
+                  dataAvailability.lakes = true;
+                }
               }
             }
 
-            // Wetlands
-            if (natural === 'wetland' || landuse === 'basin') {
-              wetlands_nearby++;
-              dataAvailability.wetlands = true;
+            // Wetlands - only count within 2km
+            if (natural === 'wetland' && !processedWetlands.has(element.id)) {
+              if (distance <= 2000) {
+                processedWetlands.add(element.id);
+                wetlands_nearby++;
+                dataAvailability.wetlands = true;
+              }
             }
 
-            // Drainage systems
-            if (waterway === 'drain' || waterway === 'ditch') {
-              drainage_systems_nearby++;
-              dataAvailability.drainage = true;
+            // Drainage systems - only count within 1.5km
+            if ((waterway === 'drain' || waterway === 'ditch') && !processedDrainage.has(element.id)) {
+              if (distance <= 1500) {
+                processedDrainage.add(element.id);
+                drainage_systems_nearby++;
+                dataAvailability.drainage = true;
+              }
             }
           }
         }
@@ -152,12 +166,12 @@ Deno.serve(async (req) => {
           nearest_lake_distance = Math.round(minLakeDistance);
         }
 
-        console.log('📊 Water analysis:', {
+        console.log('📊 Water analysis (deduplicated):', {
           rivers: dataAvailability.rivers,
           distance_to_river: distance_to_river_m,
-          lakes: water_bodies_nearby,
-          wetlands: wetlands_nearby,
-          drainage: drainage_systems_nearby,
+          unique_lakes: water_bodies_nearby,
+          unique_wetlands: wetlands_nearby,
+          unique_drainage: drainage_systems_nearby,
         });
       }
     } catch (error) {
