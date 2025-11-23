@@ -106,8 +106,8 @@ export default function GeoinsightPayments() {
     <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">My Payments to GeoInsight</h1>
-          <p className="text-muted-foreground">Manage your commissions and fees</p>
+          <h1 className="text-3xl font-bold">My GeoInsight Fee</h1>
+          <p className="text-muted-foreground">View and pay your monthly platform fees</p>
         </div>
 
         {/* Summary Cards */}
