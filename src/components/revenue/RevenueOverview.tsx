@@ -63,10 +63,14 @@ export function RevenueOverview() {
 
       if (dealsError) throw dealsError;
 
-      // Fetch active listings
+      // Fetch active listings with valuations
       const { data: listings, error: listingsError } = await supabase
         .from('listings')
-        .select('*, polygon:listing_polygons(area_m2)')
+        .select(`
+          *,
+          polygon:listing_polygons(area_m2),
+          valuation:valuation_estimates(estimated_value, estimation_currency)
+        `)
         .eq('owner_id', user?.id)
         .eq('status', 'published');
 
@@ -98,7 +102,16 @@ export function RevenueOverview() {
       }).reduce((sum, d) => sum + Number(d.final_price), 0) || 0;
 
       // Calculate expected revenue from active listings
-      const totalListingValue = listings?.reduce((sum, l) => sum + (Number(l.price) || 0), 0) || 0;
+      // Use listing price if set, otherwise use valuation estimate
+      const totalListingValue = listings?.reduce((sum, l) => {
+        const price = Number(l.price) || 0;
+        const valuationPrice = l.valuation?.[0]?.estimated_value || 0;
+        return sum + (price > 0 ? price : valuationPrice);
+      }, 0) || 0;
+      
+      // Count listings using valuation vs set price
+      const listingsWithPrice = listings?.filter(l => l.price && Number(l.price) > 0).length || 0;
+      const listingsUsingValuation = (listings?.length || 0) - listingsWithPrice;
       
       // Estimate potential commission (assuming 3% commission rate on listing price)
       const expectedRevenueFromListings = totalListingValue * 0.97; // 97% after 3% commission
@@ -122,7 +135,9 @@ export function RevenueOverview() {
         activeListings: listings?.length || 0,
         expectedRevenueFromListings,
         totalListingValue,
-      });
+        listingsWithPrice,
+        listingsUsingValuation,
+      } as any);
     } catch (error: any) {
       console.error('Error fetching revenue stats:', error);
       toast.error('Failed to load revenue statistics');
@@ -234,15 +249,30 @@ export function RevenueOverview() {
             <Progress value={stats.activeListings > 0 ? 97 : 0} className="h-2" />
           </div>
 
-          <div className="flex items-start gap-2 p-4 bg-blue-500/10 rounded-lg">
-            <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium">Estimated Potential</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                This represents the total potential revenue from all your published listings. 
-                Actual revenue will vary based on negotiations and final sale prices.
-              </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="flex items-start gap-2 p-4 bg-blue-500/10 rounded-lg">
+              <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Estimated Potential</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This represents the total potential revenue from all your published listings. 
+                  Actual revenue will vary based on negotiations and final sale prices.
+                </p>
+              </div>
             </div>
+
+            {(stats as any).listingsUsingValuation > 0 && (
+              <div className="flex items-start gap-2 p-4 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                <Building2 className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-600">Using Market Valuations</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(stats as any).listingsUsingValuation} of {stats.activeListings} listings use estimated market value (no price set).
+                    {(stats as any).listingsWithPrice > 0 && ` ${(stats as any).listingsWithPrice} listings have set prices.`}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

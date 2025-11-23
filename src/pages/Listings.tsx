@@ -38,7 +38,8 @@ export default function Listings() {
           *,
           owner:profiles(full_name, organization_name, role),
           media:listing_media(*),
-          polygon:listing_polygons(geojson)
+          polygon:listing_polygons(geojson),
+          valuation:valuation_estimates(estimated_value, estimation_currency)
         `)
         .eq('status', 'published');
 
@@ -295,7 +296,12 @@ export default function Listings() {
 
                   <div className="pt-2 border-t border-border/50">
                     <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-4">
-                      {listing.price ? `${listing.price.toLocaleString()} ${listing.currency}` : t('listing.marketValuation')}
+                      {listing.price 
+                        ? `${listing.price.toLocaleString()} ${listing.currency}` 
+                        : (listing as any).valuation?.[0]?.estimated_value
+                          ? `${((listing as any).valuation[0].estimated_value).toLocaleString()} ${(listing as any).valuation[0].estimation_currency || 'TZS'} (${t('listing.marketValuation')})`
+                          : t('listing.marketValuation')
+                      }
                     </div>
 
                     <div className="flex gap-2">

@@ -27,10 +27,13 @@ export function SellerDashboard() {
     if (!profile) return;
 
     try {
-      // Fetch seller's listings
+      // Fetch seller's listings with valuations
       const { data: listingsData, error } = await supabase
         .from('listings')
-        .select('*')
+        .select(`
+          *,
+          valuation:valuation_estimates(estimated_value, estimation_currency)
+        `)
         .eq('owner_id', profile.id)
         .order('created_at', { ascending: false });
 
@@ -301,9 +304,12 @@ export function SellerDashboard() {
                       <span className="text-muted-foreground truncate">
                         {listing.property_type} • {listing.listing_type}
                       </span>
-                      {listing.price && (
+                      {(listing.price || (listing as any).valuation?.[0]?.estimated_value) && (
                         <span className="font-semibold whitespace-nowrap">
-                          {listing.price.toLocaleString()} {listing.currency}
+                          {listing.price 
+                            ? `${listing.price.toLocaleString()} ${listing.currency}` 
+                            : `${((listing as any).valuation[0].estimated_value).toLocaleString()} ${(listing as any).valuation[0].estimation_currency || 'TZS'} (Est.)`
+                          }
                         </span>
                       )}
                      </div>
