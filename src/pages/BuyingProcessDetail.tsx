@@ -18,25 +18,14 @@ import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { PaymentProofDialog } from '@/components/PaymentProofDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const getStepsForListing = (hasTitle: boolean) => {
-  if (hasTitle) {
-    return [
-      { id: 0, name: 'Field Visit', icon: Calendar, description: 'Visit and inspect the property' },
-      { id: 1, name: 'Title Verification', icon: FileCheck, description: 'Verify ownership documents' },
-      { id: 2, name: 'Registry Search', icon: Search, description: 'Conduct land registry search' },
-      { id: 3, name: 'Sale Agreement', icon: FileText, description: 'Prepare and sign agreement' },
-      { id: 4, name: 'Payment', icon: CreditCard, description: 'Arrange payment' },
-      { id: 5, name: 'Transfer', icon: Key, description: 'Complete ownership transfer' },
-    ];
-  } else {
-    return [
-      { id: 0, name: 'Field Visit', icon: Calendar, description: 'Visit and inspect the property' },
-      { id: 1, name: 'Sale Agreement', icon: FileText, description: 'Prepare and sign agreement' },
-      { id: 2, name: 'Payment', icon: CreditCard, description: 'Arrange payment' },
-      { id: 3, name: 'New Title Application', icon: Key, description: 'Apply for new title deed' },
-    ];
-  }
-};
+const steps = [
+  { id: 0, name: 'Field Visit', icon: Calendar, description: 'Visit and inspect the property' },
+  { id: 1, name: 'Title Verification', icon: FileCheck, description: 'Verify ownership documents' },
+  { id: 2, name: 'Registry Search', icon: Search, description: 'Conduct land registry search' },
+  { id: 3, name: 'Sale Agreement', icon: FileText, description: 'Prepare and sign agreement' },
+  { id: 4, name: 'Payment', icon: CreditCard, description: 'Arrange payment' },
+  { id: 5, name: 'Transfer', icon: Key, description: 'Complete ownership transfer' },
+];
 
 export default function BuyingProcessDetail() {
   const { id } = useParams<{ id: string }>();
@@ -50,8 +39,6 @@ export default function BuyingProcessDetail() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [visitRequests, setVisitRequests] = useState<any[]>([]);
   const [paymentProofs, setPaymentProofs] = useState<any[]>([]);
-  
-  const steps = getStepsForListing(processData?.listing?.has_title ?? true);
 
   useEffect(() => {
     if (id && user?.id) {
@@ -457,54 +444,52 @@ export default function BuyingProcessDetail() {
           )}
           
           <div>
-            <Label>Visit Notes (optional)</Label>
+            <Label>Visit Notes*</Label>
             <Textarea
               placeholder="Record your observations from the site visit..."
               value={stepFormData.notes || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, notes: e.target.value })}
               rows={4}
+              required
             />
           </div>
         </div>
       );
     }
 
-    // Handle conditional steps based on has_title
-    const hasTitle = processData?.listing?.has_title;
-    
-    // Title Verification (step 1) - only for titled properties
-    if (stepId === 1 && hasTitle) {
+    // For Title Verification (step 1)
+    if (stepId === 1) {
       return (
         <div className="space-y-4">
-          <div className="p-3 bg-primary/10 rounded-lg mb-4">
-            <p className="text-sm">✓ This property has an existing title deed</p>
-          </div>
           <div>
-            <Label>Title Deed Number (optional)</Label>
+            <Label>Title Deed Number*</Label>
             <Input
               placeholder="Enter deed number"
               value={stepFormData.deedNumber || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, deedNumber: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Registry Office (optional)</Label>
+            <Label>Registry Office*</Label>
             <Input
               placeholder="Registry office location"
               value={stepFormData.registryOffice || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, registryOffice: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Verification Date (optional)</Label>
+            <Label>Verification Date*</Label>
             <Input
               type="date"
               value={stepFormData.verificationDate || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, verificationDate: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Notes (optional)</Label>
+            <Label>Notes</Label>
             <Textarea
               placeholder="Verification findings..."
               value={stepFormData.notes || ''}
@@ -516,28 +501,30 @@ export default function BuyingProcessDetail() {
       );
     }
 
-    // Registry Search (step 2) - only for titled properties
-    if (stepId === 2 && hasTitle) {
+    // For Registry Search (step 2)
+    if (stepId === 2) {
       return (
         <div className="space-y-4">
           <div>
-            <Label>Search Date (optional)</Label>
+            <Label>Search Date*</Label>
             <Input
               type="date"
               value={stepFormData.searchDate || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, searchDate: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Encumbrance Status (optional)</Label>
+            <Label>Encumbrance Status*</Label>
             <Input
               placeholder="e.g., Clear, Encumbered"
               value={stepFormData.encumbranceStatus || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, encumbranceStatus: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Findings (optional)</Label>
+            <Label>Findings</Label>
             <Textarea
               placeholder="Registry search findings..."
               value={stepFormData.findings || ''}
@@ -549,37 +536,39 @@ export default function BuyingProcessDetail() {
       );
     }
 
-    // Sale Agreement - step 3 for titled, step 1 for non-titled
-    const isSaleAgreement = (hasTitle && stepId === 3) || (!hasTitle && stepId === 1);
-    if (isSaleAgreement) {
+    // For Sale Agreement (step 3)
+    if (stepId === 3) {
       return (
         <div className="space-y-4">
           <div>
-            <Label>Lawyer Name (optional)</Label>
+            <Label>Lawyer Name*</Label>
             <Input
               placeholder="Legal representative"
               value={stepFormData.lawyerName || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, lawyerName: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Lawyer Contact (optional)</Label>
+            <Label>Lawyer Contact*</Label>
             <Input
               placeholder="Phone or email"
               value={stepFormData.lawyerContact || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, lawyerContact: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Agreement Date (optional)</Label>
+            <Label>Agreement Date*</Label>
             <Input
               type="date"
               value={stepFormData.agreementDate || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, agreementDate: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Notes (optional)</Label>
+            <Label>Notes</Label>
             <Textarea
               placeholder="Agreement details..."
               value={stepFormData.notes || ''}
@@ -591,9 +580,8 @@ export default function BuyingProcessDetail() {
       );
     }
 
-    // Payment - step 4 for titled, step 2 for non-titled
-    const isPayment = (hasTitle && stepId === 4) || (!hasTitle && stepId === 2);
-    if (isPayment) {
+    // For Payment (step 4) - integrate with payment proofs
+    if (stepId === 4) {
       const acceptedPayment = paymentProofs.find(p => p.status === 'admin_validated');
       
       return (
@@ -615,31 +603,34 @@ export default function BuyingProcessDetail() {
           )}
           
           <div>
-            <Label>Payment Method (optional)</Label>
+            <Label>Payment Method*</Label>
             <Input
               placeholder="e.g., Bank Transfer, Cash"
               value={stepFormData.paymentMethod || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, paymentMethod: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Payment Reference (optional)</Label>
+            <Label>Payment Reference*</Label>
             <Input
               placeholder="Transaction reference"
               value={stepFormData.paymentReference || acceptedPayment?.transaction_reference || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, paymentReference: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Payment Date (optional)</Label>
+            <Label>Payment Date*</Label>
             <Input
               type="date"
               value={stepFormData.paymentDate || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, paymentDate: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Notes (optional)</Label>
+            <Label>Notes</Label>
             <Textarea
               placeholder="Payment details..."
               value={stepFormData.notes || ''}
@@ -651,42 +642,39 @@ export default function BuyingProcessDetail() {
       );
     }
 
-    // Transfer/New Title - step 5 for titled, step 3 for non-titled
-    const isTransferOrNewTitle = (hasTitle && stepId === 5) || (!hasTitle && stepId === 3);
-    if (isTransferOrNewTitle) {
+    // For Transfer (step 5)
+    if (stepId === 5) {
       return (
         <div className="space-y-4">
-          {!hasTitle && (
-            <div className="p-3 bg-warning/10 rounded-lg mb-4">
-              <p className="text-sm">⚠ No title deed - Apply for new title</p>
-            </div>
-          )}
           <div>
-            <Label>{hasTitle ? 'Transfer Date' : 'Application Date'} (optional)</Label>
+            <Label>Transfer Date*</Label>
             <Input
               type="date"
               value={stepFormData.transferDate || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, transferDate: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>New Title Deed Number (optional)</Label>
+            <Label>New Title Deed Number*</Label>
             <Input
               placeholder="New deed number after transfer"
               value={stepFormData.newDeedNumber || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, newDeedNumber: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Final Completion Date (optional)</Label>
+            <Label>Final Completion Date*</Label>
             <Input
               type="date"
               value={stepFormData.completionDate || ''}
               onChange={(e) => setStepFormData({ ...stepFormData, completionDate: e.target.value })}
+              required
             />
           </div>
           <div>
-            <Label>Notes (optional)</Label>
+            <Label>Notes</Label>
             <Textarea
               placeholder="Transfer completion notes..."
               value={stepFormData.notes || ''}
@@ -792,11 +780,6 @@ export default function BuyingProcessDetail() {
               <div className="w-full sm:w-auto sm:text-right">
                 <div className="text-2xl md:text-3xl font-bold text-primary mb-2">
                   {processData.listing.price?.toLocaleString()} {processData.listing.currency}
-                </div>
-                <div className="mb-3">
-                  <Badge variant={processData.listing.has_title ? "default" : "secondary"} className="text-xs">
-                    {processData.listing.has_title ? "Has Title Deed" : "No Title Deed"}
-                  </Badge>
                 </div>
                 <Link to={`/listings/${processData.listing_id}`} className="block sm:inline-block">
                   <Button variant="outline" size="sm" className="w-full sm:w-auto touch-feedback">
