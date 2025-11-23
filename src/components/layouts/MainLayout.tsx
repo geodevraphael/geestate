@@ -20,7 +20,7 @@ export function MainLayout({ children, hideSidebar = false }: MainLayoutProps) {
       <Navbar />
       <div className="flex flex-1 w-full">
         {showSidebar && <DashboardSidebar />}
-        <main className="flex-1 w-full overflow-auto pb-20 md:pb-0">
+        <main className="flex-1 w-full overflow-auto pb-24 md:pb-0">
           <div className="w-full h-full">
             {children}
           </div>

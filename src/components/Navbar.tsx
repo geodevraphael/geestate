@@ -31,19 +31,19 @@ export function Navbar() {
           </Link>
 
           {/* Mobile Top Actions */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-1.5">
             {user ? (
               <>
                 <NotificationBell />
                 <Link to="/dashboard">
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 touch-feedback">
                     <LayoutDashboard className="h-5 w-5" />
                   </Button>
                 </Link>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-9 w-9"
+                  className="h-9 w-9 touch-feedback"
                   onClick={handleLogout}
                 >
                   <LogOut className="h-5 w-5" />
@@ -51,7 +51,7 @@ export function Navbar() {
               </>
             ) : (
               <Link to="/auth">
-                <Button size="sm" variant="default">
+                <Button size="sm" variant="default" className="h-9 px-4 touch-feedback">
                   Sign In
                 </Button>
               </Link>

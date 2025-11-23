@@ -70,7 +70,7 @@ function DashboardContent() {
 
   return (
     <MainLayout>
-      <div className="p-8">
+      <div className="p-3 sm:p-6 md:p-8">
         <DashboardComponent />
       </div>
     </MainLayout>
