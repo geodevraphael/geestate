@@ -451,17 +451,33 @@ export default function Messages() {
   };
 
   const handleShareListing = async (e: React.MouseEvent) => {
-    if (!selectedConversation?.listing_id) return;
+    if (!user?.id) return;
 
-    const listingUrl = `${window.location.origin}/listing/${selectedConversation.listing_id}`;
-    const shareMessage = `Check out this property: ${selectedConversation.listing_title}\n${listingUrl}`;
-    
-    await sendMessage(e as any, shareMessage);
-    
-    toast({
-      title: 'Listing Shared',
-      description: 'The listing link has been sent',
-    });
+    try {
+      const { data: listings } = await supabase
+        .from('listings')
+        .select('id')
+        .eq('owner_id', user.id)
+        .eq('status', 'published');
+
+      const listingsUrl = `${window.location.origin}/listings?owner=${user.id}`;
+      const listingCount = listings?.length || 0;
+      const shareMessage = `View all my ${listingCount} ${listingCount === 1 ? 'listing' : 'listings'}:\n${listingsUrl}`;
+      
+      await sendMessage(e as any, shareMessage);
+      
+      toast({
+        title: 'Listings Shared',
+        description: 'Your listings link has been sent',
+      });
+    } catch (error) {
+      console.error('Error sharing listings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to share listings',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading && !initialLoadDone) {
@@ -822,14 +838,14 @@ export default function Messages() {
                     >
                       <Paperclip className="h-5 w-5" />
                     </Button>
-                    {isUserSeller && selectedConversation?.listing_id && (
+                    {isUserSeller && (
                       <Button 
                         type="button"
                         variant="ghost" 
                         size="icon"
                         onClick={handleShareListing}
                         className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground"
-                        title="Share this listing"
+                        title="Share all your listings"
                       >
                         <Share2 className="h-5 w-5" />
                       </Button>
