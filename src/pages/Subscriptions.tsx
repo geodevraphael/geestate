@@ -1,163 +1,120 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layouts/MainLayout';
-import { SubscriptionCard, SUBSCRIPTION_PLANS } from '@/components/SubscriptionCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Download } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { SubscriptionPaymentDialog } from '@/components/SubscriptionPaymentDialog';
+import { DollarSign, ArrowRight, CheckCircle } from 'lucide-react';
 
-interface Subscription {
-  id: string;
-  user_id: string;
-  plan_type: 'basic' | 'pro' | 'enterprise';
-  start_date: string;
-  end_date: string;
-  is_active: boolean;
-  amount_paid: number | null;
-  invoice_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+const MONTHLY_FEE = 100000;
 
 export default function Subscriptions() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{ type: "basic" | "pro" | "enterprise"; amount: number } | null>(null);
-
+  const { user, hasRole } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect buyers to homepage (they don't need subscriptions)
   useEffect(() => {
-    if (user) {
-      fetchSubscription();
+    if (user && hasRole('buyer') && !hasRole('seller') && !hasRole('admin')) {
+      navigate('/');
     }
-  }, [user]);
+  }, [user, hasRole, navigate]);
 
-  const fetchSubscription = async () => {
-    const { data } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user?.id)
-      .eq('is_active', true)
-      .single();
-
-    if (data) {
-      setSubscription(data);
-    }
-    setLoading(false);
+  const handleViewPayments = () => {
+    navigate('/geoinsight-payments');
   };
-
-  const handleUpgrade = (planType: 'basic' | 'pro' | 'enterprise') => {
-    if (subscription && subscription.plan_type === planType) {
-      toast({
-        title: 'Already Subscribed',
-        description: 'You are already on this plan.',
-      });
-      return;
-    }
-    
-    const planPrices = { basic: 50000, pro: 150000, enterprise: 500000 };
-    setSelectedPlan({ type: planType, amount: planPrices[planType] });
-    setPaymentDialogOpen(true);
-  };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-6">Loading...</div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Subscription Plans</h1>
-          <p className="text-muted-foreground">Choose the perfect plan for your needs</p>
+          <h1 className="text-3xl font-bold">Monthly Platform Fee</h1>
+          <p className="text-muted-foreground">Simple, transparent pricing for all users</p>
         </div>
 
-        {subscription && (
-          <Card className="border-primary">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Current Subscription</CardTitle>
-                  <CardDescription>
-                    {subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)} Plan
-                  </CardDescription>
-                </div>
-                <Badge variant={subscription.is_active ? 'default' : 'secondary'}>
-                  {subscription.is_active ? 'Active' : 'Inactive'}
-                </Badge>
+        <div className="max-w-2xl mx-auto">
+          <Card className="border-primary shadow-lg">
+            <CardHeader className="text-center pt-8">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <DollarSign className="h-8 w-8 text-primary" />
               </div>
+              <CardTitle className="text-2xl">GeoInsight Platform</CardTitle>
+              <CardDescription>
+                <span className="text-4xl font-bold text-foreground">{MONTHLY_FEE.toLocaleString()} TZS</span>
+                <span className="text-muted-foreground">/month</span>
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap items-center gap-6">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Started: {format(new Date(subscription.start_date), 'MMM dd, yyyy')}
-                  </p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Ends: {format(new Date(subscription.end_date), 'MMM dd, yyyy')}
-                  </p>
-                </div>
-                {subscription.invoice_url && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={subscription.invoice_url} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Invoice
-                    </a>
-                  </Button>
-                )}
+
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <p className="text-center text-muted-foreground">
+                  This monthly fee includes:
+                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Full access to the GeoInsight platform</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Create and manage property listings</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Advanced geospatial tools and analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Professional support</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Payment tracking and invoices</span>
+                  </li>
+                </ul>
               </div>
+
+              <Button 
+                onClick={handleViewPayments}
+                className="w-full"
+                size="lg"
+              >
+                View My Payments
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Monthly fees are automatically generated and payable via bank transfer or mobile money.
+                View all your payments and submit proof in the payments section.
+              </p>
             </CardContent>
           </Card>
-        )}
-
-        <div className="grid gap-6 md:grid-cols-3">
-          {SUBSCRIPTION_PLANS.map((plan) => (
-            <SubscriptionCard
-              key={plan.type}
-              plan={plan}
-              isCurrentPlan={subscription?.plan_type === plan.type}
-              onSubscribe={handleUpgrade}
-            />
-          ))}
         </div>
 
-        <Card>
+        <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Frequently Asked Questions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="font-semibold mb-1">Can I change plans anytime?</p>
+              <p className="font-semibold mb-1">When is the monthly fee due?</p>
               <p className="text-sm text-muted-foreground">
-                Yes, you can upgrade or downgrade your plan at any time. Changes take effect at the start of your next billing cycle.
+                Your monthly fee is generated at the start of each month and is due by the end of the month.
               </p>
             </div>
             <div>
               <p className="font-semibold mb-1">What payment methods do you accept?</p>
               <p className="text-sm text-muted-foreground">
-                We accept M-Pesa, bank transfers, and credit cards for subscription payments.
+                We accept M-Pesa, Tigo Pesa, Airtel Money, and bank transfers.
               </p>
             </div>
             <div>
-              <p className="font-semibold mb-1">Is there a refund policy?</p>
+              <p className="font-semibold mb-1">What if I miss a payment?</p>
               <p className="text-sm text-muted-foreground">
-                We offer a 7-day money-back guarantee on all paid plans. Contact support for refund requests.
+                Late payments may result in service suspension. Please contact support if you're having trouble making payments.
               </p>
             </div>
           </CardContent>
-         </Card>
+        </Card>
       </div>
     </MainLayout>
   );
