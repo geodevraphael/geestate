@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { ListingDeletionWarning } from '@/components/ListingDeletionWarning';
-import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload, DollarSign, Loader2 } from 'lucide-react';
+import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload, DollarSign, Loader2, MapPin, Building, Tag, Maximize2 } from 'lucide-react';
 import { Listing } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -408,102 +408,131 @@ export function SellerDashboard() {
               </Link>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {listings.length > 1 && (
-                <div className="flex items-center gap-2 p-2 border-b">
+                <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
                   <Checkbox 
                     checked={selectedListings.length === listings.length}
                     onCheckedChange={handleSelectAll}
                   />
-                  <span className="text-sm font-medium">Select All</span>
+                  <span className="text-sm font-semibold">Select All Listings</span>
                 </div>
               )}
-              <div className="space-y-3 md:space-y-4">
+              <div className="grid gap-6">
                 {listings.map((listing) => (
-                  <div key={listing.id} className="border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-300">
-                    <div className="flex items-start gap-3">
-                      <Checkbox 
-                        checked={selectedListings.includes(listing.id)}
-                        onCheckedChange={(checked) => handleSelectListing(listing.id, checked as boolean)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <Link to={`/listings/${listing.id}`}>
-                          <div className="flex items-start justify-between mb-2 gap-2">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-sm md:text-lg line-clamp-2">{listing.title}</h3>
-                              <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{listing.location_label}</p>
+                  <Card key={listing.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <Checkbox 
+                          checked={selectedListings.includes(listing.id)}
+                          onCheckedChange={(checked) => handleSelectListing(listing.id, checked as boolean)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 space-y-4">
+                          <Link to={`/listings/${listing.id}`} className="block group">
+                            <div className="flex items-start justify-between gap-4 mb-3">
+                              <div className="flex-1">
+                                <h3 className="font-bold text-xl mb-2 group-hover:text-primary transition-colors">
+                                  {listing.title}
+                                </h3>
+                                <p className="text-muted-foreground flex items-center gap-1.5">
+                                  <MapPin className="h-4 w-4" />
+                                  {listing.location_label}
+                                </p>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                {getStatusBadge(listing.status!)}
+                                {getVerificationBadge(listing.verification_status!)}
+                              </div>
                             </div>
-                            <div className="flex flex-col gap-1.5 md:gap-2 flex-shrink-0">
-                              {getStatusBadge(listing.status!)}
-                              {getVerificationBadge(listing.verification_status!)}
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs md:text-sm gap-2">
-                            <span className="text-muted-foreground truncate">
-                              {listing.property_type} • {listing.listing_type}
-                              {listing.polygon?.area_m2 && ` • ${listing.polygon.area_m2.toLocaleString()} m²`}
-                            </span>
-                          </div>
-                        </Link>
-                        
-                        {/* Inline Price Edit */}
-                        <div className="mt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {editingPrice === listing.id ? (
-                            <>
-                              <Input
-                                type="number"
-                                value={tempPrice}
-                                onChange={(e) => setTempPrice(e.target.value)}
-                                className="h-8 max-w-[200px]"
-                                placeholder="Enter price"
-                                autoFocus
-                              />
-                              <Button 
-                                size="sm" 
-                                onClick={() => handleUpdatePrice(listing.id, tempPrice)}
-                                className="h-8"
-                              >
-                                Save
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => {
-                                  setEditingPrice(null);
-                                  setTempPrice('');
-                                }}
-                                className="h-8"
-                              >
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              {(listing.price || listing.valuation?.[0]?.estimated_value) && (
-                                <span className="font-semibold">
-                                  {listing.price 
-                                    ? `${listing.price.toLocaleString()} ${listing.currency}` 
-                                    : `${(listing.valuation[0].estimated_value).toLocaleString()} ${listing.valuation[0].estimation_currency || 'TZS'} (Est.)`
-                                  }
-                                </span>
+                            
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1.5">
+                                <Building className="h-4 w-4" />
+                                <span className="capitalize">{listing.property_type}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Tag className="h-4 w-4" />
+                                <span className="capitalize">{listing.listing_type}</span>
+                              </div>
+                              {listing.polygon?.area_m2 && (
+                                <div className="flex items-center gap-1.5">
+                                  <Maximize2 className="h-4 w-4" />
+                                  <span className="font-medium">{listing.polygon.area_m2.toLocaleString()} m²</span>
+                                </div>
                               )}
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => {
-                                  setEditingPrice(listing.id);
-                                  setTempPrice(listing.price?.toString() || '');
-                                }}
-                                className="h-7 px-2"
-                              >
-                                <DollarSign className="h-3 w-3" />
-                              </Button>
                             </div>
-                          )}
+                          </Link>
+                          
+                          {/* Price Section */}
+                          <div className="pt-4 border-t" onClick={(e) => e.stopPropagation()}>
+                            {editingPrice === listing.id ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1">
+                                  <Label className="text-xs text-muted-foreground mb-1.5 block">Enter New Price</Label>
+                                  <Input
+                                    type="number"
+                                    value={tempPrice}
+                                    onChange={(e) => setTempPrice(e.target.value)}
+                                    className="h-10"
+                                    placeholder="Enter price"
+                                    autoFocus
+                                  />
+                                </div>
+                                <div className="flex gap-2 pt-5">
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleUpdatePrice(listing.id, tempPrice)}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingPrice(null);
+                                      setTempPrice('');
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Price</p>
+                                  {(listing.price || listing.valuation?.[0]?.estimated_value) ? (
+                                    <p className="text-2xl font-bold text-primary">
+                                      {listing.price 
+                                        ? `${listing.price.toLocaleString()} ${listing.currency}` 
+                                        : `${(listing.valuation[0].estimated_value).toLocaleString()} ${listing.valuation[0].estimation_currency || 'TZS'}`
+                                      }
+                                      {!listing.price && (
+                                        <span className="text-sm font-normal text-muted-foreground ml-2">(Estimated)</span>
+                                      )}
+                                    </p>
+                                  ) : (
+                                    <p className="text-muted-foreground">No price set</p>
+                                  )}
+                                </div>
+                                <Button 
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingPrice(listing.id);
+                                    setTempPrice(listing.price?.toString() || '');
+                                  }}
+                                >
+                                  <DollarSign className="h-4 w-4 mr-2" />
+                                  Edit Price
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
                    
                    <ListingDeletionWarning
                      listingId={listing.id}
@@ -531,10 +560,11 @@ export function SellerDashboard() {
                         </Button>
                       </Link>
                     </div>
-                  )}
-                 </div>
-               ))}
-             </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
