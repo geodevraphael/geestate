@@ -22,7 +22,8 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    const currentPath = window.location.pathname + window.location.search;
+    return <Navigate to={`/auth?redirect=${encodeURIComponent(currentPath)}`} replace />;
   }
 
   if (!roles || roles.length === 0) {

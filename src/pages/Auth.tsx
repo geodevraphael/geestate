@@ -13,6 +13,7 @@ import logo from '@/assets/geoestate-logo.png';
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin';
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -33,7 +34,7 @@ export default function Auth() {
       toast.error(error.message || 'Failed to sign in');
     } else {
       toast.success('Signed in successfully!');
-      navigate('/dashboard');
+      navigate(redirectTo);
     }
   };
 
