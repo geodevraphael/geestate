@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
+import { ListingDeletionWarning } from '@/components/ListingDeletionWarning';
 import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload } from 'lucide-react';
 import { Listing } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -305,9 +306,19 @@ export function SellerDashboard() {
                           {listing.price.toLocaleString()} {listing.currency}
                         </span>
                       )}
-                    </div>
-                  </Link>
-                  {listing.status === 'draft' && (
+                     </div>
+                   </Link>
+                   
+                   <ListingDeletionWarning
+                     listingId={listing.id}
+                     listingTitle={listing.title}
+                     deletionWarningSentAt={(listing as any).deletion_warning_sent_at}
+                     republishRequestedAt={(listing as any).republish_requested_at}
+                     pendingDeletion={(listing as any).pending_deletion || false}
+                     onRepublish={() => fetchSellerData()}
+                   />
+                   
+                   {listing.status === 'draft' && (
                     <div className="mt-3 pt-3 border-t flex gap-2">
                       <Button
                         size="sm"

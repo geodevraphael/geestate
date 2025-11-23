@@ -959,6 +959,7 @@ export type Database = {
           block_number: string | null
           created_at: string
           currency: string | null
+          deletion_warning_sent_at: string | null
           description: string | null
           description_sw: string | null
           district: string | null
@@ -969,12 +970,14 @@ export type Database = {
           listing_type: Database["public"]["Enums"]["listing_type"]
           location_label: string
           owner_id: string
+          pending_deletion: boolean | null
           planned_use: string | null
           plot_number: string | null
           price: number | null
           property_type: Database["public"]["Enums"]["property_type"]
           region: string | null
           region_id: string | null
+          republish_requested_at: string | null
           status: Database["public"]["Enums"]["listing_status"] | null
           street_name: string | null
           street_village_id: string | null
@@ -992,6 +995,7 @@ export type Database = {
           block_number?: string | null
           created_at?: string
           currency?: string | null
+          deletion_warning_sent_at?: string | null
           description?: string | null
           description_sw?: string | null
           district?: string | null
@@ -1002,12 +1006,14 @@ export type Database = {
           listing_type: Database["public"]["Enums"]["listing_type"]
           location_label: string
           owner_id: string
+          pending_deletion?: boolean | null
           planned_use?: string | null
           plot_number?: string | null
           price?: number | null
           property_type: Database["public"]["Enums"]["property_type"]
           region?: string | null
           region_id?: string | null
+          republish_requested_at?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           street_name?: string | null
           street_village_id?: string | null
@@ -1025,6 +1031,7 @@ export type Database = {
           block_number?: string | null
           created_at?: string
           currency?: string | null
+          deletion_warning_sent_at?: string | null
           description?: string | null
           description_sw?: string | null
           district?: string | null
@@ -1035,12 +1042,14 @@ export type Database = {
           listing_type?: Database["public"]["Enums"]["listing_type"]
           location_label?: string
           owner_id?: string
+          pending_deletion?: boolean | null
           planned_use?: string | null
           plot_number?: string | null
           price?: number | null
           property_type?: Database["public"]["Enums"]["property_type"]
           region?: string | null
           region_id?: string | null
+          republish_requested_at?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           street_name?: string | null
           street_village_id?: string | null
