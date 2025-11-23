@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { ListingDeletionWarning } from '@/components/ListingDeletionWarning';
-import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload, DollarSign, Loader2, MapPin, Building, Tag, Maximize2 } from 'lucide-react';
+import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload, DollarSign, Loader2, MapPin, Building, Tag, Maximize2, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Listing } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function SellerDashboard() {
   const { profile } = useAuth();
@@ -27,35 +28,85 @@ export function SellerDashboard() {
   const [pricePerM2, setPricePerM2] = useState('');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState('');
+  
+  // Pagination and filtering
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [verificationFilter, setVerificationFilter] = useState<string>('all');
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     fetchSellerData();
-  }, [profile]);
+  }, [profile, currentPage, itemsPerPage, searchQuery, statusFilter, verificationFilter]);
 
   const fetchSellerData = async () => {
     if (!profile) return;
 
     try {
-      // Fetch seller's listings with valuations and polygon data
-      const { data: listingsData, error } = await supabase
+      // First, get total count and stats (without pagination)
+      const { count: totalCount } = await supabase
+        .from('listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', profile.id);
+
+      setTotalCount(totalCount || 0);
+
+      // Get stats
+      const { data: statsData } = await supabase
+        .from('listings')
+        .select('status, verification_status')
+        .eq('owner_id', profile.id);
+
+      if (statsData) {
+        setStats({
+          total: statsData.length,
+          published: statsData.filter((l: any) => l.status === 'published').length,
+          pending: statsData.filter((l: any) => l.verification_status === 'pending').length,
+          draft: statsData.filter((l: any) => l.status === 'draft').length,
+        });
+      }
+
+      // Build filtered query for paginated listings
+      let query = supabase
         .from('listings')
         .select(`
           *,
           valuation:valuation_estimates(estimated_value, estimation_currency),
           polygon:listing_polygons(area_m2)
-        `)
-        .eq('owner_id', profile.id)
-        .order('created_at', { ascending: false });
+        `, { count: 'exact' })
+        .eq('owner_id', profile.id);
+
+      // Apply search filter
+      if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,location_label.ilike.%${searchQuery}%,block_number.ilike.%${searchQuery}%,plot_number.ilike.%${searchQuery}%`);
+      }
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter as any);
+      }
+
+      // Apply verification filter
+      if (verificationFilter !== 'all') {
+        query = query.eq('verification_status', verificationFilter as any);
+      }
+
+      // Apply pagination
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      
+      const { data: listingsData, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
 
       setListings(listingsData || []);
-      setStats({
-        total: listingsData?.length || 0,
-        published: listingsData?.filter((l: any) => l.status === 'published').length || 0,
-        pending: listingsData?.filter((l: any) => l.verification_status === 'pending').length || 0,
-        draft: listingsData?.filter((l: any) => l.status === 'draft').length || 0,
-      });
+      if (count !== null) {
+        setTotalCount(count);
+      }
 
       // Fetch recent visit requests
       const { data: visits } = await supabase
@@ -136,11 +187,48 @@ export function SellerDashboard() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
+      // Only select listings on current page
       setSelectedListings(listings.map(l => l.id));
     } else {
       setSelectedListings([]);
     }
   };
+
+  const handleSelectAllPages = async () => {
+    if (!profile) return;
+    
+    try {
+      // Fetch all listing IDs (just IDs, not full data)
+      let query = supabase
+        .from('listings')
+        .select('id')
+        .eq('owner_id', profile.id);
+
+      // Apply same filters as current view
+      if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,location_label.ilike.%${searchQuery}%,block_number.ilike.%${searchQuery}%,plot_number.ilike.%${searchQuery}%`);
+      }
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter as any);
+      }
+      if (verificationFilter !== 'all') {
+        query = query.eq('verification_status', verificationFilter as any);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      setSelectedListings(data?.map(l => l.id) || []);
+      toast({
+        title: 'All Listings Selected',
+        description: `Selected ${data?.length || 0} listings across all pages`,
+      });
+    } catch (error) {
+      console.error('Error selecting all:', error);
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleBatchUpdate = async () => {
     const priceValue = parseFloat(pricePerM2);
@@ -383,17 +471,84 @@ export function SellerDashboard() {
       {/* My Listings */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg md:text-xl">My Listings</CardTitle>
-              <CardDescription className="text-xs md:text-sm">View and manage all your property listings</CardDescription>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg md:text-xl">My Listings</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  {totalCount > 0 ? `${totalCount.toLocaleString()} total listing${totalCount > 1 ? 's' : ''}` : 'No listings found'}
+                </CardDescription>
+              </div>
+              {selectedListings.length > 0 && (
+                <Button onClick={() => setBatchDialogOpen(true)} size="sm">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Update {selectedListings.length} Price{selectedListings.length > 1 ? 's' : ''}
+                </Button>
+              )}
             </div>
-            {selectedListings.length > 0 && (
-              <Button onClick={() => setBatchDialogOpen(true)} size="sm">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Update {selectedListings.length} Price{selectedListings.length > 1 ? 's' : ''}
-              </Button>
-            )}
+
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by title, location, plot or block number..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1); // Reset to first page on search
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={verificationFilter} onValueChange={(value) => {
+                  setVerificationFilter(value);
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Verification" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="unverified">Unverified</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                  setItemsPerPage(parseInt(value));
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 / page</SelectItem>
+                    <SelectItem value="20">20 / page</SelectItem>
+                    <SelectItem value="50">50 / page</SelectItem>
+                    <SelectItem value="100">100 / page</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -409,15 +564,28 @@ export function SellerDashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {listings.length > 1 && (
-                <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
+              {/* Selection Controls */}
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-3">
                   <Checkbox 
-                    checked={selectedListings.length === listings.length}
+                    checked={selectedListings.length === listings.length && listings.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
-                  <span className="text-sm font-semibold">Select All Listings</span>
+                  <span className="text-sm font-semibold">
+                    Select All on Page ({listings.length})
+                  </span>
                 </div>
-              )}
+                {totalCount > itemsPerPage && (
+                  <Button 
+                    variant="link" 
+                    size="sm"
+                    onClick={handleSelectAllPages}
+                    className="text-xs"
+                  >
+                    Select All {totalCount} Listings
+                  </Button>
+                )}
+              </div>
               <div className="grid gap-6">
                 {listings.map((listing) => (
                   <Card key={listing.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
@@ -565,6 +733,60 @@ export function SellerDashboard() {
                   </Card>
                 ))}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount.toLocaleString()} listings
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className="w-10"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
