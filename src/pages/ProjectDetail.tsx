@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, MapPin, Maximize2, Calendar, Edit, Plus, Building, Tag } from 'lucide-react';
+import { ArrowLeft, MapPin, Maximize2, Calendar, Edit, Plus, Building, Tag, ListPlus } from 'lucide-react';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -17,6 +19,10 @@ export default function ProjectDetail() {
   const [project, setProject] = useState<any>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [unassignedListings, setUnassignedListings] = useState<any[]>([]);
+  const [selectedListings, setSelectedListings] = useState<string[]>([]);
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     if (id && profile) {
@@ -68,6 +74,77 @@ export default function ProjectDetail() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUnassignedListings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select(`
+          *,
+          polygon:listing_polygons(area_m2)
+        `)
+        .eq('owner_id', profile!.id)
+        .is('project_id', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUnassignedListings(data || []);
+    } catch (error) {
+      console.error('Error fetching unassigned listings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load unassigned listings',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAssignListings = async () => {
+    if (selectedListings.length === 0) {
+      toast({
+        title: 'No Listings Selected',
+        description: 'Please select at least one listing to assign',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setAssigning(true);
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ project_id: id })
+        .in('id', selectedListings);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Listings Assigned',
+        description: `${selectedListings.length} listing(s) have been assigned to this project`,
+      });
+
+      setShowAssignDialog(false);
+      setSelectedListings([]);
+      fetchProjectDetails();
+    } catch (error) {
+      console.error('Error assigning listings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to assign listings',
+        variant: 'destructive',
+      });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const toggleListingSelection = (listingId: string) => {
+    setSelectedListings(prev =>
+      prev.includes(listingId)
+        ? prev.filter(id => id !== listingId)
+        : [...prev, listingId]
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -165,12 +242,24 @@ export default function ProjectDetail() {
         {/* Listings */}
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Listings in this Project</h2>
-          <Link to={`/listings/new?project=${project.id}`}>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Listing
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                fetchUnassignedListings();
+                setShowAssignDialog(true);
+              }}
+            >
+              <ListPlus className="h-4 w-4 mr-2" />
+              Assign Existing
             </Button>
-          </Link>
+            <Link to={`/listings/new?project=${project.id}`}>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Listing
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {listings.length === 0 ? (
@@ -240,6 +329,68 @@ export default function ProjectDetail() {
             ))}
           </div>
         )}
+
+        {/* Assign Existing Listings Dialog */}
+        <ResponsiveModal
+          open={showAssignDialog}
+          onOpenChange={setShowAssignDialog}
+          title="Assign Existing Listings"
+          description="Select listings to assign to this project"
+        >
+          <div className="space-y-4">
+            {unassignedListings.length === 0 ? (
+              <div className="text-center py-8">
+                <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No unassigned listings found</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {unassignedListings.map((listing) => (
+                    <div
+                      key={listing.id}
+                      className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => toggleListingSelection(listing.id)}
+                    >
+                      <Checkbox
+                        checked={selectedListings.includes(listing.id)}
+                        onCheckedChange={() => toggleListingSelection(listing.id)}
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-medium">{listing.title}</h4>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          <MapPin className="h-3 w-3" />
+                          <span>{listing.location_label}</span>
+                          {listing.polygon?.area_m2 && (
+                            <>
+                              <span>•</span>
+                              <Maximize2 className="h-3 w-3" />
+                              <span>{listing.polygon.area_m2.toLocaleString()} m²</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="mt-2">
+                          {getStatusBadge(listing.status)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleAssignListings} 
+                    disabled={assigning || selectedListings.length === 0}
+                  >
+                    {assigning ? 'Assigning...' : `Assign ${selectedListings.length} Listing(s)`}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </ResponsiveModal>
       </div>
     </MainLayout>
   );
