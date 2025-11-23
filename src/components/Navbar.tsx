@@ -24,6 +24,11 @@ export function Navbar() {
             <img src={logo} alt="GeoEstate" className="h-8 md:h-10 w-auto" />
           </Link>
 
+          {/* Mobile Notification Bell */}
+          <div className="md:hidden flex items-center gap-2">
+            {user && <NotificationBell />}
+          </div>
+
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/map" className="text-sm font-medium hover:text-primary transition-colors">
