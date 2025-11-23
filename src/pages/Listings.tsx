@@ -7,9 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2 } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
+import { toast } from 'sonner';
 
 export default function Listings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -111,6 +112,14 @@ export default function Listings() {
     setPropertyTypeFilter('all');
     setVerificationFilter('all');
     clearOwnerFilter();
+  };
+
+  const handleShareListing = (listingId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const listingUrl = `${window.location.origin}/listings/${listingId}`;
+    navigator.clipboard.writeText(listingUrl);
+    toast.success('Listing link copied to clipboard!');
   };
 
   return (
@@ -294,6 +303,14 @@ export default function Listings() {
                           View Details
                         </Button>
                       </Link>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                        onClick={(e) => handleShareListing(listing.id, e)}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
                       <Link to={`/map?listing=${listing.id}`} onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all">
                           <Map className="h-4 w-4" />

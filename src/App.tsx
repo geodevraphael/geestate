@@ -53,6 +53,7 @@ import ApplyForRole from './pages/ApplyForRole';
 import BrowseSellers from './pages/BrowseSellers';
 import DraftListings from './pages/DraftListings';
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -69,7 +70,7 @@ const App = () => (
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/listings" element={<Listings />} />
-            <Route path="/listings/:id" element={<ListingDetail />} />
+            <Route path="/listings/:id" element={<ProtectedRoute><ListingDetail /></ProtectedRoute>} />
             <Route path="/listings/new" element={<CreateListing />} />
             <Route path="/listings/:id/edit" element={<CreateListing />} />
             <Route path="/admin/verification" element={<AdminVerification />} />

@@ -14,7 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { ListingWithDetails, ListingPolygon, ListingMedia, Profile, SpatialRiskProfile, LandUseProfile, ValuationEstimate } from '@/types/database';
 import { useListingCalculations } from '@/hooks/useListingCalculations';
 import { useProximityAnalysis } from '@/hooks/useProximityAnalysis';
@@ -303,6 +304,12 @@ export default function ListingDetail() {
   const isOwner = profile?.id === listing?.owner_id;
   const editingAsAdmin = canEdit && !isOwner;
 
+  const handleShareListing = () => {
+    const listingUrl = `${window.location.origin}/listings/${id}`;
+    navigator.clipboard.writeText(listingUrl);
+    toast.success('Listing link copied to clipboard!');
+  };
+
   const getVerificationBadge = () => {
     if (!listing) return null;
 
@@ -364,17 +371,23 @@ export default function ListingDetail() {
               Back to Listings
             </Button>
           </Link>
-          {canEdit && (
-            <Link to={`/listings/${id}/edit`}>
-              <Button size="sm" className="relative">
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Listing
-                {editingAsAdmin && (
-                  <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>
-                )}
-              </Button>
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleShareListing}>
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+            {canEdit && (
+              <Link to={`/listings/${id}/edit`}>
+                <Button size="sm" className="relative">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Listing
+                  {editingAsAdmin && (
+                    <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>
+                  )}
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
