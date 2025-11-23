@@ -49,17 +49,18 @@ export default function ListingDetail() {
   const [proximityAnalysis, setProximityAnalysis] = useState<any | null>(null);
   const [approvedVisitRequest, setApprovedVisitRequest] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [riskAnalyzing, setRiskAnalyzing] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 
-  // Trigger automatic calculations for STEP 4 data
-  useListingCalculations({
-    listingId: id || '',
-    propertyType: listing?.property_type || '',
-    region: listing?.region,
-    district: listing?.district,
-    geojson: polygon?.geojson,
-  });
+  // Removed automatic calculation - now manual via button
+  // useListingCalculations({
+  //   listingId: id || '',
+  //   propertyType: listing?.property_type || '',
+  //   region: listing?.region,
+  //   district: listing?.district,
+  //   geojson: polygon?.geojson,
+  // });
 
   // Trigger proximity analysis
   const { loading: proximityLoading, error: proximityError, calculateProximity } = useProximityAnalysis({
@@ -243,6 +244,40 @@ export default function ListingDetail() {
     setTimeout(() => {
       fetchProximityAnalysis();
     }, 3000);
+  };
+
+  const handleAnalyzeRisk = async () => {
+    if (!id || !polygon?.geojson) return;
+    
+    setRiskAnalyzing(true);
+    try {
+      const { error } = await supabase.functions.invoke('calculate-spatial-risk', {
+        body: {
+          listing_id: id,
+          geojson: polygon.geojson,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(t('detail.riskAnalysisComplete'));
+      
+      // Refresh spatial risk data
+      setTimeout(async () => {
+        const { data } = await supabase
+          .from('spatial_risk_profiles')
+          .select('*')
+          .eq('listing_id', id)
+          .maybeSingle();
+        
+        setSpatialRisk(data as SpatialRiskProfile | null);
+      }, 2000);
+    } catch (error) {
+      console.error('Error analyzing risk:', error);
+      toast.error(t('detail.riskAnalysisFailed'));
+    } finally {
+      setRiskAnalyzing(false);
+    }
   };
 
   const fetchListing = async () => {
@@ -475,6 +510,28 @@ export default function ListingDetail() {
             )}
 
             {/* STEP 4: Risk & Environmental Analysis */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">{t('detail.comprehensiveRiskAnalysis')}</CardTitle>
+                  <Button 
+                    onClick={handleAnalyzeRisk}
+                    disabled={riskAnalyzing || !polygon?.geojson}
+                    size="sm"
+                  >
+                    {riskAnalyzing ? t('detail.analyzing') : t('detail.analyzeRisk')}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!spatialRisk && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>{t('detail.clickToAnalyze')}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="grid md:grid-cols-2 gap-6">
               {/* Flood Risk */}
               {spatialRisk && (
@@ -502,18 +559,106 @@ export default function ListingDetail() {
                       </div>
                       <Progress value={spatialRisk.flood_risk_score} className="h-2" />
                     </div>
-                    {spatialRisk.near_river && (
-                      <div className="text-sm pt-2 border-t">
-                        <span className="text-muted-foreground">Distance to River: </span>
-                        <span className="font-medium">{spatialRisk.distance_to_river_m?.toFixed(0)}m</span>
+
+                    <Separator />
+
+                    {/* Environmental Notes with formatted sections */}
+                    {spatialRisk.environmental_notes && (
+                      <div className="space-y-3 text-sm">
+                        {spatialRisk.environmental_notes.split('\n\n').map((section: string, idx: number) => {
+                          const lines = section.split('\n');
+                          const header = lines[0];
+                          const items = lines.slice(1);
+
+                          if (header.startsWith('DATA SOURCES:')) {
+                            return (
+                              <div key={idx} className="p-3 bg-muted/50 rounded-lg">
+                                <p className="font-semibold text-xs text-primary mb-1">
+                                  {t('detail.dataAvailability')}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {header.replace('DATA SOURCES: ', '')}
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          if (header.startsWith('RISK FACTORS:')) {
+                            return (
+                              <div key={idx} className="space-y-1">
+                                <p className="font-semibold text-xs text-destructive">
+                                  {t('detail.riskFactors')}
+                                </p>
+                                <ul className="space-y-1 ml-2">
+                                  {items.map((item, i) => (
+                                    <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                                      <span className="text-destructive mt-0.5">•</span>
+                                      <span>{item.replace(/^\d+\.\s*/, '')}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          }
+
+                          if (header.startsWith('PROTECTIVE FACTORS:')) {
+                            return (
+                              <div key={idx} className="space-y-1">
+                                <p className="font-semibold text-xs text-success">
+                                  {t('detail.protectiveFactors')}
+                                </p>
+                                <ul className="space-y-1 ml-2">
+                                  {items.map((item, i) => (
+                                    <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                                      <span className="text-success mt-0.5">•</span>
+                                      <span>{item.replace(/^\d+\.\s*/, '')}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          }
+
+                          if (header.startsWith('RECOMMENDATION:')) {
+                            return (
+                              <div key={idx} className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                                <p className="text-xs leading-relaxed">
+                                  {header.replace('RECOMMENDATION: ', '')}
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          return null;
+                        })}
                       </div>
                     )}
-                    {spatialRisk.elevation_m && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Elevation: </span>
-                        <span className="font-medium">{spatialRisk.elevation_m.toFixed(0)}m</span>
-                      </div>
-                    )}
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                      {spatialRisk.near_river && spatialRisk.distance_to_river_m && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">River Distance:</span>
+                          <p className="font-medium">{spatialRisk.distance_to_river_m}m</p>
+                        </div>
+                      )}
+                      {spatialRisk.elevation_m && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Elevation:</span>
+                          <p className="font-medium">{Math.round(spatialRisk.elevation_m)}m</p>
+                        </div>
+                      )}
+                      {spatialRisk.slope_percent !== null && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Slope:</span>
+                          <p className="font-medium">{spatialRisk.slope_percent.toFixed(1)}%</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-muted-foreground pt-2 border-t">
+                      Last analyzed: {new Date(spatialRisk.calculated_at).toLocaleString()}
+                    </div>
                   </CardContent>
                 </Card>
               )}
