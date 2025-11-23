@@ -60,6 +60,12 @@ const navItems: NavItem[] = [
     roles: ['seller', 'broker', 'admin'],
   },
   {
+    title: 'Revenue',
+    href: '/revenue-management',
+    icon: BarChart3,
+    roles: ['seller', 'broker', 'admin'],
+  },
+  {
     title: 'Reputation',
     href: '/reputation',
     icon: Star,
