@@ -128,55 +128,55 @@ export default function Deals() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Deals</h1>
-          <p className="text-muted-foreground">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-8">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">My Deals</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Track all your property purchases and their progress
           </p>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Active Deals</p>
-                  <p className="text-3xl font-bold">{activeDeals.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground mb-1">Active Deals</p>
+                  <p className="text-2xl md:text-3xl font-bold">{activeDeals.length}</p>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-primary" />
+                <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Clock className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Completed</p>
-                  <p className="text-3xl font-bold">{completedDeals.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground mb-1">Completed</p>
+                  <p className="text-2xl md:text-3xl font-bold">{completedDeals.length}</p>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-success" />
+                <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-success/10 flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 text-success" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Value</p>
-                  <p className="text-3xl font-bold">
+                  <p className="text-xs md:text-sm text-muted-foreground mb-1">Total Value</p>
+                  <p className="text-xl md:text-3xl font-bold truncate">
                     {deals.reduce((sum, d) => sum + (d.listing?.price || 0), 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-accent" />
+                <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-accent/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-accent" />
                 </div>
               </div>
             </CardContent>
@@ -185,96 +185,98 @@ export default function Deals() {
 
         {/* Deals List */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="active">
+          <TabsList className="mb-4 md:mb-6 w-full sm:w-auto grid grid-cols-3 sm:inline-grid">
+            <TabsTrigger value="active" className="text-xs sm:text-sm">
               Active ({activeDeals.length})
             </TabsTrigger>
-            <TabsTrigger value="completed">
+            <TabsTrigger value="completed" className="text-xs sm:text-sm">
               Completed ({completedDeals.length})
             </TabsTrigger>
-            <TabsTrigger value="cancelled">
+            <TabsTrigger value="cancelled" className="text-xs sm:text-sm">
               Cancelled ({cancelledDeals.length})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active" className="space-y-4">
+          <TabsContent value="active" className="space-y-3 md:space-y-4">
             {activeDeals.length === 0 ? (
               <Card>
-                <CardContent className="p-12 text-center">
-                  <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Active Deals</h3>
-                  <p className="text-muted-foreground mb-4">
+                <CardContent className="p-8 md:p-12 text-center">
+                  <ShoppingBag className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+                  <h3 className="text-base md:text-lg font-semibold mb-2">No Active Deals</h3>
+                  <p className="text-sm md:text-base text-muted-foreground mb-4">
                     Start your property buying journey by browsing listings
                   </p>
                   <Link to="/listings">
-                    <Button>Browse Properties</Button>
+                    <Button className="touch-feedback">Browse Properties</Button>
                   </Link>
                 </CardContent>
               </Card>
             ) : (
               activeDeals.map((deal) => (
-                <Card key={deal.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-6">
+                <Card key={deal.id} className="hover:shadow-md transition-shadow mobile-card">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex flex-col gap-4 md:gap-6">
                       {/* Property Info */}
                       <div className="flex-1">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                          <div className="flex-1 min-w-0">
                             <Link to={`/buying-process/${deal.id}`}>
-                              <h3 className="text-xl font-semibold hover:text-primary transition-colors">
+                              <h3 className="text-lg md:text-xl font-semibold hover:text-primary transition-colors line-clamp-2">
                                 {deal.listing?.title}
                               </h3>
                             </Link>
-                            <div className="flex items-center gap-2 text-muted-foreground mt-1">
-                              <MapPin className="h-4 w-4" />
-                              {deal.listing?.location_label}
+                            <div className="flex items-center gap-1.5 text-sm md:text-base text-muted-foreground mt-1">
+                              <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                              <span className="line-clamp-1">{deal.listing?.location_label}</span>
                             </div>
                           </div>
-                          <Badge className={getStatusColor(deal.process_status)}>
+                          <Badge className={`${getStatusColor(deal.process_status)} whitespace-nowrap text-xs`}>
                             {deal.process_status.replace('_', ' ')}
                           </Badge>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <Badge variant="outline" className="capitalize">
+                        <div className="flex flex-wrap gap-1.5 md:gap-2 mb-4">
+                          <Badge variant="outline" className="capitalize text-xs">
                             {deal.listing?.property_type}
                           </Badge>
-                          <Badge variant="outline" className="capitalize">
+                          <Badge variant="outline" className="capitalize text-xs">
                             For {deal.listing?.listing_type}
                           </Badge>
                           {deal.listing?.price && (
-                            <Badge variant="outline">
+                            <Badge variant="outline" className="text-xs">
                               {deal.listing.price.toLocaleString()} {deal.listing.currency}
                             </Badge>
                           )}
                         </div>
 
                         <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-xs md:text-sm">
                             <span className="text-muted-foreground">Progress</span>
                             <span className="font-medium">{Math.round(calculateProgress(deal))}%</span>
                           </div>
                           <Progress value={calculateProgress(deal)} className="h-2" />
                         </div>
 
-                        <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>Seller: {deal.seller?.organization_name || deal.seller?.full_name}</span>
-                          <span>•</span>
+                        <div className="mt-3 md:mt-4 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs md:text-sm text-muted-foreground">
+                          <span className="line-clamp-1">Seller: {deal.seller?.organization_name || deal.seller?.full_name}</span>
+                          <span className="hidden sm:inline">•</span>
                           <span>Started {new Date(deal.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex flex-col gap-2 md:w-48">
-                        <Link to={`/buying-process/${deal.id}`} className="w-full">
-                          <Button className="w-full">
-                            View Process
+                      <div className="flex flex-row sm:flex-col gap-2 sm:w-auto">
+                        <Link to={`/buying-process/${deal.id}`} className="flex-1 sm:flex-initial sm:w-full">
+                          <Button className="w-full touch-feedback h-11 md:h-10 text-sm">
+                            <span className="hidden sm:inline">View Process</span>
+                            <span className="sm:hidden">Process</span>
                             <ExternalLink className="h-4 w-4 ml-2" />
                           </Button>
                         </Link>
-                        <Link to={`/listings/${deal.listing_id}`} className="w-full">
-                          <Button variant="outline" className="w-full">
-                            View Listing
+                        <Link to={`/listings/${deal.listing_id}`} className="flex-1 sm:flex-initial sm:w-full">
+                          <Button variant="outline" className="w-full touch-feedback h-11 md:h-10 text-sm">
+                            <span className="hidden sm:inline">View Listing</span>
+                            <span className="sm:hidden">Listing</span>
                           </Button>
                         </Link>
                       </div>

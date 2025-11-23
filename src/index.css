@@ -192,11 +192,39 @@ All colors MUST be HSL.
   /* Mobile touch feedback */
   @media (max-width: 768px) {
     .touch-feedback {
-      @apply active:scale-95 transition-transform duration-100;
+      @apply active:scale-95 transition-transform duration-150;
     }
     
     .mobile-card {
       @apply active:scale-[0.98] transition-transform duration-150;
+    }
+    
+    /* Mobile safe area for devices with notch */
+    .safe-area-bottom {
+      padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    }
+    
+    /* Better mobile spacing */
+    .mobile-px {
+      @apply px-3;
+    }
+    
+    .mobile-py {
+      @apply py-3;
+    }
+    
+    /* Mobile typography improvements */
+    .mobile-heading {
+      @apply text-xl leading-tight;
+    }
+    
+    .mobile-subheading {
+      @apply text-base leading-snug;
+    }
+    
+    /* Mobile button improvements */
+    .mobile-button {
+      @apply min-h-[48px] text-base font-medium;
     }
   }
 

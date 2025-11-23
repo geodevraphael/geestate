@@ -57,8 +57,8 @@ export function MobileBottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border shadow-lg">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/50 shadow-2xl safe-area-bottom">
+      <div className="flex items-center justify-around h-[72px] px-1">
         {navItems.map((item) => {
           if (item.requireAuth && !user) return null;
           
@@ -70,25 +70,25 @@ export function MobileBottomNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 min-w-[60px] relative",
+                "flex flex-col items-center justify-center gap-0.5 px-2.5 py-2 rounded-2xl transition-all duration-300 min-w-[64px] relative touch-feedback",
                 isActive 
-                  ? "text-primary bg-primary/10 scale-105" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "text-primary bg-primary/15 scale-105" 
+                  : "text-muted-foreground active:bg-muted/30"
               )}
             >
               <div className="relative">
                 <Icon className={cn(
-                  "h-5 w-5 transition-transform",
+                  "h-[22px] w-[22px] transition-transform",
                   isActive && "scale-110"
                 )} />
                 {item.path === '/messages' && unreadCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                  <Badge className="absolute -top-1 -right-1 h-[18px] min-w-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </Badge>
                 )}
               </div>
               <span className={cn(
-                "text-xs font-medium",
+                "text-[10px] font-medium mt-0.5",
                 isActive && "font-semibold"
               )}>
                 {item.label}
