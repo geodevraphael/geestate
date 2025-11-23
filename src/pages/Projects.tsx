@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, MapPin, Maximize2, Edit, Trash2, Building2 } from 'lucide-react';
+import { Plus, FolderOpen, MapPin, Maximize2, Edit, Trash2, Building2, Upload, X } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -36,6 +36,9 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -74,14 +77,76 @@ export default function Projects() {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Image must be less than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+
+    try {
+      setUploadingImage(true);
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${profile!.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('listing-media')
+        .upload(fileName, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('listing-media')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Upload Failed',
+        description: 'Failed to upload project image',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      let imageUrl = editingProject?.image_url || null;
+      
+      // Upload image if new file is selected
+      if (imageFile) {
+        const uploadedUrl = await uploadImage();
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
       if (editingProject) {
         const { error } = await supabase
           .from('projects')
-          .update(formData)
+          .update({ ...formData, image_url: imageUrl })
           .eq('id', editingProject.id);
 
         if (error) throw error;
@@ -93,7 +158,7 @@ export default function Projects() {
       } else {
         const { error } = await supabase
           .from('projects')
-          .insert([{ ...formData, owner_id: profile!.id }]);
+          .insert([{ ...formData, owner_id: profile!.id, image_url: imageUrl }]);
 
         if (error) throw error;
 
@@ -105,6 +170,8 @@ export default function Projects() {
 
       setDialogOpen(false);
       setEditingProject(null);
+      setImageFile(null);
+      setImagePreview(null);
       setFormData({
         name: '',
         description: '',
@@ -127,6 +194,7 @@ export default function Projects() {
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
+    setImagePreview(project.image_url);
     setFormData({
       name: project.name,
       description: project.description || '',
@@ -197,6 +265,8 @@ export default function Projects() {
           </div>
           <Button onClick={() => {
             setEditingProject(null);
+            setImageFile(null);
+            setImagePreview(null);
             setFormData({
               name: '',
               description: '',
@@ -228,7 +298,16 @@ export default function Projects() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <Card key={project.id} className="hover:shadow-lg transition-shadow">
+              <Card key={project.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                {project.image_url && (
+                  <div className="w-full h-48 overflow-hidden">
+                    <img 
+                      src={project.image_url} 
+                      alt={project.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -331,6 +410,39 @@ export default function Projects() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="image">Project Cover Image</Label>
+                <div className="flex flex-col gap-3">
+                  {imagePreview && (
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Upload a cover image for your project (max 5MB)
+                  </p>
+                </div>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="project_type">Project Type</Label>
@@ -388,8 +500,8 @@ export default function Projects() {
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingProject ? 'Update Project' : 'Create Project'}
+                <Button type="submit" disabled={uploadingImage}>
+                  {uploadingImage ? 'Uploading...' : editingProject ? 'Update Project' : 'Create Project'}
                 </Button>
               </DialogFooter>
             </form>
