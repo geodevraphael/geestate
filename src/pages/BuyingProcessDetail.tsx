@@ -63,9 +63,15 @@ export default function BuyingProcessDetail() {
           seller:profiles!buying_process_tracker_seller_id_fkey(*)
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        toast.error('Buying process not found');
+        navigate('/deals');
+        return;
+      }
       
       // Check if user is the buyer
       if (data.buyer_id !== user?.id) {
@@ -696,7 +702,7 @@ export default function BuyingProcessDetail() {
     );
   }
 
-  if (!processData) {
+  if (!processData || !processData.listing) {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -704,7 +710,7 @@ export default function BuyingProcessDetail() {
             <CardContent className="p-12 text-center">
               <h2 className="text-2xl font-bold mb-2">Process Not Found</h2>
               <p className="text-muted-foreground mb-4">
-                The buying process you're looking for doesn't exist
+                The buying process you're looking for doesn't exist or the associated listing is no longer available
               </p>
               <Link to="/deals">
                 <Button>Back to Deals</Button>
