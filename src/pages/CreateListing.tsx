@@ -789,7 +789,8 @@ export default function CreateListing() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isLandProperty && jsonFileName === '') {
+    // Only require file upload for new land listings, not when editing existing ones
+    if (isLandProperty && jsonFileName === '' && !id) {
       toast({
         title: 'File Required',
         description: 'Land parcels must be uploaded via GeoJSON or TopoJSON file',
