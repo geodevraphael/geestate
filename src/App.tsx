@@ -123,7 +123,7 @@ const App = () => (
             <Route path="/buying-process/:id" element={<ProtectedRoute><BuyingProcessDetail /></ProtectedRoute>} />
             <Route path="/revenue-management" element={<RevenueManagement />} />
             <Route path="/projects" element={<ProtectedRoute requireRole={['seller', 'broker', 'admin']}><Projects /></ProtectedRoute>} />
-            <Route path="/projects/:id" element={<ProtectedRoute requireRole={['seller', 'broker', 'admin']}><ProjectDetail /></ProtectedRoute>} />
+            <Route path="/projects/:id" element={<ProjectDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
