@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ import { ResponsiveModal } from '@/components/ResponsiveModal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { toast } from 'sonner';
+import { FastAverageColor } from 'fast-average-color';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -23,6 +24,9 @@ export default function ProjectDetail() {
   const [unassignedListings, setUnassignedListings] = useState<any[]>([]);
   const [selectedListings, setSelectedListings] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const [dominantColor, setDominantColor] = useState<string>('');
+  const [accentColor, setAccentColor] = useState<string>('');
+  const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (id && profile) {
@@ -59,7 +63,7 @@ export default function ProjectDetail() {
         .select(`
           *,
           valuation:valuation_estimates(estimated_value, estimation_currency),
-          polygon:listing_polygons(area_m2)
+          polygon:listing_polygons(geojson, area_m2)
         `)
         .eq('project_id', id);
 
@@ -83,13 +87,35 @@ export default function ProjectDetail() {
     }
   };
 
+  const extractColorsFromImage = (imageUrl: string) => {
+    if (!imageRef.current) return;
+    
+    const fac = new FastAverageColor();
+    const img = imageRef.current;
+    
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      try {
+        const color = fac.getColor(img);
+        setDominantColor(color.hex);
+        
+        // Create a lighter accent color
+        const rgb = color.value;
+        const accent = `rgb(${Math.min(rgb[0] + 40, 255)}, ${Math.min(rgb[1] + 40, 255)}, ${Math.min(rgb[2] + 40, 255)})`;
+        setAccentColor(accent);
+      } catch (error) {
+        console.error('Error extracting color:', error);
+      }
+    };
+  };
+
   const fetchUnassignedListings = async () => {
     try {
       const { data, error } = await supabase
         .from('listings')
         .select(`
           *,
-          polygon:listing_polygons(area_m2)
+          polygon:listing_polygons(geojson, area_m2)
         `)
         .eq('owner_id', profile!.id)
         .is('project_id', null)
@@ -184,8 +210,26 @@ export default function ProjectDetail() {
   return (
     <MainLayout>
       <div className="w-full">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
+        {/* Hero Section with Dynamic Background */}
+        <div 
+          className="relative border-b overflow-hidden"
+          style={{
+            background: dominantColor 
+              ? `linear-gradient(135deg, ${dominantColor}15, ${accentColor}10, hsl(var(--background)))`
+              : 'linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.05), hsl(var(--background)))'
+          }}
+        >
+          {/* Hidden image for color extraction */}
+          {project?.image_url && (
+            <img
+              ref={imageRef}
+              src={project.image_url}
+              alt=""
+              className="hidden"
+              onLoad={() => extractColorsFromImage(project.image_url)}
+            />
+          )}
+          
           <div className="w-full px-4 md:px-8 lg:px-12 py-6 md:py-12">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
               <div>
@@ -213,7 +257,15 @@ export default function ProjectDetail() {
                 </div>
               </div>
               {isOwner && (
-                <Button onClick={() => navigate(`/projects/edit/${project.id}`)} size="lg" className="gap-2 shadow-lg">
+                <Button 
+                  onClick={() => navigate(`/projects/edit/${project.id}`)} 
+                  size="lg" 
+                  className="gap-2 shadow-lg"
+                  style={dominantColor ? {
+                    backgroundColor: dominantColor,
+                    borderColor: dominantColor
+                  } : {}}
+                >
                   <Edit className="h-4 w-4" />
                   Edit Project
                 </Button>
@@ -222,12 +274,13 @@ export default function ProjectDetail() {
 
             {/* Cover Image */}
             {project.image_url && (
-              <div className="w-full h-64 md:h-96 overflow-hidden rounded-2xl shadow-2xl border border-border/50">
+              <div className="relative w-full h-64 md:h-96 overflow-hidden rounded-2xl shadow-2xl border border-border/50 group">
                 <img 
                   src={project.image_url} 
                   alt={project.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </div>
             )}
 
@@ -240,16 +293,43 @@ export default function ProjectDetail() {
                   )}
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                    <div 
+                      className="p-4 rounded-lg border transition-all duration-300 hover:shadow-lg"
+                      style={dominantColor ? {
+                        background: `linear-gradient(135deg, ${dominantColor}15, ${dominantColor}08)`,
+                        borderColor: `${dominantColor}30`
+                      } : {
+                        background: 'linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.05))',
+                        borderColor: 'hsl(var(--primary) / 0.2)'
+                      }}
+                    >
                       <p className="text-sm text-muted-foreground mb-1">Project Type</p>
                       <p className="text-lg font-semibold capitalize">{project.project_type || 'N/A'}</p>
                     </div>
-                    <div className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                    <div 
+                      className="p-4 rounded-lg border transition-all duration-300 hover:shadow-lg"
+                      style={dominantColor ? {
+                        background: `linear-gradient(135deg, ${dominantColor}12, ${dominantColor}06)`,
+                        borderColor: `${dominantColor}25`
+                      } : {
+                        background: 'linear-gradient(135deg, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.04))',
+                        borderColor: 'hsl(var(--primary) / 0.15)'
+                      }}
+                    >
                       <p className="text-sm text-muted-foreground mb-1">Total Plots</p>
                       <p className="text-lg font-semibold">{listings.length}</p>
                     </div>
                     {project.total_area_m2 && (
-                      <div className="p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
+                      <div 
+                        className="p-4 rounded-lg border transition-all duration-300 hover:shadow-lg"
+                        style={dominantColor ? {
+                          background: `linear-gradient(135deg, ${dominantColor}10, ${dominantColor}05)`,
+                          borderColor: `${dominantColor}20`
+                        } : {
+                          background: 'linear-gradient(135deg, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.03))',
+                          borderColor: 'hsl(var(--primary) / 0.12)'
+                        }}
+                      >
                         <p className="text-sm text-muted-foreground mb-1">Total Area</p>
                         <p className="text-lg font-semibold flex items-center gap-1">
                           <Maximize2 className="h-4 w-4" />
@@ -258,7 +338,16 @@ export default function ProjectDetail() {
                       </div>
                     )}
                     {project.start_date && (
-                      <div className="p-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg border border-purple-500/20">
+                      <div 
+                        className="p-4 rounded-lg border transition-all duration-300 hover:shadow-lg"
+                        style={dominantColor ? {
+                          background: `linear-gradient(135deg, ${dominantColor}08, ${dominantColor}04)`,
+                          borderColor: `${dominantColor}18`
+                        } : {
+                          background: 'linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--primary) / 0.02))',
+                          borderColor: 'hsl(var(--primary) / 0.1)'
+                        }}
+                      >
                         <p className="text-sm text-muted-foreground mb-1">Start Date</p>
                         <p className="text-lg font-semibold flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -290,12 +379,19 @@ export default function ProjectDetail() {
                     fetchUnassignedListings();
                     setShowAssignDialog(true);
                   }}
+                  className="hover:shadow-md transition-all"
                 >
                   <ListPlus className="h-4 w-4 mr-2" />
                   Assign Existing
                 </Button>
                 <Link to={`/listings/new?project=${project.id}`}>
-                  <Button>
+                  <Button
+                    className="hover:shadow-md transition-all"
+                    style={dominantColor ? {
+                      backgroundColor: dominantColor,
+                      borderColor: dominantColor
+                    } : {}}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Listing
                   </Button>
@@ -449,26 +545,42 @@ export default function ProjectDetail() {
                     {unassignedListings.map((listing) => (
                       <div
                         key={listing.id}
-                        className="flex items-start gap-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
                         onClick={() => toggleListingSelection(listing.id)}
                       >
                         <Checkbox
                           checked={selectedListings.includes(listing.id)}
                           onCheckedChange={() => toggleListingSelection(listing.id)}
+                          className="mt-1"
                         />
+                        
+                        {/* Satellite thumbnail */}
+                        <div className="w-24 h-16 rounded overflow-hidden border border-border/50 flex-shrink-0">
+                          {(listing as any).polygon?.geojson ? (
+                            <PropertyMapThumbnail 
+                              geojson={(listing as any).polygon.geojson}
+                              className="w-full h-full"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <MapPin className="h-8 w-8 text-muted-foreground/30" />
+                            </div>
+                          )}
+                        </div>
+                        
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium line-clamp-1">{listing.title}</h4>
+                          <h4 className="font-medium line-clamp-1 group-hover:text-primary transition-colors">{listing.title}</h4>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 flex-wrap">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               <span className="line-clamp-1">{listing.location_label}</span>
                             </div>
-                            {listing.polygon?.area_m2 && (
+                            {(listing as any).polygon?.area_m2 && (
                               <>
                                 <span>•</span>
                                 <div className="flex items-center gap-1">
                                   <Maximize2 className="h-3 w-3" />
-                                  <span>{listing.polygon.area_m2.toLocaleString()} m²</span>
+                                  <span>{(listing as any).polygon.area_m2.toLocaleString()} m²</span>
                                 </div>
                               </>
                             )}
