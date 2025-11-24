@@ -6,16 +6,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, MapPin, Maximize2, Calendar, Edit, Plus, Building, Tag, ListPlus } from 'lucide-react';
+import { ArrowLeft, MapPin, Maximize2, Calendar, Edit, Plus, Building, Tag, ListPlus, CheckCircle2, Share2, Eye, TrendingUp } from 'lucide-react';
 import { ResponsiveModal } from '@/components/ResponsiveModal';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
+import { toast } from 'sonner';
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { toast } = useToast();
   const [project, setProject] = useState<any>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,10 +41,8 @@ export default function ProjectDetail() {
       if (projectError) throw projectError;
       
       if (!projectData) {
-        toast({
-          title: 'Project Not Found',
+        toast.error('Project Not Found', {
           description: 'The project you are looking for does not exist',
-          variant: 'destructive',
         });
         navigate('/projects');
         return;
@@ -77,10 +75,8 @@ export default function ProjectDetail() {
       setListings(listingsData || []);
     } catch (error) {
       console.error('Error fetching project details:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to load project details',
-        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -103,20 +99,16 @@ export default function ProjectDetail() {
       setUnassignedListings(data || []);
     } catch (error) {
       console.error('Error fetching unassigned listings:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to load unassigned listings',
-        variant: 'destructive',
       });
     }
   };
 
   const handleAssignListings = async () => {
     if (selectedListings.length === 0) {
-      toast({
-        title: 'No Listings Selected',
+      toast.error('No Listings Selected', {
         description: 'Please select at least one listing to assign',
-        variant: 'destructive',
       });
       return;
     }
@@ -130,8 +122,7 @@ export default function ProjectDetail() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Listings Assigned',
+      toast.success('Listings Assigned', {
         description: `${selectedListings.length} listing(s) have been assigned to this project`,
       });
 
@@ -140,10 +131,8 @@ export default function ProjectDetail() {
       fetchProjectDetails();
     } catch (error) {
       console.error('Error assigning listings:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to assign listings',
-        variant: 'destructive',
       });
     } finally {
       setAssigning(false);
@@ -168,6 +157,14 @@ export default function ProjectDetail() {
     return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
   };
 
+  const handleShareListing = (listingId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const listingUrl = `${window.location.origin}/listings/${listingId}`;
+    navigator.clipboard.writeText(listingUrl);
+    toast.success('Listing link copied to clipboard!');
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -186,202 +183,248 @@ export default function ProjectDetail() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Back Navigation */}
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(isOwner ? '/projects' : '/listings')} 
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isOwner ? 'Back to My Projects' : 'Back to Marketplace'}
-        </Button>
-
-        {/* Cover Image */}
-        {project.image_url && (
-          <div className="w-full h-64 md:h-96 overflow-hidden rounded-xl">
-            <img 
-              src={project.image_url} 
-              alt={project.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Project Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <CardTitle className="text-3xl">{project.name}</CardTitle>
-                  <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
+      <div className="w-full">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
+          <div className="w-full px-4 md:px-8 lg:px-12 py-6 md:py-12">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+              <div>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate(isOwner ? '/projects' : '/listings')} 
+                  className="mb-4 -ml-2"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  {isOwner ? 'Back to My Projects' : 'Back to Marketplace'}
+                </Button>
+                <h1 className="text-3xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  {project.name}
+                </h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {project.location && (
+                    <p className="text-sm md:text-lg text-muted-foreground flex items-center gap-1.5">
+                      <MapPin className="h-4 w-4" />
+                      {project.location}
+                    </p>
+                  )}
+                  <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-sm">
                     {project.status.replace('_', ' ')}
                   </Badge>
                 </div>
-                {project.location && (
-                  <CardDescription className="flex items-center gap-1.5 text-base">
-                    <MapPin className="h-4 w-4" />
-                    {project.location}
-                  </CardDescription>
-                )}
               </div>
               {isOwner && (
-                <Button onClick={() => navigate(`/projects/edit/${project.id}`)}>
-                  <Edit className="h-4 w-4 mr-2" />
+                <Button onClick={() => navigate(`/projects/edit/${project.id}`)} size="lg" className="gap-2 shadow-lg">
+                  <Edit className="h-4 w-4" />
                   Edit Project
                 </Button>
               )}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {project.description && (
-              <p className="text-muted-foreground leading-relaxed">{project.description}</p>
+
+            {/* Cover Image */}
+            {project.image_url && (
+              <div className="w-full h-64 md:h-96 overflow-hidden rounded-2xl shadow-2xl border border-border/50">
+                <img 
+                  src={project.image_url} 
+                  alt={project.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             )}
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-              <div className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                <p className="text-sm text-muted-foreground mb-1">Project Type</p>
-                <p className="text-lg font-semibold capitalize">{project.project_type || 'N/A'}</p>
-              </div>
-              <div className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
-                <p className="text-sm text-muted-foreground mb-1">Total Plots</p>
-                <p className="text-lg font-semibold">{project.total_plots || 0}</p>
-              </div>
-              {project.total_area_m2 && (
-                <div className="p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
-                  <p className="text-sm text-muted-foreground mb-1">Total Area</p>
-                  <p className="text-lg font-semibold flex items-center gap-1">
-                    <Maximize2 className="h-4 w-4" />
-                    {project.total_area_m2.toLocaleString()} m²
-                  </p>
-                </div>
-              )}
-              {project.start_date && (
-                <div className="p-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg border border-purple-500/20">
-                  <p className="text-sm text-muted-foreground mb-1">Start Date</p>
-                  <p className="text-lg font-semibold flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(project.start_date).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Listings Section */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-2xl font-bold">Available Plots</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {listings.length} {listings.length === 1 ? 'listing' : 'listings'} in this project
-            </p>
-          </div>
-          {isOwner && (
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  fetchUnassignedListings();
-                  setShowAssignDialog(true);
-                }}
-              >
-                <ListPlus className="h-4 w-4 mr-2" />
-                Assign Existing
-              </Button>
-              <Link to={`/listings/new?project=${project.id}`}>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Listing
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {listings.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-16">
-              <Building className="h-16 w-16 mx-auto text-muted-foreground mb-4 opacity-50" />
-              <h3 className="text-xl font-semibold mb-2">
-                {isOwner ? 'No listings yet' : 'No available plots'}
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                {isOwner 
-                  ? 'Add your first listing to this project to get started' 
-                  : 'This project currently has no available plots for sale'}
-              </p>
-              {isOwner && (
-                <Link to={`/listings/new?project=${project.id}`}>
-                  <Button size="lg">
-                    <Plus className="h-5 w-5 mr-2" />
-                    Create First Listing
-                  </Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {listings.map((listing) => (
-              <Link key={listing.id} to={`/listings/${listing.id}`}>
-                <Card className="h-full hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group">
-                  <CardContent className="p-0">
-                    <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center relative overflow-hidden">
-                      <Building className="h-16 w-16 text-primary/30 group-hover:scale-110 transition-transform" />
-                      <div className="absolute top-3 right-3">
-                        {getStatusBadge(listing.status)}
-                      </div>
+            {/* Project Stats */}
+            <div className="mt-6">
+              <Card className="shadow-lg border-border/50 rounded-2xl overflow-hidden backdrop-blur-sm bg-background/95">
+                <CardContent className="p-6">
+                  {project.description && (
+                    <p className="text-muted-foreground leading-relaxed mb-6">{project.description}</p>
+                  )}
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                      <p className="text-sm text-muted-foreground mb-1">Project Type</p>
+                      <p className="text-lg font-semibold capitalize">{project.project_type || 'N/A'}</p>
                     </div>
-                    <div className="p-4 space-y-3">
-                      <div>
-                        <h3 className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                          {listing.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1.5 line-clamp-1">
-                          <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                          {listing.location_label}
+                    <div className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                      <p className="text-sm text-muted-foreground mb-1">Total Plots</p>
+                      <p className="text-lg font-semibold">{listings.length}</p>
+                    </div>
+                    {project.total_area_m2 && (
+                      <div className="p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
+                        <p className="text-sm text-muted-foreground mb-1">Total Area</p>
+                        <p className="text-lg font-semibold flex items-center gap-1">
+                          <Maximize2 className="h-4 w-4" />
+                          {project.total_area_m2.toLocaleString()} m²
                         </p>
                       </div>
-                      
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded">
-                          <Building className="h-3.5 w-3.5" />
-                          <span className="capitalize">{listing.property_type}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded">
-                          <Tag className="h-3.5 w-3.5" />
-                          <span className="capitalize">{listing.listing_type}</span>
-                        </div>
-                        {listing.polygon?.area_m2 && (
-                          <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded">
-                            <Maximize2 className="h-3.5 w-3.5" />
-                            <span className="font-medium">{listing.polygon.area_m2.toLocaleString()} m²</span>
+                    )}
+                    {project.start_date && (
+                      <div className="p-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg border border-purple-500/20">
+                        <p className="text-sm text-muted-foreground mb-1">Start Date</p>
+                        <p className="text-lg font-semibold flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {new Date(project.start_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Listings Section */}
+        <div className="w-full px-4 md:px-8 lg:px-12 py-6 md:py-8">
+          <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <p className="text-lg font-medium">
+                {listings.length} {listings.length === 1 ? 'Property' : 'Properties'} Available
+              </p>
+            </div>
+            {isOwner && (
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    fetchUnassignedListings();
+                    setShowAssignDialog(true);
+                  }}
+                >
+                  <ListPlus className="h-4 w-4 mr-2" />
+                  Assign Existing
+                </Button>
+                <Link to={`/listings/new?project=${project.id}`}>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Listing
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {listings.length === 0 ? (
+            <Card className="shadow-lg">
+              <CardContent className="text-center py-16">
+                <Building className="h-16 w-16 mx-auto text-muted-foreground mb-4 opacity-50" />
+                <h3 className="text-xl font-semibold mb-2">
+                  {isOwner ? 'No listings yet' : 'No available plots'}
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {isOwner 
+                    ? 'Add your first listing to this project to get started' 
+                    : 'This project currently has no available plots for sale'}
+                </p>
+                {isOwner && (
+                  <Link to={`/listings/new?project=${project.id}`}>
+                    <Button size="lg">
+                      <Plus className="h-5 w-5 mr-2" />
+                      Create First Listing
+                    </Button>
+                  </Link>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {listings.map((listing) => (
+                <Card key={listing.id} className="group overflow-hidden hover:shadow-2xl transition-all duration-300 h-full rounded-2xl border-border/50 hover:border-primary/20">
+                  <div className="relative">
+                    {/* Map or Image */}
+                    <Link to={`/listings/${listing.id}`}>
+                      <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
+                        {(listing as any).polygon?.geojson ? (
+                          <PropertyMapThumbnail 
+                            geojson={(listing as any).polygon.geojson}
+                            className="w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <MapPin className="h-16 w-16 text-muted-foreground/30" />
                           </div>
                         )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-
-                      {(listing.price || listing.valuation?.[0]?.estimated_value) && (
-                        <div className="pt-3 border-t">
-                          <p className="text-xl font-bold text-primary">
-                            {listing.price 
-                              ? `${listing.price.toLocaleString()} ${listing.currency}` 
-                              : `${(listing.valuation[0].estimated_value).toLocaleString()} ${listing.valuation[0].estimation_currency || 'TZS'}`
-                            }
-                          </p>
-                          {!listing.price && (
-                            <span className="text-xs text-muted-foreground">(Estimated value)</span>
-                          )}
-                        </div>
+                    </Link>
+                    
+                    {/* Badges Overlay */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
+                      <div className="flex flex-col gap-1.5">
+                        <Badge variant="secondary" className="capitalize text-xs shadow-lg backdrop-blur-sm bg-background/90">
+                          {listing.listing_type}
+                        </Badge>
+                        {isOwner && (
+                          <Badge variant="outline" className="capitalize text-xs shadow-lg backdrop-blur-sm bg-background/90">
+                            {listing.status}
+                          </Badge>
+                        )}
+                      </div>
+                      {listing.verification_status === 'verified' && (
+                        <Badge className="bg-success/90 text-success-foreground shadow-lg backdrop-blur-sm">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Verified
+                        </Badge>
                       )}
+                    </div>
+                  </div>
+
+                  <CardContent className="p-4 space-y-3">
+                    <Link to={`/listings/${listing.id}`}>
+                      <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                        {listing.title}
+                      </h3>
+                    </Link>
+                    
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 flex-shrink-0 text-primary/60" />
+                      <span className="line-clamp-1">{listing.location_label}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="capitalize text-xs">
+                        {listing.property_type}
+                      </Badge>
+                      {(listing as any).polygon?.area_m2 && (
+                        <Badge variant="outline" className="text-xs">
+                          <Maximize2 className="h-3 w-3 mr-1" />
+                          {(listing as any).polygon.area_m2.toLocaleString()} m²
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-border/50">
+                      <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-4">
+                        {listing.price 
+                          ? `${listing.price.toLocaleString()} ${listing.currency}` 
+                          : (listing as any).valuation?.[0]?.estimated_value
+                            ? `${(listing as any).valuation[0].estimated_value.toLocaleString()} ${(listing as any).valuation[0].estimation_currency || 'TZS'}`
+                            : 'Contact for price'
+                        }
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Link to={`/listings/${listing.id}`} className="flex-1">
+                          <Button variant="default" size="sm" className="w-full gap-2">
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={(e) => handleShareListing(listing.id, e)}
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Assign Existing Listings Dialog - Only for owners */}
         {isOwner && (
