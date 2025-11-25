@@ -63,8 +63,8 @@ All colors MUST be HSL.
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    /* Instagram Purple - accent */
-    --accent: 276 53% 46%;
+    /* Instagram Orange - accent */
+    --accent: 16 93% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -94,9 +94,9 @@ All colors MUST be HSL.
     --sidebar-border: 0 0% 90%;
     --sidebar-ring: 326 75% 54%;
 
-    /* Instagram Gradient - purple to pink to orange */
-    --gradient-hero: linear-gradient(135deg, hsl(326 75% 54%), hsl(276 53% 46%), hsl(16 93% 60%));
-    --gradient-mesh: linear-gradient(135deg, hsl(326 75% 54% / 0.1), hsl(276 53% 46% / 0.1));
+    /* Instagram Gradient - pink to orange */
+    --gradient-hero: linear-gradient(135deg, hsl(326 75% 54%), hsl(16 93% 60%));
+    --gradient-mesh: linear-gradient(135deg, hsl(326 75% 54% / 0.1), hsl(16 93% 60% / 0.1));
     --gradient-shine: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.2), transparent);
     --shadow-soft: 0 4px 20px -2px hsl(326 75% 54% / 0.1);
     --shadow-hover: 0 8px 30px -4px hsl(326 75% 54% / 0.15);
@@ -124,7 +124,7 @@ All colors MUST be HSL.
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 65%;
 
-    --accent: 276 53% 46%;
+    --accent: 16 93% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
