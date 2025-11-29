@@ -87,31 +87,65 @@ export default function AdminApprovals() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch role requests
+      // Fetch role requests (user_id references auth.users, not profiles, so fetch separately)
       const { data: roleData, error: roleError } = await supabase
         .from('role_requests')
-        .select(`
-          *,
-          applicant:profiles!role_requests_user_id_fkey(full_name, email)
-        `)
+        .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (roleError) throw roleError;
-      setRoleRequests((roleData as any) || []);
 
-      // Fetch institutional sellers
+      // Fetch applicant profiles for role requests
+      const roleRequestsWithProfiles: RoleRequest[] = [];
+      if (roleData && roleData.length > 0) {
+        const userIds = roleData.map(r => r.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+
+        const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+        
+        for (const request of roleData) {
+          const profile = profilesMap.get(request.user_id);
+          roleRequestsWithProfiles.push({
+            ...request,
+            applicant: profile ? { full_name: profile.full_name, email: profile.email } : undefined
+          } as RoleRequest);
+        }
+      }
+      setRoleRequests(roleRequestsWithProfiles);
+
+      // Fetch institutional sellers (profile_id references profiles directly)
       const { data: instData, error: instError } = await supabase
         .from('institutional_sellers')
-        .select(`
-          *,
-          applicant:profiles!institutional_sellers_profile_id_fkey(full_name, email)
-        `)
+        .select('*')
         .is('is_approved', null)
         .order('created_at', { ascending: false });
 
       if (instError) throw instError;
-      setInstitutions(instData || []);
+
+      // Fetch applicant profiles for institutions
+      const institutionsWithProfiles: InstitutionalSeller[] = [];
+      if (instData && instData.length > 0) {
+        const profileIds = instData.map(i => i.profile_id);
+        const { data: instProfilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', profileIds);
+
+        const instProfilesMap = new Map(instProfilesData?.map(p => [p.id, p]) || []);
+        
+        for (const inst of instData) {
+          const profile = instProfilesMap.get(inst.profile_id);
+          institutionsWithProfiles.push({
+            ...inst,
+            applicant: profile ? { full_name: profile.full_name, email: profile.email } : undefined
+          } as InstitutionalSeller);
+        }
+      }
+      setInstitutions(institutionsWithProfiles);
     } catch (error: any) {
       console.error('Error fetching data:', error);
       toast({
