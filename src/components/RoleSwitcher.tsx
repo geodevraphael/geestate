@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,25 +10,52 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ArrowLeftRight, ShoppingCart, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface RoleSwitcherProps {
   compact?: boolean;
 }
 
 export function RoleSwitcher({ compact = false }: RoleSwitcherProps) {
-  const { user, hasRole, primaryRole } = useAuth();
-  const [activeMode, setActiveMode] = useState<'buyer' | 'seller'>(
-    hasRole('seller') || hasRole('broker') ? 'seller' : 'buyer'
-  );
+  const { user, hasRole } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [activeMode, setActiveMode] = useState<'buyer' | 'seller'>('buyer');
+
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('activeMode');
+    if (saved === 'seller' || saved === 'buyer') {
+      setActiveMode(saved);
+    } else if (hasRole('seller') || hasRole('broker')) {
+      setActiveMode('seller');
+    }
+  }, [hasRole]);
 
   if (!user) return null;
 
-  const canSwitchToSeller = hasRole('seller') || hasRole('broker') || hasRole('admin');
+  const canActAsSeller = hasRole('seller') || hasRole('broker') || hasRole('admin');
 
   const handleSwitch = (mode: 'buyer' | 'seller') => {
+    if (mode === 'seller' && !canActAsSeller) {
+      // Prompt buyer to apply for seller role
+      toast({
+        title: 'Become a Seller',
+        description: 'Apply to become a seller to list your properties.',
+      });
+      navigate('/apply-for-role');
+      return;
+    }
+    
     setActiveMode(mode);
-    // Store preference in localStorage for persistence
     localStorage.setItem('activeMode', mode);
+    
+    toast({
+      title: `Switched to ${mode === 'buyer' ? 'Buyer' : 'Seller'} Mode`,
+      description: mode === 'buyer' 
+        ? 'You can now browse and purchase properties.' 
+        : 'You can now manage and list your properties.',
+    });
   };
 
   if (compact) {
@@ -35,10 +63,14 @@ export function RoleSwitcher({ compact = false }: RoleSwitcherProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-9 w-9">
-            <ArrowLeftRight className="h-5 w-5" />
+            {activeMode === 'buyer' ? (
+              <ShoppingCart className="h-5 w-5" />
+            ) : (
+              <Store className="h-5 w-5" />
+            )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="bg-popover border border-border shadow-lg z-50">
           <DropdownMenuItem 
             onClick={() => handleSwitch('buyer')}
             className={cn(activeMode === 'buyer' && 'bg-accent')}
@@ -46,15 +78,13 @@ export function RoleSwitcher({ compact = false }: RoleSwitcherProps) {
             <ShoppingCart className="h-4 w-4 mr-2" />
             Buyer Mode
           </DropdownMenuItem>
-          {canSwitchToSeller && (
-            <DropdownMenuItem 
-              onClick={() => handleSwitch('seller')}
-              className={cn(activeMode === 'seller' && 'bg-accent')}
-            >
-              <Store className="h-4 w-4 mr-2" />
-              Seller Mode
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem 
+            onClick={() => handleSwitch('seller')}
+            className={cn(activeMode === 'seller' && canActAsSeller && 'bg-accent')}
+          >
+            <Store className="h-4 w-4 mr-2" />
+            {canActAsSeller ? 'Seller Mode' : 'Become a Seller'}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -71,17 +101,15 @@ export function RoleSwitcher({ compact = false }: RoleSwitcherProps) {
         <ShoppingCart className="h-4 w-4" />
         <span className="hidden sm:inline">Buyer</span>
       </Button>
-      {canSwitchToSeller && (
-        <Button
-          variant={activeMode === 'seller' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => handleSwitch('seller')}
-          className="gap-2"
-        >
-          <Store className="h-4 w-4" />
-          <span className="hidden sm:inline">Seller</span>
-        </Button>
-      )}
+      <Button
+        variant={activeMode === 'seller' && canActAsSeller ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => handleSwitch('seller')}
+        className="gap-2"
+      >
+        <Store className="h-4 w-4" />
+        <span className="hidden sm:inline">{canActAsSeller ? 'Seller' : 'Become Seller'}</span>
+      </Button>
     </div>
   );
 }
