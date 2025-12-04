@@ -1,12 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard, FileUp } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { UserMenu } from './navbar/UserMenu';
 import { AdminMenu } from './navbar/AdminMenu';
+import { RoleSwitcher } from './RoleSwitcher';
+import { SurveyPlanUploadDialog } from './SurveyPlanUploadDialog';
 import { useTranslation } from 'react-i18next';
 import logo from '@/assets/geoestate-logo.png';
 
@@ -34,6 +36,14 @@ export function Navbar() {
           <div className="md:hidden flex items-center gap-1.5">
             {user ? (
               <>
+                <RoleSwitcher compact />
+                <SurveyPlanUploadDialog 
+                  trigger={
+                    <Button variant="ghost" size="icon" className="h-9 w-9 touch-feedback">
+                      <FileUp className="h-5 w-5" />
+                    </Button>
+                  }
+                />
                 <NotificationBell />
                 <Link to="/dashboard">
                   <Button variant="ghost" size="icon" className="h-9 w-9 touch-feedback">
@@ -84,6 +94,10 @@ export function Navbar() {
                 <Link to="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
                   {t('nav.dashboard')}
                 </Link>
+                
+                <RoleSwitcher />
+                
+                <SurveyPlanUploadDialog />
                 
                 {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <Link to="/listings/new">
@@ -178,6 +192,17 @@ export function Navbar() {
                 >
                   {t('nav.dashboard')}
                 </Link>
+
+                <div className="py-2">
+                  <SurveyPlanUploadDialog 
+                    trigger={
+                      <Button variant="outline" size="sm" className="w-full gap-2">
+                        <FileUp className="h-4 w-4" />
+                        Request Listing
+                      </Button>
+                    }
+                  />
+                </div>
 
                 {(hasRole('seller') || hasRole('broker') || hasRole('admin')) && (
                   <Link

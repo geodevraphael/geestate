@@ -57,6 +57,7 @@ import BuyingProcessDetail from './pages/BuyingProcessDetail';
 import RevenueManagement from './pages/RevenueManagement';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
+import AdminListingRequests from './pages/AdminListingRequests';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -117,6 +118,7 @@ const App = () => (
             <Route path="/admin/geodata-upload" element={<AdminGeoDataUpload />} />
             <Route path="/geoinsight-payments" element={<GeoinsightPayments />} />
             <Route path="/admin/income" element={<AdminIncomeManagement />} />
+            <Route path="/admin/listing-requests" element={<ProtectedRoute requireRole={['admin', 'verification_officer']}><AdminListingRequests /></ProtectedRoute>} />
             <Route path="/sellers" element={<BrowseSellers />} />
             <Route path="/drafts" element={<DraftListings />} />
             <Route path="/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>} />

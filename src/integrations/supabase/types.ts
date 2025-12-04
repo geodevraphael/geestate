@@ -1115,6 +1115,59 @@ export type Database = {
           },
         ]
       }
+      listing_requests: {
+        Row: {
+          admin_notes: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          location_description: string | null
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          survey_plan_url: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          location_description?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          survey_plan_url: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          location_description?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          survey_plan_url?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           block_number: string | null
