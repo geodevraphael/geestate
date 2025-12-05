@@ -96,14 +96,7 @@ const Index = () => {
       
 
       {/* Footer */}
-      <footer className="py-8 md:py-12 mb-16 md:mb-0 border-t border-border/50 bg-card/50">
-        <div className="container mx-auto px-4 md:px-6">
-          
-          <div className="pt-6 md:pt-8 border-t border-border/50 text-center text-xs md:text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} GeoEstate Tanzania. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      
     </div>;
 };
 export default Index;
