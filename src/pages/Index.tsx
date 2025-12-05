@@ -4,10 +4,10 @@ import { MapPin, Search, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useTranslation } from 'react-i18next';
-
 const Index = () => {
-  const { t } = useTranslation();
-  
+  const {
+    t
+  } = useTranslation();
   return <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       <MobileBottomNav />
@@ -89,11 +89,7 @@ const Index = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 rounded-full border-2 border-primary/30 flex items-start justify-center p-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-glow" />
-          </div>
-        </div>
+        
       </section>
 
       {/* CTA Section */}
