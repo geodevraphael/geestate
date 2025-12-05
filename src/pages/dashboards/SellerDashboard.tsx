@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { ListingDeletionWarning } from '@/components/ListingDeletionWarning';
-import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload, DollarSign, Loader2, MapPin, Building, Tag, Maximize2, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Eye, CheckCircle2, Clock, AlertCircle, TrendingUp, Calendar, MessageSquare, Upload, DollarSign, Loader2, MapPin, Building, Tag, Maximize2, Search, Filter, ChevronLeft, ChevronRight, Sparkles, ArrowRight, BarChart3 } from 'lucide-react';
 import { Listing } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,6 @@ export function SellerDashboard() {
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState('');
   
-  // Pagination and filtering
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,7 +44,6 @@ export function SellerDashboard() {
     if (!profile) return;
 
     try {
-      // First, get total count and stats (without pagination)
       const { count: totalCount } = await supabase
         .from('listings')
         .select('*', { count: 'exact', head: true })
@@ -53,7 +51,6 @@ export function SellerDashboard() {
 
       setTotalCount(totalCount || 0);
 
-      // Get stats
       const { data: statsData } = await supabase
         .from('listings')
         .select('status, verification_status')
@@ -68,7 +65,6 @@ export function SellerDashboard() {
         });
       }
 
-      // Build filtered query for paginated listings
       let query = supabase
         .from('listings')
         .select(`
@@ -78,22 +74,18 @@ export function SellerDashboard() {
         `, { count: 'exact' })
         .eq('owner_id', profile.id);
 
-      // Apply search filter
       if (searchQuery) {
         query = query.or(`title.ilike.%${searchQuery}%,location_label.ilike.%${searchQuery}%,block_number.ilike.%${searchQuery}%,plot_number.ilike.%${searchQuery}%`);
       }
 
-      // Apply status filter
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter as any);
       }
 
-      // Apply verification filter
       if (verificationFilter !== 'all') {
         query = query.eq('verification_status', verificationFilter as any);
       }
 
-      // Apply pagination
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
       
@@ -108,7 +100,6 @@ export function SellerDashboard() {
         setTotalCount(count);
       }
 
-      // Fetch recent visit requests
       const { data: visits } = await supabase
         .from('visit_requests')
         .select('*, listings(title), profiles!visit_requests_buyer_id_fkey(full_name)')
@@ -125,14 +116,15 @@ export function SellerDashboard() {
   };
 
   const getStatusBadge = (status: string) => {
-    const icons = {
-      published: <CheckCircle2 className="h-3 w-3 mr-1" />,
-      draft: <Clock className="h-3 w-3 mr-1" />,
-      archived: <AlertCircle className="h-3 w-3 mr-1" />,
+    const config: Record<string, { icon: any; className: string }> = {
+      published: { icon: CheckCircle2, className: 'bg-success/10 text-success border-success/20' },
+      draft: { icon: Clock, className: 'bg-muted text-muted-foreground border-muted' },
+      archived: { icon: AlertCircle, className: 'bg-destructive/10 text-destructive border-destructive/20' },
     };
+    const { icon: Icon, className } = config[status] || config.draft;
     return (
-      <Badge variant={status === 'published' ? 'default' : 'secondary'} className="flex items-center">
-        {icons[status as keyof typeof icons]}
+      <Badge variant="outline" className={`flex items-center gap-1 ${className}`}>
+        <Icon className="h-3 w-3" />
         {status}
       </Badge>
     );
@@ -165,7 +157,6 @@ export function SellerDashboard() {
         description: 'Your listing is now visible to buyers',
       });
 
-      // Refresh the listings
       fetchSellerData();
     } catch (error: any) {
       console.error('Error publishing listing:', error);
@@ -187,7 +178,6 @@ export function SellerDashboard() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select listings on current page
       setSelectedListings(listings.map(l => l.id));
     } else {
       setSelectedListings([]);
@@ -198,13 +188,11 @@ export function SellerDashboard() {
     if (!profile) return;
     
     try {
-      // Fetch all listing IDs (just IDs, not full data)
       let query = supabase
         .from('listings')
         .select('id')
         .eq('owner_id', profile.id);
 
-      // Apply same filters as current view
       if (searchQuery) {
         query = query.or(`title.ilike.%${searchQuery}%,location_label.ilike.%${searchQuery}%,block_number.ilike.%${searchQuery}%,plot_number.ilike.%${searchQuery}%`);
       }
@@ -319,143 +307,194 @@ export function SellerDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">Seller Dashboard</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Manage your listings and track your performance
-        </p>
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8 pb-24 md:pb-8 max-w-7xl mx-auto">
+      {/* Welcome Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 md:p-8 text-primary-foreground">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-5 w-5 text-accent" />
+              <span className="text-sm font-medium text-primary-foreground/80">Seller Dashboard</span>
+            </div>
+            <h1 className="text-2xl md:text-4xl font-display font-bold mb-2">
+              {profile?.full_name}
+            </h1>
+            <p className="text-primary-foreground/80">
+              Manage your listings and track performance
+            </p>
+          </div>
+          <Link to="/listings/new">
+            <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2 shadow-lg">
+              <Plus className="h-5 w-5" />
+              Create Listing
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <Card className="hover-lift">
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-              <span className="hidden sm:inline">Total Listings</span>
-              <span className="sm:hidden">Total</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                <Building className="h-5 w-5" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">Total</span>
+            </div>
             <div className="text-2xl md:text-3xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground mt-1">Listings</p>
           </CardContent>
         </Card>
 
-        <Card className="hover-lift">
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Published</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 rounded-xl bg-success/10 text-success">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">Live</span>
+            </div>
             <div className="text-2xl md:text-3xl font-bold text-success">{stats.published}</div>
+            <p className="text-xs text-muted-foreground mt-1">Published</p>
           </CardContent>
         </Card>
 
-        <Card className="hover-lift">
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Drafts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl md:text-3xl font-bold text-muted-foreground">{stats.draft}</div>
+        <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 rounded-xl bg-muted text-muted-foreground">
+                <Clock className="h-5 w-5" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">Draft</span>
+            </div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.draft}</div>
+            <p className="text-xs text-muted-foreground mt-1">Unpublished</p>
           </CardContent>
         </Card>
 
-        <Card className="hover-lift">
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
-              <span className="hidden sm:inline">Pending</span>
-              <span className="sm:hidden">Pending</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 rounded-xl bg-warning/10 text-warning">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">Review</span>
+            </div>
             <div className="text-2xl md:text-3xl font-bold text-warning">{stats.pending}</div>
+            <p className="text-xs text-muted-foreground mt-1">Pending</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Info: Draft vs Published */}
+      {/* Draft Alert */}
       {stats.draft > 0 && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
+        <Alert className="border-warning/50 bg-warning/5">
+          <Clock className="h-4 w-4 text-warning" />
           <div className="ml-2">
-            <h4 className="font-semibold mb-1">You have {stats.draft} draft listing{stats.draft > 1 ? 's' : ''}</h4>
+            <h4 className="font-semibold">You have {stats.draft} draft listing{stats.draft > 1 ? 's' : ''}</h4>
             <p className="text-sm text-muted-foreground">
-              Draft listings are not visible to buyers. Click "Publish Listing" on any draft to make it visible on the marketplace, or edit your listing and click "Publish Listing" to make it live.
+              Draft listings are not visible to buyers. Publish them to make them live.
             </p>
           </div>
         </Alert>
       )}
 
       {/* Quick Actions */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-lg md:text-xl">Quick Actions</CardTitle>
-          <CardDescription className="text-xs md:text-sm">Manage your business</CardDescription>
+      <Card className="border-border/50 overflow-hidden">
+        <CardHeader className="pb-4 bg-muted/30">
+          <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-accent" />
+            Quick Actions
+          </CardTitle>
+          <CardDescription>Manage your business</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3">
-          <Link to="/listings/new" className="w-full md:w-auto">
-            <Button className="w-full h-11 md:h-10" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Create Listing</span>
-              <span className="sm:hidden">Create</span>
-            </Button>
-          </Link>
-          {stats.draft > 0 && (
-            <Link to="/drafts" className="w-full md:w-auto">
-              <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
-                <Clock className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">View Drafts ({stats.draft})</span>
-                <span className="sm:hidden">Drafts</span>
-              </Button>
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <Link to="/listings/new" className="group">
+              <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border/50 hover:border-accent hover:bg-accent/5 transition-all">
+                <div className="p-3 rounded-full bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                  <Plus className="h-5 w-5 text-accent" />
+                </div>
+                <span className="text-sm font-medium text-center">Create</span>
+              </div>
             </Link>
-          )}
-          <Link to="/visit-requests" className="w-full md:w-auto">
-            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Visit Requests</span>
-              <span className="sm:hidden">Visits</span>
-            </Button>
-          </Link>
-          <Link to="/payment-proofs" className="w-full md:w-auto">
-            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Payments</span>
-              <span className="sm:hidden">Pay</span>
-            </Button>
-          </Link>
-          <Link to="/messages" className="w-full md:w-auto">
-            <Button variant="outline" className="w-full h-11 md:h-10" size="sm">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Messages</span>
-              <span className="sm:hidden">Msgs</span>
-            </Button>
-          </Link>
+            {stats.draft > 0 && (
+              <Link to="/drafts" className="group">
+                <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border/50 hover:border-warning hover:bg-warning/5 transition-all">
+                  <div className="p-3 rounded-full bg-warning/10 group-hover:bg-warning/20 transition-colors">
+                    <Clock className="h-5 w-5 text-warning" />
+                  </div>
+                  <span className="text-sm font-medium text-center">Drafts ({stats.draft})</span>
+                </div>
+              </Link>
+            )}
+            <Link to="/visit-requests" className="group">
+              <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border/50 hover:border-success hover:bg-success/5 transition-all">
+                <div className="p-3 rounded-full bg-success/10 group-hover:bg-success/20 transition-colors">
+                  <Calendar className="h-5 w-5 text-success" />
+                </div>
+                <span className="text-sm font-medium text-center">Visits</span>
+              </div>
+            </Link>
+            <Link to="/payment-proofs" className="group">
+              <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border/50 hover:border-primary hover:bg-primary/5 transition-all">
+                <div className="p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-center">Payments</span>
+              </div>
+            </Link>
+            <Link to="/messages" className="group">
+              <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border/50 hover:border-primary hover:bg-primary/5 transition-all">
+                <div className="p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-center">Messages</span>
+              </div>
+            </Link>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Recent Visit Requests */}
+      {/* Recent Visits */}
       {recentVisits.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Visit Requests</CardTitle>
-            <CardDescription>Buyers interested in your properties</CardDescription>
+        <Card className="border-border/50">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-success" />
+                Recent Visit Requests
+              </CardTitle>
+              <Link to="/visit-requests">
+                <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                  View all <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentVisits.map((visit) => (
-                <div key={visit.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-semibold">{visit.listings?.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Requested by {visit.profiles?.full_name}
-                    </p>
-                    <p className="text-sm mt-1">
-                      {new Date(visit.requested_date).toLocaleDateString()} - {visit.requested_time_slot}
+              {recentVisits.slice(0, 3).map((visit) => (
+                <div 
+                  key={visit.id} 
+                  className="flex items-center gap-4 p-3 rounded-xl border border-border/50 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-success" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm line-clamp-1">{visit.listings?.title}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {visit.profiles?.full_name} • {new Date(visit.requested_date).toLocaleDateString()}
                     </p>
                   </div>
                   <Badge variant={visit.status === 'approved' ? 'default' : 'secondary'}>
@@ -468,278 +507,136 @@ export function SellerDashboard() {
         </Card>
       )}
 
-      {/* My Listings */}
-      <Card>
-        <CardHeader>
+      {/* Listings Management */}
+      <Card className="border-border/50">
+        <CardHeader className="pb-4">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg md:text-xl">My Listings</CardTitle>
-                <CardDescription className="text-xs md:text-sm">
-                  {totalCount > 0 ? `${totalCount.toLocaleString()} total listing${totalCount > 1 ? 's' : ''}` : 'No listings found'}
+                <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+                  <Building className="h-5 w-5 text-primary" />
+                  My Listings
+                </CardTitle>
+                <CardDescription>
+                  {totalCount > 0 ? `${totalCount.toLocaleString()} total listings` : 'No listings found'}
                 </CardDescription>
               </div>
               {selectedListings.length > 0 && (
-                <Button onClick={() => setBatchDialogOpen(true)} size="sm">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Update {selectedListings.length} Price{selectedListings.length > 1 ? 's' : ''}
+                <Button onClick={() => setBatchDialogOpen(true)} size="sm" className="gap-2">
+                  <Tag className="h-4 w-4" />
+                  Set Price ({selectedListings.length})
                 </Button>
               )}
             </div>
-
-            {/* Search and Filters */}
+            
+            {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by title, location, plot or block number..."
+                  placeholder="Search listings..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1); // Reset to first page on search
-                  }}
-                  className="pl-10"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
                 />
               </div>
-              <div className="flex gap-2">
-                <Select value={statusFilter} onValueChange={(value) => {
-                  setStatusFilter(value);
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={verificationFilter} onValueChange={(value) => {
-                  setVerificationFilter(value);
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Verification" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="verified">Verified</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="unverified">Unverified</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                  setItemsPerPage(parseInt(value));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-[100px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10 / page</SelectItem>
-                    <SelectItem value="20">20 / page</SelectItem>
-                    <SelectItem value="50">50 / page</SelectItem>
-                    <SelectItem value="100">100 / page</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={verificationFilter} onValueChange={setVerificationFilter}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="Verification" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {listings.length === 0 ? (
-            <div className="text-center py-8 md:py-12">
-              <p className="text-sm md:text-base text-muted-foreground mb-4">You haven't created any listings yet</p>
-              <Link to="/listings/new">
-                <Button className="h-11 md:h-10">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Listing
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Selection Controls */}
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-                <div className="flex items-center gap-3">
-                  <Checkbox 
-                    checked={selectedListings.length === listings.length && listings.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                  <span className="text-sm font-semibold">
-                    Select All on Page ({listings.length})
-                  </span>
-                </div>
-                {totalCount > itemsPerPage && (
-                  <Button 
-                    variant="link" 
-                    size="sm"
-                    onClick={handleSelectAllPages}
-                    className="text-xs"
-                  >
-                    Select All {totalCount} Listings
+          {listings.length > 0 ? (
+            <>
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b">
+                <Checkbox
+                  checked={selectedListings.length === listings.length && listings.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {selectedListings.length > 0 ? `${selectedListings.length} selected` : 'Select all'}
+                </span>
+                {totalCount > itemsPerPage && selectedListings.length === listings.length && (
+                  <Button variant="link" size="sm" onClick={handleSelectAllPages} className="text-accent">
+                    Select all {totalCount} listings
                   </Button>
                 )}
               </div>
-              <div className="grid gap-6">
+              
+              <div className="space-y-3">
                 {listings.map((listing) => (
-                  <Card key={listing.id} className="overflow-hidden hover:shadow-xl transition-all duration-300">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Checkbox 
-                          checked={selectedListings.includes(listing.id)}
-                          onCheckedChange={(checked) => handleSelectListing(listing.id, checked as boolean)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 space-y-4">
-                          <Link to={`/listings/${listing.id}`} className="block group">
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                              <div className="flex-1">
-                                <h3 className="font-bold text-xl mb-2 group-hover:text-primary transition-colors">
-                                  {listing.title}
-                                </h3>
-                                <p className="text-muted-foreground flex items-center gap-1.5">
-                                  <MapPin className="h-4 w-4" />
-                                  {listing.location_label}
-                                </p>
-                              </div>
-                              <div className="flex flex-col gap-2">
-                                {getStatusBadge(listing.status!)}
-                                {getVerificationBadge(listing.verification_status!)}
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1.5">
-                                <Building className="h-4 w-4" />
-                                <span className="capitalize">{listing.property_type}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Tag className="h-4 w-4" />
-                                <span className="capitalize">{listing.listing_type}</span>
-                              </div>
-                              {listing.polygon?.area_m2 && (
-                                <div className="flex items-center gap-1.5">
-                                  <Maximize2 className="h-4 w-4" />
-                                  <span className="font-medium">{listing.polygon.area_m2.toLocaleString()} m²</span>
-                                </div>
-                              )}
-                            </div>
-                          </Link>
-                          
-                          {/* Price Section */}
-                          <div className="pt-4 border-t" onClick={(e) => e.stopPropagation()}>
-                            {editingPrice === listing.id ? (
-                              <div className="flex items-center gap-3">
-                                <div className="flex-1">
-                                  <Label className="text-xs text-muted-foreground mb-1.5 block">Enter New Price</Label>
-                                  <Input
-                                    type="number"
-                                    value={tempPrice}
-                                    onChange={(e) => setTempPrice(e.target.value)}
-                                    className="h-10"
-                                    placeholder="Enter price"
-                                    autoFocus
-                                  />
-                                </div>
-                                <div className="flex gap-2 pt-5">
-                                  <Button 
-                                    size="sm" 
-                                    onClick={() => handleUpdatePrice(listing.id, tempPrice)}
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingPrice(null);
-                                      setTempPrice('');
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-xs text-muted-foreground mb-1">Price</p>
-                                  {(listing.price || listing.valuation?.[0]?.estimated_value) ? (
-                                    <p className="text-2xl font-bold text-primary">
-                                      {listing.price 
-                                        ? `${listing.price.toLocaleString()} ${listing.currency}` 
-                                        : `${(listing.valuation[0].estimated_value).toLocaleString()} ${listing.valuation[0].estimation_currency || 'TZS'}`
-                                      }
-                                      {!listing.price && (
-                                        <span className="text-sm font-normal text-muted-foreground ml-2">(Estimated)</span>
-                                      )}
-                                    </p>
-                                  ) : (
-                                    <p className="text-muted-foreground">No price set</p>
-                                  )}
-                                </div>
-                                <Button 
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingPrice(listing.id);
-                                    setTempPrice(listing.price?.toString() || '');
-                                  }}
-                                >
-                                  <DollarSign className="h-4 w-4 mr-2" />
-                                  Edit Price
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                  <div 
+                    key={listing.id} 
+                    className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:bg-muted/50 hover:border-accent/30 transition-all group"
+                  >
+                    <Checkbox
+                      checked={selectedListings.includes(listing.id)}
+                      onCheckedChange={(checked) => handleSelectListing(listing.id, checked as boolean)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    
+                    <Link to={`/listings/${listing.id}`} className="flex-1 min-w-0 flex items-center gap-4">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <MapPin className="h-5 w-5 text-primary" />
                       </div>
-                   
-                   <ListingDeletionWarning
-                     listingId={listing.id}
-                     listingTitle={listing.title}
-                     deletionWarningSentAt={(listing as any).deletion_warning_sent_at}
-                     republishRequestedAt={(listing as any).republish_requested_at}
-                     pendingDeletion={(listing as any).pending_deletion || false}
-                     onRepublish={() => fetchSellerData()}
-                   />
-                   
-                   {listing.status === 'draft' && (
-                    <div className="mt-3 pt-3 border-t flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={(e) => handlePublishListing(listing.id, e)}
-                        className="flex-1 h-10 md:h-9 text-xs md:text-sm"
-                      >
-                        <Upload className="h-3 md:h-4 w-3 md:w-4 mr-1.5 md:mr-2" />
-                        <span className="hidden sm:inline">Publish Listing</span>
-                        <span className="sm:hidden">Publish</span>
-                      </Button>
-                      <Link to={`/listings/${listing.id}/edit`} className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full h-10 md:h-9 text-xs md:text-sm">
-                          Edit
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-medium text-sm line-clamp-1">{listing.title}</h3>
+                          {listing.pending_deletion && (
+                            <Badge variant="destructive" className="text-xs">Pending Deletion</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{listing.location_label}</p>
+                        {listing.polygon?.area_m2 && (
+                          <p className="text-xs text-muted-foreground">
+                            {listing.polygon.area_m2.toLocaleString()} m²
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                    
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(listing.status)}
+                      {listing.status === 'draft' && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => handlePublishListing(listing.id, e)}
+                          className="bg-success hover:bg-success/90"
+                        >
+                          Publish
                         </Button>
-                      </Link>
-                    </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount.toLocaleString()} listings
-                  </div>
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </p>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -748,89 +645,59 @@ export function SellerDashboard() {
                       disabled={currentPage === 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Previous
                     </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={currentPage === pageNum ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setCurrentPage(pageNum)}
-                            className="w-10"
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
-                    </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                     >
-                      Next
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+              <h3 className="font-medium mb-2">No listings found</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {searchQuery || statusFilter !== 'all' || verificationFilter !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'Create your first listing to get started'}
+              </p>
+              <Link to="/listings/new">
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Listing
+                </Button>
+              </Link>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Batch Price Update Dialog */}
+      {/* Batch Update Dialog */}
       <Dialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Batch Update Prices</DialogTitle>
+            <DialogTitle>Set Price per m²</DialogTitle>
             <DialogDescription>
-              Set price per square meter for {selectedListings.length} selected listing(s). 
-              The system will calculate the total price based on each plot's area.
+              This will calculate and update prices for {selectedListings.length} selected listing(s) based on their area.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="pricePerM2">Price per Square Meter ({listings[0]?.currency || 'TZS'})</Label>
+              <Label htmlFor="pricePerM2">Price per Square Meter (TZS)</Label>
               <Input
                 id="pricePerM2"
                 type="number"
+                placeholder="e.g., 50000"
                 value={pricePerM2}
                 onChange={(e) => setPricePerM2(e.target.value)}
-                placeholder="Enter price per m²"
               />
             </div>
-            {pricePerM2 && (
-              <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-lg p-3">
-                <p className="text-sm font-medium mb-2">Preview:</p>
-                {selectedListings.map(id => {
-                  const listing = listings.find(l => l.id === id);
-                  const area = listing?.polygon?.area_m2;
-                  const totalPrice = area ? parseFloat(pricePerM2) * area : 0;
-                  return (
-                    <div key={id} className="text-xs flex justify-between py-1">
-                      <span className="truncate max-w-[200px]">{listing?.title}</span>
-                      <span className="font-medium">
-                        {area ? `${area.toLocaleString()} m² × ${parseFloat(pricePerM2).toLocaleString()} = ${totalPrice.toLocaleString()} ${listing?.currency || 'TZS'}` : 'No area data'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBatchDialogOpen(false)}>
