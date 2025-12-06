@@ -1883,6 +1883,195 @@ export type Database = {
           },
         ]
       }
+      service_provider_profiles: {
+        Row: {
+          company_name: string
+          completed_projects: number | null
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          license_number: string | null
+          logo_url: string | null
+          provider_type: string
+          rating: number | null
+          service_areas: string[] | null
+          services_offered: string[] | null
+          total_reviews: number | null
+          updated_at: string
+          user_id: string
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
+          website_url: string | null
+          years_in_business: number | null
+        }
+        Insert: {
+          company_name: string
+          completed_projects?: number | null
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          license_number?: string | null
+          logo_url?: string | null
+          provider_type: string
+          rating?: number | null
+          service_areas?: string[] | null
+          services_offered?: string[] | null
+          total_reviews?: number | null
+          updated_at?: string
+          user_id: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Update: {
+          company_name?: string
+          completed_projects?: number | null
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          license_number?: string | null
+          logo_url?: string | null
+          provider_type?: string
+          rating?: number | null
+          service_areas?: string[] | null
+          services_offered?: string[] | null
+          total_reviews?: number | null
+          updated_at?: string
+          user_id?: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Relationships: []
+      }
+      service_provider_requests: {
+        Row: {
+          admin_notes: string | null
+          company_name: string
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          license_number: string | null
+          provider_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_areas: string[] | null
+          services_offered: string[] | null
+          status: string
+          updated_at: string
+          user_id: string
+          website_url: string | null
+          years_in_business: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          company_name: string
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          license_number?: string | null
+          provider_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_areas?: string[] | null
+          services_offered?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          company_name?: string
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          license_number?: string | null
+          provider_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_areas?: string[] | null
+          services_offered?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Relationships: []
+      }
+      service_provider_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          provider_id: string
+          rating: number
+          review_text: string | null
+          reviewer_id: string
+          service_request_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider_id: string
+          rating: number
+          review_text?: string | null
+          reviewer_id: string
+          service_request_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider_id?: string
+          rating?: number
+          review_text?: string | null
+          reviewer_id?: string
+          service_request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_provider_reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_provider_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_provider_reviews_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_providers: {
         Row: {
           average_turnaround_days: number | null
@@ -2656,6 +2845,10 @@ export type Database = {
     }
     Functions: {
       approve_role_request: { Args: { request_id: string }; Returns: undefined }
+      approve_service_provider_request: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
       backfill_listing_fees: {
         Args: never
         Returns: {
@@ -2708,6 +2901,7 @@ export type Database = {
         | "spatial_analyst"
         | "customer_success"
         | "staff"
+        | "service_provider"
       compliance_flag_type:
         | "payment_mismatch"
         | "duplicate_polygon"
@@ -2920,6 +3114,7 @@ export const Constants = {
         "spatial_analyst",
         "customer_success",
         "staff",
+        "service_provider",
       ],
       compliance_flag_type: [
         "payment_mismatch",

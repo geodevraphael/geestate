@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Search, CheckCircle2, ArrowRight } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useTranslation } from 'react-i18next';
@@ -82,6 +82,13 @@ const Index = () => {
                   <Search className="mr-2 h-5 md:h-6 w-5 md:w-6" />
                   <span className="hidden sm:inline">{t('home.viewSellers')}</span>
                   <span className="sm:hidden">{t('home.viewSellersShort')}</span>
+                </Button>
+              </Link>
+              <Link to="/service-providers" className="group w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full h-12 md:h-14 px-6 md:px-8 text-base md:text-lg glass hover:bg-primary/10 border-2 border-border hover:border-primary/50 transition-all duration-300">
+                  <Briefcase className="mr-2 h-5 md:h-6 w-5 md:w-6" />
+                  <span className="hidden sm:inline">Service Providers</span>
+                  <span className="sm:hidden">Services</span>
                 </Button>
               </Link>
             </div>
