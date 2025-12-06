@@ -1,4 +1,4 @@
-export type AppRole = 'buyer' | 'seller' | 'broker' | 'admin' | 'verification_officer' | 'compliance_officer' | 'spatial_analyst' | 'customer_success' | 'staff';
+export type AppRole = 'buyer' | 'seller' | 'broker' | 'admin' | 'verification_officer' | 'compliance_officer' | 'spatial_analyst' | 'customer_success' | 'staff' | 'service_provider';
 export type ListingType = 'sale' | 'rent';
 export type PropertyType = 'land' | 'house' | 'apartment' | 'commercial' | 'other';
 
