@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Scale, Building2, Hammer, Package, MapPin, Ruler, 
   Pencil, Star, CheckCircle2, Phone, Mail, Globe,
-  ArrowLeft, Send, Clock, Briefcase, Calendar
+  ArrowLeft, Send, Clock, Briefcase, Calendar, Home
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -37,6 +37,9 @@ interface ServiceProvider {
   completed_projects: number;
   is_verified: boolean;
   years_in_business: number | null;
+  office_latitude?: number | null;
+  office_longitude?: number | null;
+  office_address?: string | null;
 }
 
 interface Review {
@@ -45,6 +48,12 @@ interface Review {
   review_text: string | null;
   created_at: string;
   reviewer: { full_name: string } | null;
+}
+
+interface UserListing {
+  id: string;
+  title: string;
+  location_label: string;
 }
 
 const PROVIDER_TYPES: Record<string, { label: string; labelSw: string; icon: any }> = {
@@ -66,12 +75,14 @@ export default function ServiceProviderDetail() {
   
   const [provider, setProvider] = useState<ServiceProvider | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [userListings, setUserListings] = useState<UserListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [requestForm, setRequestForm] = useState({
     service_type: '',
     notes: '',
+    listing_id: '',
   });
 
   useEffect(() => {
@@ -80,6 +91,30 @@ export default function ServiceProviderDetail() {
       fetchReviews();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserListings();
+    }
+  }, [user]);
+
+  const fetchUserListings = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('id, title, location_label')
+        .eq('owner_id', user.id)
+        .in('status', ['published', 'draft'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserListings(data || []);
+    } catch (error) {
+      console.error('Error fetching user listings:', error);
+    }
+  };
 
   const fetchProvider = async () => {
     try {
@@ -137,9 +172,9 @@ export default function ServiceProviderDetail() {
 
     setSubmitting(true);
     try {
-      // Create a general service request (not linked to a specific listing)
+      // Create service request with optional listing
       const { error } = await supabase.from('service_requests').insert({
-        listing_id: null, // General request not linked to a specific listing
+        listing_id: requestForm.listing_id || null,
         requester_id: user.id,
         service_provider_id: provider?.user_id,
         service_type: requestForm.service_type,
@@ -169,7 +204,7 @@ export default function ServiceProviderDetail() {
       });
       
       setRequestOpen(false);
-      setRequestForm({ service_type: '', notes: '' });
+      setRequestForm({ service_type: '', notes: '', listing_id: '' });
     } catch (error: any) {
       console.error('Error submitting request:', error);
       toast({
@@ -330,6 +365,42 @@ export default function ServiceProviderDetail() {
                 }
               >
                 <div className="space-y-4 pt-4">
+                  {/* Property Selection */}
+                  {userListings.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        {i18n.language === 'sw' ? 'Chagua Mali (Hiari)' : 'Select Property (Optional)'}
+                      </Label>
+                      <Select 
+                        value={requestForm.listing_id} 
+                        onValueChange={(v) => setRequestForm({ ...requestForm, listing_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={i18n.language === 'sw' ? 'Chagua mali yako' : 'Select your property'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">
+                            {i18n.language === 'sw' ? 'Ombi la Jumla (Bila mali)' : 'General Request (No property)'}
+                          </SelectItem>
+                          {userListings.map(listing => (
+                            <SelectItem key={listing.id} value={listing.id}>
+                              <div className="flex flex-col">
+                                <span>{listing.title}</span>
+                                <span className="text-xs text-muted-foreground">{listing.location_label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {i18n.language === 'sw' 
+                          ? 'Chagua mali ikiwa huduma inahusiana na mali fulani'
+                          : 'Select a property if this service is related to a specific property'}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>{i18n.language === 'sw' ? 'Aina ya Huduma' : 'Service Type'}</Label>
                     <Select 
