@@ -24,12 +24,10 @@ import {
   Clock, 
   User, 
   Phone, 
-  Mail, 
   MapPin,
   CheckCircle,
   XCircle,
-  MessageSquare,
-  DollarSign
+  MessageSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -84,7 +82,6 @@ export function BookingRequests({ providerId, onUpdate }: BookingRequestsProps) 
   useEffect(() => {
     fetchBookings();
     
-    // Subscribe to new bookings
     const channel = supabase
       .channel('booking-changes')
       .on(
@@ -109,8 +106,8 @@ export function BookingRequests({ providerId, onUpdate }: BookingRequestsProps) 
 
   const fetchBookings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('service_bookings')
+      const { data, error } = await (supabase
+        .from('service_bookings' as any)
         .select(`
           *,
           provider_services (name, price, price_type),
@@ -119,10 +116,10 @@ export function BookingRequests({ providerId, onUpdate }: BookingRequestsProps) 
         `)
         .eq('provider_id', user?.id)
         .order('booking_date', { ascending: true })
-        .order('booking_time', { ascending: true });
+        .order('booking_time', { ascending: true }) as any);
 
       if (error) throw error;
-      setBookings(data || []);
+      setBookings((data as Booking[]) || []);
     } catch (error) {
       console.error('Error fetching bookings:', error);
     } finally {
@@ -137,21 +134,20 @@ export function BookingRequests({ providerId, onUpdate }: BookingRequestsProps) 
         updateData.provider_notes = responseNote;
       }
 
-      const { error } = await supabase
-        .from('service_bookings')
+      const { error } = await (supabase
+        .from('service_bookings' as any)
         .update(updateData)
-        .eq('id', bookingId);
+        .eq('id', bookingId) as any);
 
       if (error) throw error;
 
-      // Create notification for client
       const booking = bookings.find(b => b.id === bookingId);
       if (booking) {
         await supabase.from('notifications').insert({
           user_id: booking.client_id,
           title: `Booking ${status}`,
           message: `Your booking for ${booking.provider_services?.name} has been ${status}`,
-          type: 'system',
+          type: 'system' as any,
           link_url: '/my-bookings',
         });
       }
@@ -331,7 +327,6 @@ export function BookingRequests({ providerId, onUpdate }: BookingRequestsProps) 
           </div>
         )}
 
-        {/* Accept Booking Dialog */}
         <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
           <DialogContent>
             <DialogHeader>

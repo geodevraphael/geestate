@@ -59,6 +59,12 @@ import RevenueManagement from './pages/RevenueManagement';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import AdminListingRequests from './pages/AdminListingRequests';
+import ServiceProviders from './pages/ServiceProviders';
+import BecomeServiceProvider from './pages/BecomeServiceProvider';
+import ServiceProviderDetail from './pages/ServiceProviderDetail';
+import AdminServiceProviders from './pages/AdminServiceProviders';
+import ServiceProviderDashboard from './pages/dashboards/ServiceProviderDashboard';
+import MyBookings from './pages/MyBookings';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -128,6 +134,12 @@ const App = () => (
             <Route path="/revenue-management" element={<RevenueManagement />} />
             <Route path="/projects" element={<ProtectedRoute requireRole={['seller', 'broker', 'admin']}><Projects /></ProtectedRoute>} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/service-providers" element={<ServiceProviders />} />
+            <Route path="/service-providers/:id" element={<ServiceProviderDetail />} />
+            <Route path="/become-service-provider" element={<BecomeServiceProvider />} />
+            <Route path="/admin/service-providers" element={<AdminServiceProviders />} />
+            <Route path="/service-provider/dashboard" element={<ProtectedRoute requireRole={['service_provider', 'admin']}><ServiceProviderDashboard /></ProtectedRoute>} />
+            <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

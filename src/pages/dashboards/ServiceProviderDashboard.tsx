@@ -37,6 +37,12 @@ interface ProviderProfile {
   rating: number;
   total_reviews: number;
   completed_projects: number;
+  contact_email: string;
+  contact_phone?: string;
+  description?: string;
+  website_url?: string;
+  service_areas?: string[];
+  is_active?: boolean;
 }
 
 interface DashboardStats {

@@ -81,14 +81,14 @@ export function ServiceManagement({ providerId, onUpdate }: ServiceManagementPro
 
   const fetchServices = async () => {
     try {
-      const { data, error } = await supabase
-        .from('provider_services')
+      const { data, error } = await (supabase
+        .from('provider_services' as any)
         .select('*')
         .eq('provider_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as any);
 
       if (error) throw error;
-      setServices(data || []);
+      setServices((data as Service[]) || []);
     } catch (error) {
       console.error('Error fetching services:', error);
     } finally {
@@ -112,17 +112,17 @@ export function ServiceManagement({ providerId, onUpdate }: ServiceManagementPro
       };
 
       if (editingService) {
-        const { error } = await supabase
-          .from('provider_services')
+        const { error } = await (supabase
+          .from('provider_services' as any)
           .update(serviceData)
-          .eq('id', editingService.id);
+          .eq('id', editingService.id) as any);
 
         if (error) throw error;
         toast.success('Service updated successfully');
       } else {
-        const { error } = await supabase
-          .from('provider_services')
-          .insert([serviceData]);
+        const { error } = await (supabase
+          .from('provider_services' as any)
+          .insert([serviceData]) as any);
 
         if (error) throw error;
         toast.success('Service added successfully');
@@ -155,10 +155,10 @@ export function ServiceManagement({ providerId, onUpdate }: ServiceManagementPro
     if (!confirm('Are you sure you want to delete this service?')) return;
 
     try {
-      const { error } = await supabase
-        .from('provider_services')
+      const { error } = await (supabase
+        .from('provider_services' as any)
         .delete()
-        .eq('id', serviceId);
+        .eq('id', serviceId) as any);
 
       if (error) throw error;
       toast.success('Service deleted');
@@ -171,10 +171,10 @@ export function ServiceManagement({ providerId, onUpdate }: ServiceManagementPro
 
   const toggleActive = async (service: Service) => {
     try {
-      const { error } = await supabase
-        .from('provider_services')
+      const { error } = await (supabase
+        .from('provider_services' as any)
         .update({ is_active: !service.is_active })
-        .eq('id', service.id);
+        .eq('id', service.id) as any);
 
       if (error) throw error;
       fetchServices();
@@ -243,7 +243,6 @@ export function ServiceManagement({ providerId, onUpdate }: ServiceManagementPro
                 <Select
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
