@@ -22,7 +22,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Polygon } from 'ol/geom';
 import Feature from 'ol/Feature';
-import { Style, Fill, Stroke } from 'ol/style';
+import { Style, Fill, Stroke, Text } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import Overlay from 'ol/Overlay';
 import { getCenter } from 'ol/extent';
@@ -387,6 +387,8 @@ export default function MapBrowse() {
         });
 
         const color = getPolygonColor(listing);
+        const label = listing.title || (listing as any).plot_number || 'Plot';
+        
         feature.setStyle(
           new Style({
             fill: new Fill({
@@ -395,6 +397,19 @@ export default function MapBrowse() {
             stroke: new Stroke({
               color: color,
               width: 2,
+            }),
+            text: new Text({
+              text: label,
+              font: 'bold 12px sans-serif',
+              fill: new Fill({
+                color: '#ffffff',
+              }),
+              stroke: new Stroke({
+                color: color,
+                width: 3,
+              }),
+              overflow: true,
+              offsetY: 0,
             }),
           })
         );
