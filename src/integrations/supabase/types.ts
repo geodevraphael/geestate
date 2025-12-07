@@ -2335,7 +2335,7 @@ export type Database = {
           created_at: string
           estimated_completion_date: string | null
           id: string
-          listing_id: string
+          listing_id: string | null
           provider_notes: string | null
           quoted_currency: string | null
           quoted_price: number | null
@@ -2353,7 +2353,7 @@ export type Database = {
           created_at?: string
           estimated_completion_date?: string | null
           id?: string
-          listing_id: string
+          listing_id?: string | null
           provider_notes?: string | null
           quoted_currency?: string | null
           quoted_price?: number | null
@@ -2371,7 +2371,7 @@ export type Database = {
           created_at?: string
           estimated_completion_date?: string | null
           id?: string
-          listing_id?: string
+          listing_id?: string | null
           provider_notes?: string | null
           quoted_currency?: string | null
           quoted_price?: number | null
