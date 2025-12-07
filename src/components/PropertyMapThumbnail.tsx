@@ -6,16 +6,20 @@ import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
-import { Style, Stroke, Fill } from 'ol/style';
+import { Style, Stroke, Fill, Text } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
+import Feature from 'ol/Feature';
+import { Point, LineString } from 'ol/geom';
 import 'ol/ol.css';
+import { calculatePolygonDimensions } from '@/lib/polygonDimensions';
 
 interface PropertyMapThumbnailProps {
   geojson: any;
   className?: string;
+  showDimensions?: boolean;
 }
 
-export function PropertyMapThumbnail({ geojson, className = '' }: PropertyMapThumbnailProps) {
+export function PropertyMapThumbnail({ geojson, className = '', showDimensions = true }: PropertyMapThumbnailProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 
@@ -50,6 +54,62 @@ export function PropertyMapThumbnail({ geojson, className = '' }: PropertyMapThu
       }),
     });
 
+    // Create dimension annotations layer
+    const dimensionSource = new VectorSource();
+    const dimensionLayer = new VectorLayer({
+      source: dimensionSource,
+      style: (feature) => {
+        const label = feature.get('label');
+        const rotation = feature.get('rotation') || 0;
+        
+        return new Style({
+          text: new Text({
+            text: label,
+            font: 'bold 12px sans-serif',
+            fill: new Fill({ color: '#ffffff' }),
+            stroke: new Stroke({ color: '#000000', width: 3 }),
+            rotation: -rotation * (Math.PI / 180), // Convert to radians
+            offsetY: -12,
+            textAlign: 'center',
+            textBaseline: 'middle',
+          }),
+        });
+      },
+    });
+
+    // Add dimension labels if enabled
+    if (showDimensions) {
+      const dimensions = calculatePolygonDimensions(geojson);
+      
+      dimensions.forEach((edge) => {
+        // Create a point feature at the midpoint of each edge
+        const midpointCoord = fromLonLat(edge.midpoint);
+        const pointFeature = new Feature({
+          geometry: new Point(midpointCoord),
+        });
+        pointFeature.set('label', edge.formattedLength);
+        pointFeature.set('rotation', edge.angle);
+        dimensionSource.addFeature(pointFeature);
+
+        // Add small perpendicular ticks at endpoints (like survey plans)
+        const startCoord = fromLonLat(edge.startCoord);
+        const endCoord = fromLonLat(edge.endCoord);
+        
+        // Create edge line with dimension style
+        const lineFeature = new Feature({
+          geometry: new LineString([startCoord, endCoord]),
+        });
+        lineFeature.setStyle(new Style({
+          stroke: new Stroke({
+            color: 'rgba(255, 255, 0, 0.8)',
+            width: 1,
+            lineDash: [4, 4],
+          }),
+        }));
+        dimensionSource.addFeature(lineFeature);
+      });
+    }
+
     // Calculate center and zoom
     const extent = vectorSource.getExtent();
     const centerLon = (extent[0] + extent[2]) / 2;
@@ -57,7 +117,7 @@ export function PropertyMapThumbnail({ geojson, className = '' }: PropertyMapThu
 
     const map = new Map({
       target: mapRef.current,
-      layers: [satelliteLayer, vectorLayer],
+      layers: [satelliteLayer, vectorLayer, dimensionLayer],
       view: new View({
         center: [centerLon, centerLat],
         zoom: 16,
@@ -68,7 +128,7 @@ export function PropertyMapThumbnail({ geojson, className = '' }: PropertyMapThu
 
     // Fit to the polygon extent
     map.getView().fit(extent, {
-      padding: [20, 20, 20, 20],
+      padding: [30, 30, 30, 30],
       maxZoom: 18,
     });
 
@@ -78,7 +138,7 @@ export function PropertyMapThumbnail({ geojson, className = '' }: PropertyMapThu
       map.setTarget(undefined);
       mapInstanceRef.current = null;
     };
-  }, [geojson]);
+  }, [geojson, showDimensions]);
 
   if (!geojson) {
     return (
