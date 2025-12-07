@@ -224,9 +224,9 @@ export default function ServiceProviderDetail() {
         </Button>
 
         {/* Hero Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 p-6 md:p-10 text-primary-foreground">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10 dark:from-primary/20 dark:via-primary/10 dark:to-secondary/20 border border-border p-6 md:p-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full translate-y-1/2 -translate-x-1/2" />
           
           <div className="relative flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10">
             {/* Provider Icon/Logo */}
@@ -235,11 +235,11 @@ export default function ServiceProviderDetail() {
                 <img 
                   src={provider.logo_url} 
                   alt={provider.company_name}
-                  className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover border-4 border-white/20 shadow-xl"
+                  className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover border-4 border-border shadow-xl"
                 />
               ) : (
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                  <Icon className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground/80" />
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted border border-border flex items-center justify-center">
+                  <Icon className="h-12 w-12 md:h-16 md:w-16 text-foreground/60" />
                 </div>
               )}
             </div>
@@ -247,16 +247,16 @@ export default function ServiceProviderDetail() {
             <div className="flex-1 space-y-4">
               <div>
                 <div className="flex flex-wrap items-center gap-3 mb-2">
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold">{provider.company_name}</h1>
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground">{provider.company_name}</h1>
                   {provider.is_verified && (
-                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30">
+                    <Badge className="bg-primary text-primary-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                       Verified
                     </Badge>
                   )}
                 </div>
                 
-                <p className="text-lg md:text-xl text-white/90 font-medium">
+                <p className="text-lg md:text-xl text-muted-foreground font-medium">
                   {i18n.language === 'sw' ? typeInfo.labelSw : typeInfo.label}
                 </p>
               </div>
@@ -265,19 +265,19 @@ export default function ServiceProviderDetail() {
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
-                    <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
-                    <span className="text-2xl font-bold text-white">{provider.rating.toFixed(1)}</span>
+                    <Star className="h-6 w-6 fill-amber-500 text-amber-500" />
+                    <span className="text-2xl font-bold text-foreground">{provider.rating.toFixed(1)}</span>
                   </div>
-                  <span className="text-white/90">({provider.total_reviews} {i18n.language === 'sw' ? 'maoni' : 'reviews'})</span>
+                  <span className="text-muted-foreground">({provider.total_reviews} {i18n.language === 'sw' ? 'maoni' : 'reviews'})</span>
                 </div>
                 {provider.completed_projects > 0 && (
-                  <div className="flex items-center gap-2 text-white/90">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Briefcase className="h-5 w-5" />
                     <span className="font-medium">{provider.completed_projects} {i18n.language === 'sw' ? 'miradi' : 'projects completed'}</span>
                   </div>
                 )}
                 {provider.years_in_business && (
-                  <div className="flex items-center gap-2 text-white/90">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="h-5 w-5" />
                     <span className="font-medium">{provider.years_in_business} {i18n.language === 'sw' ? 'miaka kazini' : 'years in business'}</span>
                   </div>
@@ -288,21 +288,21 @@ export default function ServiceProviderDetail() {
               <div className="flex flex-wrap gap-3 pt-2">
                 {provider.contact_phone && (
                   <a href={`tel:${provider.contact_phone}`}>
-                    <Button variant="secondary" size="lg" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <Button variant="outline" size="lg" className="gap-2">
                       <Phone className="h-4 w-4" />
                       {provider.contact_phone}
                     </Button>
                   </a>
                 )}
                 <a href={`mailto:${provider.contact_email}`}>
-                  <Button variant="secondary" size="lg" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                  <Button variant="outline" size="lg" className="gap-2">
                     <Mail className="h-4 w-4" />
                     {i18n.language === 'sw' ? 'Barua Pepe' : 'Email'}
                   </Button>
                 </a>
                 {provider.website_url && (
                   <a href={provider.website_url} target="_blank" rel="noopener noreferrer">
-                    <Button variant="secondary" size="lg" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <Button variant="outline" size="lg" className="gap-2">
                       <Globe className="h-4 w-4" />
                       {i18n.language === 'sw' ? 'Tovuti' : 'Website'}
                     </Button>
@@ -322,7 +322,7 @@ export default function ServiceProviderDetail() {
                   : 'Send your service request to this provider'}
                 trigger={
                   <DialogTrigger asChild>
-                    <Button size="lg" className="w-full lg:w-auto bg-white text-primary hover:bg-white/90 shadow-lg">
+                    <Button size="lg" className="w-full lg:w-auto shadow-lg">
                       <Send className="mr-2 h-5 w-5" />
                       {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
                     </Button>
