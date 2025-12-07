@@ -216,246 +216,351 @@ export default function ServiceProviderDetail() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-6 md:py-8 max-w-5xl">
+      <div className="w-full px-4 md:px-6 lg:px-8 py-6 md:py-8 space-y-6">
         {/* Back Button */}
-        <Button variant="ghost" onClick={() => navigate('/service-providers')} className="mb-4">
+        <Button variant="ghost" onClick={() => navigate('/service-providers')} className="mb-2">
           <ArrowLeft className="mr-2 h-4 w-4" />
           {i18n.language === 'sw' ? 'Rudi' : 'Back'}
         </Button>
 
-        {/* Provider Header */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row md:items-start gap-6">
-              <div className="p-4 rounded-2xl bg-primary/10 text-primary self-start">
-                <Icon className="h-12 w-12" />
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl md:text-3xl font-bold">{provider.company_name}</h1>
+        {/* Hero Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 p-6 md:p-10 text-primary-foreground">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10">
+            {/* Provider Icon/Logo */}
+            <div className="flex-shrink-0">
+              {provider.logo_url ? (
+                <img 
+                  src={provider.logo_url} 
+                  alt={provider.company_name}
+                  className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover border-4 border-white/20 shadow-xl"
+                />
+              ) : (
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                  <Icon className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground/80" />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 space-y-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold">{provider.company_name}</h1>
                   {provider.is_verified && (
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30">
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Verified
+                    </Badge>
                   )}
                 </div>
                 
-                <p className="text-muted-foreground mb-4">
+                <p className="text-lg md:text-xl text-primary-foreground/80 font-medium">
                   {i18n.language === 'sw' ? typeInfo.labelSw : typeInfo.label}
                 </p>
+              </div>
 
-                {/* Stats */}
-                <div className="flex flex-wrap items-center gap-4 mb-4">
-                  <div className="flex items-center gap-1.5">
-                    <Star className="h-5 w-5 fill-primary text-primary" />
-                    <span className="font-semibold">{provider.rating.toFixed(1)}</span>
-                    <span className="text-muted-foreground">({provider.total_reviews} {i18n.language === 'sw' ? 'maoni' : 'reviews'})</span>
+              {/* Stats Row */}
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                    <span className="text-2xl font-bold">{provider.rating.toFixed(1)}</span>
                   </div>
-                  {provider.completed_projects > 0 && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Briefcase className="h-4 w-4" />
-                      <span>{provider.completed_projects} {i18n.language === 'sw' ? 'miradi' : 'projects'}</span>
-                    </div>
-                  )}
-                  {provider.years_in_business && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>{provider.years_in_business} {i18n.language === 'sw' ? 'miaka' : 'years'}</span>
-                    </div>
-                  )}
+                  <span className="text-primary-foreground/70">({provider.total_reviews} {i18n.language === 'sw' ? 'maoni' : 'reviews'})</span>
                 </div>
+                {provider.completed_projects > 0 && (
+                  <div className="flex items-center gap-2 text-primary-foreground/80">
+                    <Briefcase className="h-5 w-5" />
+                    <span className="font-medium">{provider.completed_projects} {i18n.language === 'sw' ? 'miradi' : 'projects completed'}</span>
+                  </div>
+                )}
+                {provider.years_in_business && (
+                  <div className="flex items-center gap-2 text-primary-foreground/80">
+                    <Clock className="h-5 w-5" />
+                    <span className="font-medium">{provider.years_in_business} {i18n.language === 'sw' ? 'miaka kazini' : 'years in business'}</span>
+                  </div>
+                )}
+              </div>
 
-                {/* Contact Actions */}
-                <div className="flex flex-wrap gap-3">
-                  {provider.contact_phone && (
-                    <a href={`tel:${provider.contact_phone}`}>
-                      <Button variant="outline" size="sm">
-                        <Phone className="mr-2 h-4 w-4" />
-                        {provider.contact_phone}
-                      </Button>
-                    </a>
-                  )}
-                  <a href={`mailto:${provider.contact_email}`}>
-                    <Button variant="outline" size="sm">
-                      <Mail className="mr-2 h-4 w-4" />
-                      {i18n.language === 'sw' ? 'Barua Pepe' : 'Email'}
+              {/* Contact Actions */}
+              <div className="flex flex-wrap gap-3 pt-2">
+                {provider.contact_phone && (
+                  <a href={`tel:${provider.contact_phone}`}>
+                    <Button variant="secondary" size="lg" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                      <Phone className="h-4 w-4" />
+                      {provider.contact_phone}
                     </Button>
                   </a>
-                  {provider.website_url && (
-                    <a href={provider.website_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm">
-                        <Globe className="mr-2 h-4 w-4" />
-                        {i18n.language === 'sw' ? 'Tovuti' : 'Website'}
-                      </Button>
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div className="w-full md:w-auto">
-                <ResponsiveModal
-                  open={requestOpen}
-                  onOpenChange={setRequestOpen}
-                  title={i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
-                  description={i18n.language === 'sw' 
-                    ? 'Tuma ombi lako kwa mtoa huduma huyu'
-                    : 'Send your service request to this provider'}
-                  trigger={
-                    <DialogTrigger asChild>
-                      <Button size="lg" className="w-full md:w-auto">
-                        <Send className="mr-2 h-4 w-4" />
-                        {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
-                      </Button>
-                    </DialogTrigger>
-                  }
-                >
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label>{i18n.language === 'sw' ? 'Aina ya Huduma' : 'Service Type'}</Label>
-                      <Select 
-                        value={requestForm.service_type} 
-                        onValueChange={(v) => setRequestForm({ ...requestForm, service_type: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={i18n.language === 'sw' ? 'Chagua huduma' : 'Select service'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {provider.services_offered.map(service => (
-                            <SelectItem key={service} value={service}>{service}</SelectItem>
-                          ))}
-                          <SelectItem value="other">{i18n.language === 'sw' ? 'Nyingine' : 'Other'}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>{i18n.language === 'sw' ? 'Maelezo ya Ombi' : 'Request Details'}</Label>
-                      <Textarea
-                        value={requestForm.notes}
-                        onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })}
-                        placeholder={i18n.language === 'sw' 
-                          ? 'Eleza mahitaji yako...'
-                          : 'Describe your requirements...'}
-                        rows={4}
-                      />
-                    </div>
-
-                    <Button 
-                      onClick={handleSubmitRequest} 
-                      disabled={submitting || !requestForm.service_type}
-                      className="w-full"
-                    >
-                      {submitting 
-                        ? (i18n.language === 'sw' ? 'Inatuma...' : 'Sending...') 
-                        : (i18n.language === 'sw' ? 'Tuma Ombi' : 'Send Request')}
+                )}
+                <a href={`mailto:${provider.contact_email}`}>
+                  <Button variant="secondary" size="lg" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                    <Mail className="h-4 w-4" />
+                    {i18n.language === 'sw' ? 'Barua Pepe' : 'Email'}
+                  </Button>
+                </a>
+                {provider.website_url && (
+                  <a href={provider.website_url} target="_blank" rel="noopener noreferrer">
+                    <Button variant="secondary" size="lg" className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20">
+                      <Globe className="h-4 w-4" />
+                      {i18n.language === 'sw' ? 'Tovuti' : 'Website'}
                     </Button>
-                  </div>
-                </ResponsiveModal>
+                  </a>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Details Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* About */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{i18n.language === 'sw' ? 'Kuhusu' : 'About'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {provider.description ? (
-                <p className="text-muted-foreground">{provider.description}</p>
-              ) : (
-                <p className="text-muted-foreground italic">
-                  {i18n.language === 'sw' ? 'Hakuna maelezo' : 'No description provided'}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+            {/* CTA Button */}
+            <div className="lg:flex-shrink-0">
+              <ResponsiveModal
+                open={requestOpen}
+                onOpenChange={setRequestOpen}
+                title={i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
+                description={i18n.language === 'sw' 
+                  ? 'Tuma ombi lako kwa mtoa huduma huyu'
+                  : 'Send your service request to this provider'}
+                trigger={
+                  <DialogTrigger asChild>
+                    <Button size="lg" className="w-full lg:w-auto bg-white text-primary hover:bg-white/90 shadow-lg">
+                      <Send className="mr-2 h-5 w-5" />
+                      {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
+                    </Button>
+                  </DialogTrigger>
+                }
+              >
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label>{i18n.language === 'sw' ? 'Aina ya Huduma' : 'Service Type'}</Label>
+                    <Select 
+                      value={requestForm.service_type} 
+                      onValueChange={(v) => setRequestForm({ ...requestForm, service_type: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={i18n.language === 'sw' ? 'Chagua huduma' : 'Select service'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {provider.services_offered.map(service => (
+                          <SelectItem key={service} value={service}>{service}</SelectItem>
+                        ))}
+                        <SelectItem value="other">{i18n.language === 'sw' ? 'Nyingine' : 'Other'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          {/* Services */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{i18n.language === 'sw' ? 'Huduma' : 'Services'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {provider.services_offered.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {provider.services_offered.map((service, idx) => (
-                    <Badge key={idx} variant="secondary">{service}</Badge>
-                  ))}
+                  <div className="space-y-2">
+                    <Label>{i18n.language === 'sw' ? 'Maelezo ya Ombi' : 'Request Details'}</Label>
+                    <Textarea
+                      value={requestForm.notes}
+                      onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })}
+                      placeholder={i18n.language === 'sw' 
+                        ? 'Eleza mahitaji yako...'
+                        : 'Describe your requirements...'}
+                      rows={4}
+                    />
+                  </div>
+
+                  <Button 
+                    onClick={handleSubmitRequest} 
+                    disabled={submitting || !requestForm.service_type}
+                    className="w-full"
+                  >
+                    {submitting 
+                      ? (i18n.language === 'sw' ? 'Inatuma...' : 'Sending...') 
+                      : (i18n.language === 'sw' ? 'Tuma Ombi' : 'Send Request')}
+                  </Button>
                 </div>
-              ) : (
-                <p className="text-muted-foreground italic">
-                  {i18n.language === 'sw' ? 'Hakuna huduma zilizoorodheshwa' : 'No services listed'}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              </ResponsiveModal>
+            </div>
+          </div>
+        </div>
 
-          {/* Service Areas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                {i18n.language === 'sw' ? 'Maeneo ya Huduma' : 'Service Areas'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {provider.service_areas.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {provider.service_areas.map((area, idx) => (
-                    <Badge key={idx} variant="outline">{area}</Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground italic">
-                  {i18n.language === 'sw' ? 'Hakuna maeneo yaliyoorodheshwa' : 'No areas listed'}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Details Grid - Full Width */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left Column - About & Description */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* About */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  {i18n.language === 'sw' ? 'Kuhusu Sisi' : 'About Us'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {provider.description ? (
+                  <p className="text-muted-foreground leading-relaxed text-lg">{provider.description}</p>
+                ) : (
+                  <p className="text-muted-foreground italic">
+                    {i18n.language === 'sw' ? 'Hakuna maelezo' : 'No description provided'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Reviews */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                {i18n.language === 'sw' ? 'Maoni' : 'Reviews'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {reviews.length > 0 ? (
-                <div className="space-y-4">
-                  {reviews.map(review => (
-                    <div key={review.id} className="border-b pb-3 last:border-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`h-3 w-3 ${i < review.rating ? 'fill-primary text-primary' : 'text-muted'}`} 
-                            />
-                          ))}
+            {/* Services Offered */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary" />
+                  {i18n.language === 'sw' ? 'Huduma Tunazotoa' : 'Services We Offer'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {provider.services_offered.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {provider.services_offered.map((service, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          {review.reviewer?.full_name || 'Anonymous'}
-                        </span>
+                        <span className="font-medium">{service}</span>
                       </div>
-                      {review.review_text && (
-                        <p className="text-sm">{review.review_text}</p>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground italic">
+                    {i18n.language === 'sw' ? 'Hakuna huduma zilizoorodheshwa' : 'No services listed'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Reviews */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Star className="h-5 w-5 text-primary" />
+                  {i18n.language === 'sw' ? 'Maoni ya Wateja' : 'Customer Reviews'}
+                </CardTitle>
+                <CardDescription>
+                  {provider.total_reviews} {i18n.language === 'sw' ? 'maoni jumla' : 'total reviews'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map(review => (
+                      <div key={review.id} className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-medium text-primary">
+                                {review.reviewer?.full_name?.charAt(0) || 'A'}
+                              </span>
+                            </div>
+                            <span className="font-medium">{review.reviewer?.full_name || 'Anonymous'}</span>
+                          </div>
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted'}`} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {review.review_text && (
+                          <p className="text-muted-foreground">{review.review_text}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Star className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground">
+                      {i18n.language === 'sw' ? 'Hakuna maoni bado' : 'No reviews yet'}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Stats Card */}
+            <Card className="border-border/50 bg-gradient-to-br from-muted/50 to-muted/20">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">{i18n.language === 'sw' ? 'Takwimu' : 'Quick Stats'}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                  <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Ukadiriaji' : 'Rating'}</span>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-bold">{provider.rating.toFixed(1)}</span>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-muted-foreground italic">
-                  {i18n.language === 'sw' ? 'Hakuna maoni bado' : 'No reviews yet'}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                  <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Maoni' : 'Reviews'}</span>
+                  <span className="font-bold">{provider.total_reviews}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                  <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Miradi' : 'Projects'}</span>
+                  <span className="font-bold">{provider.completed_projects}</span>
+                </div>
+                {provider.years_in_business && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                    <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Miaka' : 'Years'}</span>
+                    <span className="font-bold">{provider.years_in_business}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Service Areas */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  {i18n.language === 'sw' ? 'Maeneo ya Huduma' : 'Service Areas'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {provider.service_areas.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {provider.service_areas.map((area, idx) => (
+                      <Badge key={idx} variant="outline" className="px-3 py-1">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {area}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground italic text-sm">
+                    {i18n.language === 'sw' ? 'Hakuna maeneo yaliyoorodheshwa' : 'No areas listed'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Contact Card */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">{i18n.language === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <a href={`mailto:${provider.contact_email}`} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:bg-muted transition-colors">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <span className="text-sm truncate">{provider.contact_email}</span>
+                </a>
+                {provider.contact_phone && (
+                  <a href={`tel:${provider.contact_phone}`} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:bg-muted transition-colors">
+                    <Phone className="h-5 w-5 text-primary" />
+                    <span className="text-sm">{provider.contact_phone}</span>
+                  </a>
+                )}
+                {provider.website_url && (
+                  <a href={provider.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-background hover:bg-muted transition-colors">
+                    <Globe className="h-5 w-5 text-primary" />
+                    <span className="text-sm truncate">{provider.website_url}</span>
+                  </a>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </MainLayout>
