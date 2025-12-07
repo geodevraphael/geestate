@@ -67,7 +67,7 @@ function RevenueManagementContent() {
 
 export default function RevenueManagement() {
   return (
-    <ProtectedRoute requireRole={['seller', 'broker', 'admin']}>
+    <ProtectedRoute requireRole={['seller', 'broker', 'admin', 'service_provider']}>
       <RevenueManagementContent />
     </ProtectedRoute>
   );

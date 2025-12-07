@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, TrendingDown, Percent, Building2, Calendar, ListChecks, Clock } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Percent, Building2, Calendar, ListChecks, Clock, Briefcase, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
 
 export function RevenueOverview() {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -21,8 +21,12 @@ export function RevenueOverview() {
     activeListings: 0,
     expectedRevenueFromListings: 0,
     totalListingValue: 0,
+    serviceRevenue: 0,
+    serviceCommissions: 0,
+    completedServices: 0,
   });
   const [taxRate, setTaxRate] = useState(18);
+  const isServiceProvider = hasRole('service_provider');
 
   useEffect(() => {
     if (user) {
@@ -79,17 +83,38 @@ export function RevenueOverview() {
       // Fetch GeoInsight fees
       const { data: fees, error: feesError } = await supabase
         .from('geoinsight_income_records')
-        .select('*')
+        .select('*, fee_definition:geoinsight_fee_definitions(code)')
         .eq('user_id', user?.id);
 
       if (feesError) throw feesError;
+
+      // Fetch service bookings for service providers
+      let serviceRevenue = 0;
+      let serviceCommissions = 0;
+      let completedServices = 0;
+
+      if (isServiceProvider) {
+        const { data: bookings, error: bookingsError } = await supabase
+          .from('service_bookings')
+          .select('*, service:provider_services(price)')
+          .eq('provider_id', user?.id)
+          .eq('status', 'completed')
+          .not('payment_confirmed_at', 'is', null);
+
+        if (!bookingsError && bookings) {
+          completedServices = bookings.length;
+          serviceRevenue = bookings.reduce((sum, b) => sum + Number(b.total_price || b.service?.price || 0), 0);
+          serviceCommissions = serviceRevenue * 0.02; // 2% commission
+        }
+      }
 
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
       // Calculate revenue from completed deals
-      const totalRevenue = deals?.reduce((sum, d) => sum + Number(d.final_price), 0) || 0;
+      const dealRevenue = deals?.reduce((sum, d) => sum + Number(d.final_price), 0) || 0;
+      const totalRevenue = dealRevenue + serviceRevenue;
       
       const thisMonth = deals?.filter(d => {
         const date = new Date(d.closed_at);
@@ -102,19 +127,16 @@ export function RevenueOverview() {
       }).reduce((sum, d) => sum + Number(d.final_price), 0) || 0;
 
       // Calculate expected revenue from active listings
-      // Use listing price if set, otherwise use valuation estimate
       const totalListingValue = listings?.reduce((sum, l) => {
         const price = Number(l.price) || 0;
         const valuationPrice = l.valuation?.[0]?.estimated_value || 0;
         return sum + (price > 0 ? price : valuationPrice);
       }, 0) || 0;
       
-      // Count listings using valuation vs set price
       const listingsWithPrice = listings?.filter(l => l.price && Number(l.price) > 0).length || 0;
       const listingsUsingValuation = (listings?.length || 0) - listingsWithPrice;
       
-      // Estimate potential commission (assuming 3% commission rate on listing price)
-      const expectedRevenueFromListings = totalListingValue * 0.97; // 97% after 3% commission
+      const expectedRevenueFromListings = totalListingValue * 0.97;
 
       const geoinsightFees = fees?.reduce((sum, f) => sum + Number(f.amount_due), 0) || 0;
       const pendingPayments = fees?.filter(f => f.status === 'pending' || f.status === 'overdue')
@@ -137,6 +159,9 @@ export function RevenueOverview() {
         totalListingValue,
         listingsWithPrice,
         listingsUsingValuation,
+        serviceRevenue,
+        serviceCommissions,
+        completedServices,
       } as any);
     } catch (error: any) {
       console.error('Error fetching revenue stats:', error);
@@ -167,23 +192,44 @@ export function RevenueOverview() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative flex items-center gap-3">
+          <Sparkles className="h-6 w-6" />
+          <div>
+            <h2 className="text-2xl font-bold">Revenue Overview</h2>
+            <p className="text-primary-foreground/80">
+              Track your earnings from property sales{isServiceProvider ? ' and services' : ''}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-2 border-primary/20 hover:border-primary/40 transition-colors">
+        <Card className="border-2 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-xl bg-primary/10">
+              <DollarSign className="h-5 w-5 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">From {stats.completedDeals} completed deals</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              From {stats.completedDeals} deals{isServiceProvider ? ` + ${(stats as any).completedServices || 0} services` : ''}
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
-            <Calendar className="h-5 w-5 text-muted-foreground" />
+            <div className="p-2 rounded-xl bg-blue-500/10">
+              <Calendar className="h-5 w-5 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{formatCurrency(stats.thisMonth)}</div>
@@ -191,10 +237,12 @@ export function RevenueOverview() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Year</CardTitle>
-            <TrendingUp className="h-5 w-5 text-muted-foreground" />
+            <div className="p-2 rounded-xl bg-amber-500/10">
+              <TrendingUp className="h-5 w-5 text-amber-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{formatCurrency(stats.thisYear)}</div>
@@ -202,17 +250,69 @@ export function RevenueOverview() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-emerald-500/30 hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Net Revenue</CardTitle>
-            <TrendingUp className="h-5 w-5 text-green-600" />
+            <div className="p-2 rounded-xl bg-emerald-500/10">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{formatCurrency(stats.netRevenue)}</div>
+            <div className="text-3xl font-bold text-emerald-600">{formatCurrency(stats.netRevenue)}</div>
             <p className="text-xs text-muted-foreground mt-1">After deductions</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Service Provider Revenue Section */}
+      {isServiceProvider && (stats as any).serviceRevenue > 0 && (
+        <Card className="border-2 border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-purple-500/10">
+                  <Briefcase className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Service Revenue</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Revenue from {(stats as any).completedServices} completed services
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                <p className="text-sm font-medium text-muted-foreground mb-1">Total Service Revenue</p>
+                <p className="text-3xl font-bold text-purple-600">{formatCurrency((stats as any).serviceRevenue)}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <p className="text-sm font-medium text-muted-foreground mb-1">Platform Commission (2%)</p>
+                <p className="text-3xl font-bold text-amber-600">{formatCurrency((stats as any).serviceCommissions)}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-sm font-medium text-muted-foreground mb-1">Net Service Revenue</p>
+                <p className="text-3xl font-bold text-emerald-600">
+                  {formatCurrency((stats as any).serviceRevenue - (stats as any).serviceCommissions)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-xl">
+              <Briefcase className="h-5 w-5 text-purple-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Service Commission Rate</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  GeoInsight charges a 2% commission on all completed service transactions. 
+                  This fee is charged when clients confirm payment for your services.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Active Listings Overview */}
       <Card className="border-2 border-blue-500/20">

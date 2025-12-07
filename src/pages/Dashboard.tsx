@@ -8,6 +8,7 @@ import { VerificationDashboard } from './dashboards/VerificationDashboard';
 import { ComplianceDashboard } from './dashboards/ComplianceDashboard';
 import { SpatialDashboard } from './dashboards/SpatialDashboard';
 import { CustomerSuccessDashboard } from './dashboards/CustomerSuccessDashboard';
+import ServiceProviderDashboard from './dashboards/ServiceProviderDashboard';
 import { Navigate } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -60,6 +61,9 @@ function DashboardContent() {
     case 'customer_success':
       DashboardComponent = CustomerSuccessDashboard;
       break;
+    case 'service_provider':
+      DashboardComponent = ServiceProviderDashboard;
+      break;
     case 'staff':
       // Default staff to a simple dashboard
       DashboardComponent = CustomerSuccessDashboard;
@@ -70,7 +74,7 @@ function DashboardContent() {
 
   return (
     <MainLayout>
-      <div className="p-3 sm:p-6 md:p-8">
+      <div className="w-full">
         <DashboardComponent />
       </div>
     </MainLayout>
