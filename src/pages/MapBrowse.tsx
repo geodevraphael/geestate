@@ -273,7 +273,8 @@ export default function MapBrowse() {
     }
   };
 
-  const getPolygonColor = (listing: ListingWithPolygon) => {
+  const getPolygonColor = (listing: ListingWithPolygon, isSelected: boolean) => {
+    if (isSelected) return '#ef4444'; // Red for selected
     if (listing.verification_status === 'verified') return '#22c55e';
     if (listing.verification_status === 'pending') return '#eab308';
     return '#94a3b8';
@@ -386,21 +387,22 @@ export default function MapBrowse() {
           listing: listing,
         });
 
-        const color = getPolygonColor(listing);
+        const isSelected = selectedListing?.id === listing.id;
+        const color = getPolygonColor(listing, isSelected);
         const label = listing.title || (listing as any).plot_number || 'Plot';
         
         feature.setStyle(
           new Style({
             fill: new Fill({
-              color: color + '66',
+              color: color + (isSelected ? '99' : '66'),
             }),
             stroke: new Stroke({
               color: color,
-              width: 2,
+              width: isSelected ? 4 : 2,
             }),
             text: new Text({
               text: label,
-              font: 'bold 12px sans-serif',
+              font: `bold ${isSelected ? '14px' : '12px'} sans-serif`,
               fill: new Fill({
                 color: '#ffffff',
               }),
@@ -448,7 +450,7 @@ export default function MapBrowse() {
         mapRef.current.style.cursor = hit ? 'pointer' : '';
       }
     });
-  }, [filteredListings]);
+  }, [filteredListings, selectedListing]);
 
   // Auto-zoom to selected listing from URL parameter
   useEffect(() => {
@@ -872,28 +874,73 @@ export default function MapBrowse() {
           <div ref={mapRef} className="w-full h-full" />
 
           {/* Popup Overlay */}
-          <div ref={popupRef} className="absolute bg-card border border-border rounded-lg shadow-xl p-0 min-w-[250px] max-w-[300px]" style={{ display: selectedListing ? 'block' : 'none' }}>
+          <div 
+            ref={popupRef} 
+            className="absolute z-50" 
+            style={{ display: selectedListing ? 'block' : 'none' }}
+          >
             {selectedListing && (
-              <div className="p-4">
-                <h3 className="font-semibold text-base mb-2 line-clamp-2">{selectedListing.title}</h3>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                  <MapPin className="h-4 w-4" />
-                  {selectedListing.location_label}
+              <div className="bg-card/95 backdrop-blur-md border-2 border-red-500 rounded-2xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px] animate-scale-in">
+                {/* Header with gradient */}
+                <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-3">
+                  <h3 className="font-bold text-white text-lg line-clamp-2">{selectedListing.title}</h3>
+                  <div className="flex items-center gap-1 text-white/90 text-sm mt-1">
+                    <MapPin className="h-4 w-4" />
+                    {selectedListing.location_label}
+                  </div>
                 </div>
-                {selectedListing.verification_status === 'verified' && (
-                  <Badge className="bg-green-500 text-white mb-2">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Verified
-                  </Badge>
-                )}
-                <div className="text-lg font-bold text-primary mb-3">
-                  {selectedListing.price ? `${selectedListing.price.toLocaleString()} ${selectedListing.currency}` : 'Market Valuation Estimate'}
+                
+                {/* Content */}
+                <div className="p-4 space-y-3">
+                  {/* Verification Badge */}
+                  {selectedListing.verification_status === 'verified' ? (
+                    <Badge className="bg-green-500/10 text-green-600 border border-green-500/30">
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                      Verified Property
+                    </Badge>
+                  ) : selectedListing.verification_status === 'pending' ? (
+                    <Badge className="bg-yellow-500/10 text-yellow-600 border border-yellow-500/30">
+                      Pending Verification
+                    </Badge>
+                  ) : null}
+                  
+                  {/* Price */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Price</span>
+                    <span className="text-xl font-bold text-primary">
+                      {selectedListing.price 
+                        ? `${selectedListing.currency} ${selectedListing.price.toLocaleString()}` 
+                        : 'Contact for Price'}
+                    </span>
+                  </div>
+                  
+                  {/* Area if available */}
+                  {selectedListing.polygon?.area_m2 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Area</span>
+                      <span className="font-medium">
+                        {selectedListing.polygon.area_m2 < 10000 
+                          ? `${selectedListing.polygon.area_m2.toLocaleString()} m²`
+                          : `${(selectedListing.polygon.area_m2 / 10000).toFixed(2)} ha`}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Action Button */}
+                  <Link to={`/listings/${selectedListing.id}`} className="block pt-2">
+                    <Button className="w-full bg-red-500 hover:bg-red-600 text-white gap-2">
+                      View Full Details
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Button>
+                  </Link>
                 </div>
-                <Link to={`/listings/${selectedListing.id}`}>
-                  <Button size="sm" className="w-full">
-                    View Details
-                  </Button>
-                </Link>
+                
+                {/* Close hint */}
+                <div className="text-center text-xs text-muted-foreground pb-2">
+                  Click elsewhere to close
+                </div>
               </div>
             )}
           </div>
