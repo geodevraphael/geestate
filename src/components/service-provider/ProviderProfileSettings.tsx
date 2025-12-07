@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Settings, Upload, Globe, Phone, Mail, Building } from 'lucide-react';
+import { Settings, Upload, Globe, Phone, Mail, Building, MapPin, Navigation } from 'lucide-react';
 
 interface ProviderProfile {
   id: string;
@@ -29,6 +29,9 @@ interface ProviderProfile {
   service_areas?: string[];
   is_active?: boolean;
   is_verified: boolean;
+  office_latitude?: number | null;
+  office_longitude?: number | null;
+  office_address?: string | null;
 }
 
 interface ProviderProfileSettingsProps {
@@ -56,6 +59,7 @@ const REGIONS = [
 
 export function ProviderProfileSettings({ profile, onUpdate }: ProviderProfileSettingsProps) {
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [formData, setFormData] = useState({
     company_name: profile.company_name || '',
     provider_type: profile.provider_type || '',
@@ -65,6 +69,9 @@ export function ProviderProfileSettings({ profile, onUpdate }: ProviderProfileSe
     website_url: profile.website_url || '',
     service_areas: profile.service_areas || [],
     is_active: profile.is_active ?? true,
+    office_latitude: profile.office_latitude || null,
+    office_longitude: profile.office_longitude || null,
+    office_address: profile.office_address || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,6 +90,9 @@ export function ProviderProfileSettings({ profile, onUpdate }: ProviderProfileSe
           website_url: formData.website_url,
           service_areas: formData.service_areas,
           is_active: formData.is_active,
+          office_latitude: formData.office_latitude,
+          office_longitude: formData.office_longitude,
+          office_address: formData.office_address,
         })
         .eq('id', profile.id);
 
@@ -104,6 +114,32 @@ export function ProviderProfileSettings({ profile, onUpdate }: ProviderProfileSe
         ? prev.service_areas.filter(a => a !== area)
         : [...prev.service_areas, area]
     }));
+  };
+
+  const getCurrentLocation = () => {
+    setLocationLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData(prev => ({
+            ...prev,
+            office_latitude: position.coords.latitude,
+            office_longitude: position.coords.longitude,
+          }));
+          toast.success('Location captured successfully');
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          toast.error('Failed to get location. Please enter coordinates manually.');
+          setLocationLoading(false);
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      toast.error('Geolocation is not supported by your browser');
+      setLocationLoading(false);
+    }
   };
 
   return (
@@ -225,6 +261,74 @@ export function ProviderProfileSettings({ profile, onUpdate }: ProviderProfileSe
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Office Location
+          </CardTitle>
+          <CardDescription>
+            Set your office location so clients can find you based on proximity
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="office_address">Office Address</Label>
+            <Input
+              id="office_address"
+              value={formData.office_address}
+              onChange={(e) => setFormData({ ...formData, office_address: e.target.value })}
+              placeholder="Enter your office address"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="office_latitude">Latitude</Label>
+              <Input
+                id="office_latitude"
+                type="number"
+                step="any"
+                value={formData.office_latitude || ''}
+                onChange={(e) => setFormData({ ...formData, office_latitude: e.target.value ? parseFloat(e.target.value) : null })}
+                placeholder="-6.8235"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="office_longitude">Longitude</Label>
+              <Input
+                id="office_longitude"
+                type="number"
+                step="any"
+                value={formData.office_longitude || ''}
+                onChange={(e) => setFormData({ ...formData, office_longitude: e.target.value ? parseFloat(e.target.value) : null })}
+                placeholder="37.0172"
+              />
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={getCurrentLocation}
+            disabled={locationLoading}
+            className="w-full gap-2"
+          >
+            <Navigation className="h-4 w-4" />
+            {locationLoading ? 'Getting Location...' : 'Use My Current Location'}
+          </Button>
+
+          {formData.office_latitude && formData.office_longitude && (
+            <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Location set: {formData.office_latitude.toFixed(6)}, {formData.office_longitude.toFixed(6)}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -2081,6 +2081,9 @@ export type Database = {
           is_verified: boolean | null
           license_number: string | null
           logo_url: string | null
+          office_address: string | null
+          office_latitude: number | null
+          office_longitude: number | null
           provider_type: string
           rating: number | null
           service_areas: string[] | null
@@ -2106,6 +2109,9 @@ export type Database = {
           is_verified?: boolean | null
           license_number?: string | null
           logo_url?: string | null
+          office_address?: string | null
+          office_latitude?: number | null
+          office_longitude?: number | null
           provider_type: string
           rating?: number | null
           service_areas?: string[] | null
@@ -2131,6 +2137,9 @@ export type Database = {
           is_verified?: boolean | null
           license_number?: string | null
           logo_url?: string | null
+          office_address?: string | null
+          office_latitude?: number | null
+          office_longitude?: number | null
           provider_type?: string
           rating?: number | null
           service_areas?: string[] | null

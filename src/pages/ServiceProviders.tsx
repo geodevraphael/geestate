@@ -32,6 +32,10 @@ interface ServiceProvider {
   completed_projects: number;
   is_verified: boolean;
   years_in_business: number | null;
+  office_latitude: number | null;
+  office_longitude: number | null;
+  office_address: string | null;
+  distance?: number; // calculated distance in km
 }
 
 const PROVIDER_TYPES = [
@@ -52,10 +56,26 @@ export default function ServiceProviders() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [sortByProximity, setSortByProximity] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   useEffect(() => {
     fetchProviders();
   }, []);
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in km
+  };
 
   const fetchProviders = async () => {
     try {
@@ -75,6 +95,28 @@ export default function ServiceProviders() {
     }
   };
 
+  const enableLocationSearch = () => {
+    setLocationLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setSortByProximity(true);
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setLocationLoading(false);
+        }
+      );
+    } else {
+      setLocationLoading(false);
+    }
+  };
+
   const getProviderTypeInfo = (type: string) => {
     return PROVIDER_TYPES.find(t => t.value === type) || { 
       label: type, 
@@ -84,13 +126,35 @@ export default function ServiceProviders() {
     };
   };
 
-  const filteredProviders = providers.filter(provider => {
-    const matchesSearch = provider.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         provider.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         provider.services_offered.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesType = selectedType === 'all' || provider.provider_type === selectedType;
-    return matchesSearch && matchesType;
-  });
+  const filteredProviders = providers
+    .map(provider => {
+      // Calculate distance if user location is available
+      if (userLocation && provider.office_latitude && provider.office_longitude) {
+        return {
+          ...provider,
+          distance: calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            provider.office_latitude,
+            provider.office_longitude
+          )
+        };
+      }
+      return provider;
+    })
+    .filter(provider => {
+      const matchesSearch = provider.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           provider.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           provider.services_offered.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesType = selectedType === 'all' || provider.provider_type === selectedType;
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      if (sortByProximity && a.distance !== undefined && b.distance !== undefined) {
+        return a.distance - b.distance;
+      }
+      return b.rating - a.rating;
+    });
 
   const handleRequestService = (providerId: string) => {
     if (!user) {
@@ -124,7 +188,7 @@ export default function ServiceProviders() {
               </p>
               
               {/* Search Bar */}
-              <div className="relative max-w-xl mx-auto">
+              <div className="relative max-w-xl mx-auto mb-4">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   placeholder={i18n.language === 'sw' ? 'Tafuta watoa huduma, huduma, au eneo...' : 'Search providers, services, or location...'}
@@ -132,6 +196,30 @@ export default function ServiceProviders() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-4 h-14 text-base rounded-2xl border-2 focus:border-primary shadow-lg"
                 />
+              </div>
+
+              {/* Proximity Search Button */}
+              <div className="flex justify-center">
+                <Button
+                  variant={sortByProximity ? "default" : "outline"}
+                  onClick={() => {
+                    if (!userLocation) {
+                      enableLocationSearch();
+                    } else {
+                      setSortByProximity(!sortByProximity);
+                    }
+                  }}
+                  disabled={locationLoading}
+                  className="gap-2"
+                >
+                  <MapPin className="h-4 w-4" />
+                  {locationLoading 
+                    ? (i18n.language === 'sw' ? 'Inatafuta...' : 'Finding location...') 
+                    : sortByProximity 
+                      ? (i18n.language === 'sw' ? 'Karibu Nawe ✓' : 'Near Me ✓')
+                      : (i18n.language === 'sw' ? 'Tafuta Karibu Nawe' : 'Find Near Me')
+                  }
+                </Button>
               </div>
             </div>
           </div>
@@ -294,13 +382,19 @@ export default function ServiceProviders() {
 
                       {/* Contact & Location */}
                       <div className="flex items-center gap-4 text-sm text-muted-foreground pt-3 border-t">
+                        {provider.distance !== undefined && (
+                          <div className="flex items-center gap-1.5 text-primary font-medium">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span>{provider.distance.toFixed(1)} km</span>
+                          </div>
+                        )}
                         {provider.contact_phone && (
                           <div className="flex items-center gap-1.5">
                             <Phone className="h-3.5 w-3.5" />
                             <span className="truncate">{provider.contact_phone}</span>
                           </div>
                         )}
-                        {provider.service_areas.length > 0 && (
+                        {provider.service_areas.length > 0 && !provider.distance && (
                           <div className="flex items-center gap-1.5">
                             <MapPin className="h-3.5 w-3.5" />
                             <span className="truncate">{provider.service_areas[0]}</span>
