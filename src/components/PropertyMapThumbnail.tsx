@@ -63,19 +63,25 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
     const dimensionLayer = new VectorLayer({
       source: dimensionSource,
       style: (feature) => {
+        if (feature.get('isAreaLabel') || feature.get('isLine')) return undefined;
+        
         const label = feature.get('label');
         const rotation = feature.get('rotation') || 0;
+        
+        // Convert bearing to radians and adjust for text direction along line
+        const rotationRad = -(rotation - 90) * (Math.PI / 180);
         
         return new Style({
           text: new Text({
             text: label,
-            font: 'bold 12px sans-serif',
-            fill: new Fill({ color: '#ffffff' }),
+            font: 'bold 11px sans-serif',
+            fill: new Fill({ color: '#ffff00' }),
             stroke: new Stroke({ color: '#000000', width: 3 }),
-            rotation: -rotation * (Math.PI / 180), // Convert to radians
-            offsetY: -12,
+            rotation: rotationRad,
             textAlign: 'center',
             textBaseline: 'middle',
+            backgroundFill: new Fill({ color: 'rgba(0, 0, 0, 0.6)' }),
+            padding: [2, 4, 2, 4],
           }),
         });
       },
