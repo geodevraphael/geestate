@@ -15,7 +15,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink, Share2 } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink, Share2, Map as MapIcon } from 'lucide-react';
+import { ShareDialog } from '@/components/ShareDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { ListingWithDetails, ListingPolygon, ListingMedia, Profile, SpatialRiskProfile, LandUseProfile, ValuationEstimate } from '@/types/database';
@@ -51,6 +52,7 @@ export default function ListingDetail() {
   const [approvedVisitRequest, setApprovedVisitRequest] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [riskAnalyzing, setRiskAnalyzing] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 
@@ -343,9 +345,11 @@ export default function ListingDetail() {
   const editingAsAdmin = canEdit && !isOwner;
 
   const handleShareListing = () => {
-    const listingUrl = `${window.location.origin}/listings/${id}`;
-    navigator.clipboard.writeText(listingUrl);
-    toast.success(t('listing.linkCopied'));
+    setShareDialogOpen(true);
+  };
+
+  const handleBrowseOnMap = () => {
+    navigate(`/map?listing=${id}`);
   };
 
   const getVerificationBadge = () => {
@@ -410,6 +414,10 @@ export default function ListingDetail() {
             </Button>
           </Link>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleBrowseOnMap}>
+              <MapIcon className="mr-2 h-4 w-4" />
+              {t('listing.browseOnMap')}
+            </Button>
             <Button variant="outline" size="sm" onClick={handleShareListing}>
               <Share2 className="mr-2 h-4 w-4" />
               {t('listing.share')}
@@ -426,6 +434,19 @@ export default function ListingDetail() {
               </Link>
             )}
           </div>
+          
+          {/* Share Dialog */}
+          <ShareDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            url={`${window.location.origin}/listings/${id}`}
+            title={listing?.title || ''}
+            description={listing?.description || undefined}
+            price={listing?.price || undefined}
+            currency={listing?.currency || 'TZS'}
+            location={listing?.location_label}
+            area={polygon?.area_m2 || undefined}
+          />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">

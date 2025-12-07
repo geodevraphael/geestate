@@ -10,7 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
-import { MapPin, CheckCircle2, Check, ChevronsUpDown, SlidersHorizontal, List, Navigation2 } from 'lucide-react';
+import { MapPin, CheckCircle2, Check, ChevronsUpDown, SlidersHorizontal, List, Navigation2, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
@@ -54,7 +54,8 @@ export default function MapBrowse() {
   const [districtFilter, setDistrictFilter] = useState<string>('all');
   const [wardFilter, setWardFilter] = useState<string>('all');
   const [streetFilter, setStreetFilter] = useState<string>('all');
-  const [basemap, setBasemap] = useState<'street' | 'satellite'>('satellite');
+  const [basemap, setBasemap] = useState<'osm' | 'satellite' | 'topo' | 'terrain'>('osm');
+  const [showBasemapSelector, setShowBasemapSelector] = useState(false);
   const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationPermissionAsked, setLocationPermissionAsked] = useState(false);
@@ -281,25 +282,19 @@ export default function MapBrowse() {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const satelliteLayer = new TileLayer({
+    // Default to OSM
+    const osmLayer = new TileLayer({
       source: new XYZ({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attributions: '© Esri',
+        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attributions: '© OpenStreetMap contributors',
       }),
     });
     
-    const labelsLayer = new TileLayer({
-      source: new XYZ({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        attributions: '© Esri',
-      }),
-    });
-    
-    baseTileLayerRef.current = satelliteLayer;
+    baseTileLayerRef.current = osmLayer;
 
     const map = new Map({
       target: mapRef.current,
-      layers: [satelliteLayer, labelsLayer],
+      layers: [osmLayer],
       view: new View({
         center: fromLonLat([34.888822, -6.369028]),
         zoom: 6,
@@ -329,15 +324,34 @@ export default function MapBrowse() {
   useEffect(() => {
     if (!mapInstance.current || !baseTileLayerRef.current) return;
 
-    const source = basemap === 'satellite'
-      ? new XYZ({
+    let source: XYZ;
+    switch (basemap) {
+      case 'satellite':
+        source = new XYZ({
           url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
           attributions: 'Tiles © Esri',
-        })
-      : new XYZ({
+        });
+        break;
+      case 'topo':
+        source = new XYZ({
+          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+          attributions: '© OpenTopoMap contributors',
+        });
+        break;
+      case 'terrain':
+        source = new XYZ({
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
+          attributions: 'Tiles © Esri',
+        });
+        break;
+      case 'osm':
+      default:
+        source = new XYZ({
           url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
           attributions: '© OpenStreetMap contributors',
         });
+        break;
+    }
 
     baseTileLayerRef.current.setSource(source);
   }, [basemap]);
@@ -609,13 +623,15 @@ export default function MapBrowse() {
 
       <div>
         <label className="text-sm font-medium mb-2 block">Basemap</label>
-        <Select value={basemap} onValueChange={(value: 'street' | 'satellite') => setBasemap(value)}>
+        <Select value={basemap} onValueChange={(value: 'osm' | 'satellite' | 'topo' | 'terrain') => setBasemap(value)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="osm">OpenStreetMap</SelectItem>
             <SelectItem value="satellite">Satellite</SelectItem>
-            <SelectItem value="street">Street Map</SelectItem>
+            <SelectItem value="topo">Topographic</SelectItem>
+            <SelectItem value="terrain">Terrain</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -790,6 +806,46 @@ export default function MapBrowse() {
                 <Navigation2 className="h-5 w-5" />
               </Button>
             )}
+
+            {/* Basemap Switcher */}
+            <Popover open={showBasemapSelector} onOpenChange={setShowBasemapSelector}>
+              <PopoverTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="fixed top-32 right-4 z-20 rounded-full shadow-xl touch-feedback"
+                >
+                  <Layers className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="left" className="w-40 p-2">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground px-2 pb-1">Basemap</p>
+                  {[
+                    { value: 'osm', label: 'OpenStreetMap' },
+                    { value: 'satellite', label: 'Satellite' },
+                    { value: 'topo', label: 'Topographic' },
+                    { value: 'terrain', label: 'Terrain' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setBasemap(option.value as 'osm' | 'satellite' | 'topo' | 'terrain');
+                        setShowBasemapSelector(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors",
+                        basemap === option.value
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </>
         )}
 
