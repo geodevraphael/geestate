@@ -8,11 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Scale, Building2, Hammer, Package, MapPin, Ruler, 
-  Pencil, Star, CheckCircle2, Search, Phone, Mail, Globe,
-  ArrowRight, UserPlus, Filter
+  Pencil, Star, CheckCircle2, Search, Phone, 
+  ArrowRight, UserPlus, Briefcase
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -36,13 +35,13 @@ interface ServiceProvider {
 }
 
 const PROVIDER_TYPES = [
-  { value: 'lawyer', label: 'Lawyer / Mwanasheria', labelSw: 'Mwanasheria', icon: Scale },
-  { value: 'land_valuer', label: 'Land Valuer / Mthamini Ardhi', labelSw: 'Mthamini Ardhi', icon: Ruler },
-  { value: 'construction_company', label: 'Construction Company / Kampuni ya Ujenzi', labelSw: 'Kampuni ya Ujenzi', icon: Building2 },
-  { value: 'building_materials', label: 'Building Materials / Vifaa vya Ujenzi', labelSw: 'Vifaa vya Ujenzi', icon: Package },
-  { value: 'surveyor', label: 'Surveyor / Mpima Ardhi', labelSw: 'Mpima Ardhi', icon: MapPin },
-  { value: 'architect', label: 'Architect / Mhandisi wa Majengo', labelSw: 'Mhandisi wa Majengo', icon: Pencil },
-  { value: 'contractor', label: 'Contractor / Mkandarasi', labelSw: 'Mkandarasi', icon: Hammer },
+  { value: 'lawyer', label: 'Lawyer', labelSw: 'Mwanasheria', icon: Scale, color: 'from-violet-500 to-purple-600' },
+  { value: 'land_valuer', label: 'Land Valuer', labelSw: 'Mthamini Ardhi', icon: Ruler, color: 'from-emerald-500 to-teal-600' },
+  { value: 'construction_company', label: 'Construction', labelSw: 'Ujenzi', icon: Building2, color: 'from-orange-500 to-amber-600' },
+  { value: 'building_materials', label: 'Materials', labelSw: 'Vifaa', icon: Package, color: 'from-sky-500 to-blue-600' },
+  { value: 'surveyor', label: 'Surveyor', labelSw: 'Mpima Ardhi', icon: MapPin, color: 'from-rose-500 to-pink-600' },
+  { value: 'architect', label: 'Architect', labelSw: 'Mhandisi', icon: Pencil, color: 'from-indigo-500 to-blue-600' },
+  { value: 'contractor', label: 'Contractor', labelSw: 'Mkandarasi', icon: Hammer, color: 'from-amber-500 to-yellow-600' },
 ];
 
 export default function ServiceProviders() {
@@ -80,7 +79,8 @@ export default function ServiceProviders() {
     return PROVIDER_TYPES.find(t => t.value === type) || { 
       label: type, 
       labelSw: type,
-      icon: Building2 
+      icon: Building2,
+      color: 'from-gray-500 to-gray-600'
     };
   };
 
@@ -100,204 +100,229 @@ export default function ServiceProviders() {
     navigate(`/service-providers/${providerId}`);
   };
 
+  const totalProviders = providers.length;
+
   return (
     <MainLayout>
-      <div className="w-full px-4 md:px-6 lg:px-8 py-6 md:py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-display font-bold mb-2">
-                {i18n.language === 'sw' ? 'Watoa Huduma' : 'Service Providers'}
+      <div className="w-full">
+        {/* Hero Section */}
+        <div className="relative bg-gradient-to-br from-primary/10 via-background to-secondary/10 border-b">
+          <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+          <div className="relative px-4 md:px-6 lg:px-8 py-12 md:py-16">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+                <Briefcase className="h-4 w-4" />
+                {totalProviders} {i18n.language === 'sw' ? 'Watoa Huduma Walioidhinishwa' : 'Verified Professionals'}
+              </div>
+              <h1 className="text-3xl md:text-5xl font-display font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                {i18n.language === 'sw' ? 'Pata Wataalamu Bora' : 'Find Top Professionals'}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                 {i18n.language === 'sw' 
-                  ? 'Pata wataalamu wa ardhi na ujenzi walioidhinishwa' 
-                  : 'Find verified land and construction professionals'}
+                  ? 'Wasiliana na wataalamu wa ardhi na ujenzi walioidhinishwa kwa mradi wako' 
+                  : 'Connect with verified land and construction experts for your next project'}
               </p>
+              
+              {/* Search Bar */}
+              <div className="relative max-w-xl mx-auto">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder={i18n.language === 'sw' ? 'Tafuta watoa huduma, huduma, au eneo...' : 'Search providers, services, or location...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 pr-4 h-14 text-base rounded-2xl border-2 focus:border-primary shadow-lg"
+                />
+              </div>
             </div>
-            <Link to="/become-service-provider">
-              <Button variant="outline" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                {i18n.language === 'sw' ? 'Jiunge kama Mtoa Huduma' : 'Become a Provider'}
-              </Button>
-            </Link>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={i18n.language === 'sw' ? 'Tafuta watoa huduma...' : 'Search providers...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-full sm:w-[250px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder={i18n.language === 'sw' ? 'Aina yote' : 'All Types'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {i18n.language === 'sw' ? 'Aina Zote' : 'All Types'}
-                </SelectItem>
-                {PROVIDER_TYPES.map(type => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {i18n.language === 'sw' ? type.labelSw : type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
-        {/* Provider Type Quick Filters */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
-          {PROVIDER_TYPES.map(type => {
-            const Icon = type.icon;
-            const count = providers.filter(p => p.provider_type === type.value).length;
-            return (
+        <div className="px-4 md:px-6 lg:px-8 py-8">
+          {/* Category Pills */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                {i18n.language === 'sw' ? 'Chagua Aina' : 'Browse by Category'}
+              </h2>
+              <Link to="/become-service-provider">
+                <Button variant="ghost" size="sm" className="gap-2 text-primary hover:text-primary">
+                  <UserPlus className="h-4 w-4" />
+                  {i18n.language === 'sw' ? 'Jiunge' : 'Join as Provider'}
+                </Button>
+              </Link>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={type.value}
-                onClick={() => setSelectedType(selectedType === type.value ? 'all' : type.value)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                  selectedType === type.value 
-                    ? 'bg-primary text-primary-foreground border-primary' 
-                    : 'bg-card hover:border-primary/50 hover:bg-primary/5'
+                onClick={() => setSelectedType('all')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  selectedType === 'all' 
+                    ? 'bg-foreground text-background shadow-lg scale-105' 
+                    : 'bg-muted hover:bg-muted/80 text-foreground'
                 }`}
               >
-                <Icon className="h-6 w-6" />
-                <span className="text-xs font-medium text-center leading-tight">
-                  {i18n.language === 'sw' ? type.labelSw : type.label.split('/')[0].trim()}
-                </span>
-                <Badge variant="secondary" className="text-xs">
-                  {count}
+                <Building2 className="h-4 w-4" />
+                {i18n.language === 'sw' ? 'Wote' : 'All'}
+                <Badge variant="secondary" className={`ml-1 ${selectedType === 'all' ? 'bg-background/20 text-background' : ''}`}>
+                  {totalProviders}
                 </Badge>
               </button>
-            );
-          })}
-        </div>
-
-        {/* Provider List */}
-        {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-64" />
-            ))}
+              {PROVIDER_TYPES.map(type => {
+                const Icon = type.icon;
+                const count = providers.filter(p => p.provider_type === type.value).length;
+                const isSelected = selectedType === type.value;
+                return (
+                  <button
+                    key={type.value}
+                    onClick={() => setSelectedType(isSelected ? 'all' : type.value)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                      isSelected 
+                        ? `bg-gradient-to-r ${type.color} text-white shadow-lg scale-105` 
+                        : 'bg-muted hover:bg-muted/80 text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {i18n.language === 'sw' ? type.labelSw : type.label}
+                    <Badge variant="secondary" className={`ml-1 ${isSelected ? 'bg-white/20 text-white' : ''}`}>
+                      {count}
+                    </Badge>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        ) : filteredProviders.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Building2 className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">
-              {i18n.language === 'sw' ? 'Hakuna watoa huduma walipatikana' : 'No Service Providers Found'}
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              {i18n.language === 'sw' 
-                ? 'Hakuna watoa huduma wanaofanana na utafutaji wako' 
-                : 'No providers match your search criteria'}
-            </p>
-            <Link to="/become-service-provider">
-              <Button>
-                {i18n.language === 'sw' ? 'Kuwa Mtoa Huduma wa Kwanza' : 'Be the First Provider'}
-              </Button>
-            </Link>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProviders.map(provider => {
-              const typeInfo = getProviderTypeInfo(provider.provider_type);
-              const Icon = typeInfo.icon;
-              
-              return (
-                <Card key={provider.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="text-lg truncate">{provider.company_name}</CardTitle>
-                          {provider.is_verified && (
-                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
-                          )}
+
+          {/* Provider List */}
+          {loading ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-72 rounded-2xl" />
+              ))}
+            </div>
+          ) : filteredProviders.length === 0 ? (
+            <Card className="p-12 text-center rounded-2xl border-dashed">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
+                <Building2 className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">
+                {i18n.language === 'sw' ? 'Hakuna Watoa Huduma' : 'No Providers Found'}
+              </h3>
+              <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
+                {i18n.language === 'sw' 
+                  ? 'Hakuna watoa huduma wanaofanana na utafutaji wako. Jaribu kutafuta tena au jiunge nasi.' 
+                  : 'No providers match your search. Try adjusting your filters or become a provider yourself.'}
+              </p>
+              <Link to="/become-service-provider">
+                <Button size="lg" className="rounded-full px-8">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  {i18n.language === 'sw' ? 'Kuwa Mtoa Huduma' : 'Become a Provider'}
+                </Button>
+              </Link>
+            </Card>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProviders.map(provider => {
+                const typeInfo = getProviderTypeInfo(provider.provider_type);
+                const Icon = typeInfo.icon;
+                
+                return (
+                  <Card 
+                    key={provider.id} 
+                    className="group overflow-hidden rounded-2xl border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  >
+                    {/* Gradient Header */}
+                    <div className={`h-2 bg-gradient-to-r ${typeInfo.color}`} />
+                    
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-xl bg-gradient-to-br ${typeInfo.color} text-white shadow-lg`}>
+                          <Icon className="h-6 w-6" />
                         </div>
-                        <CardDescription className="mt-1">
-                          {i18n.language === 'sw' ? typeInfo.labelSw : typeInfo.label}
-                        </CardDescription>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg font-bold truncate">
+                              {provider.company_name}
+                            </CardTitle>
+                            {provider.is_verified && (
+                              <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                            )}
+                          </div>
+                          <CardDescription className="mt-0.5 font-medium">
+                            {i18n.language === 'sw' ? typeInfo.labelSw : typeInfo.label}
+                          </CardDescription>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {provider.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {provider.description}
-                      </p>
-                    )}
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-primary text-primary" />
-                        <span className="font-medium">{provider.rating.toFixed(1)}</span>
-                        <span className="text-muted-foreground">({provider.total_reviews})</span>
-                      </div>
-                      {provider.completed_projects > 0 && (
-                        <span className="text-muted-foreground">
-                          {provider.completed_projects} {i18n.language === 'sw' ? 'miradi' : 'projects'}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Services */}
-                    {provider.services_offered.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {provider.services_offered.slice(0, 3).map((service, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {service}
-                          </Badge>
-                        ))}
-                        {provider.services_offered.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{provider.services_offered.length - 3}
-                          </Badge>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      {/* Rating & Stats */}
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-full">
+                          <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                          <span className="font-bold text-amber-700 dark:text-amber-400">
+                            {provider.rating.toFixed(1)}
+                          </span>
+                          <span className="text-amber-600/70 dark:text-amber-500/70 text-sm">
+                            ({provider.total_reviews})
+                          </span>
+                        </div>
+                        {provider.completed_projects > 0 && (
+                          <span className="text-sm text-muted-foreground">
+                            {provider.completed_projects} {i18n.language === 'sw' ? 'miradi' : 'projects'}
+                          </span>
                         )}
                       </div>
-                    )}
 
-                    {/* Contact Quick View */}
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t">
-                      {provider.contact_phone && (
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          <span>{provider.contact_phone}</span>
+                      {/* Services */}
+                      {provider.services_offered.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {provider.services_offered.slice(0, 3).map((service, idx) => (
+                            <Badge 
+                              key={idx} 
+                              variant="secondary" 
+                              className="text-xs font-normal bg-muted/50"
+                            >
+                              {service}
+                            </Badge>
+                          ))}
+                          {provider.services_offered.length > 3 && (
+                            <Badge variant="outline" className="text-xs font-normal">
+                              +{provider.services_offered.length - 3}
+                            </Badge>
+                          )}
                         </div>
                       )}
-                      {provider.service_areas.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{provider.service_areas[0]}</span>
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Action Button */}
-                    <Button 
-                      onClick={() => handleRequestService(provider.id)}
-                      className="w-full group-hover:bg-primary/90"
-                    >
-                      {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                      {/* Contact & Location */}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground pt-3 border-t">
+                        {provider.contact_phone && (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5" />
+                            <span className="truncate">{provider.contact_phone}</span>
+                          </div>
+                        )}
+                        {provider.service_areas.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span className="truncate">{provider.service_areas[0]}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* CTA Button */}
+                      <Button 
+                        onClick={() => handleRequestService(provider.id)}
+                        className="w-full rounded-xl h-11 font-semibold group-hover:shadow-md transition-all"
+                      >
+                        {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </MainLayout>
   );
