@@ -5,10 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Calendar, MessageSquare, CreditCard, TrendingUp, MapPin, User, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
+import { Heart, Calendar, MessageSquare, CreditCard, TrendingUp, MapPin, User, ShoppingBag, ArrowRight, Sparkles, Briefcase } from 'lucide-react';
 
 export function BuyerDashboard() {
-  const { profile } = useAuth();
+  const { profile, hasRole } = useAuth();
   const [stats, setStats] = useState({
     savedListings: 0,
     visitRequests: 0,
@@ -105,6 +105,14 @@ export function BuyerDashboard() {
           <p className="text-primary-foreground/80 max-w-md">
             Find your dream property with verified listings and complete transparency.
           </p>
+          {hasRole('service_provider') && (
+            <Link to="/service-provider/dashboard">
+              <Button variant="secondary" className="mt-4 gap-2">
+                <Briefcase className="h-4 w-4" />
+                Go to Service Provider Dashboard
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
