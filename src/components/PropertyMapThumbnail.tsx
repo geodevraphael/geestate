@@ -10,6 +10,7 @@ import { Style, Stroke, Fill, Text } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import Feature from 'ol/Feature';
 import { Point, LineString } from 'ol/geom';
+import * as turf from '@turf/turf';
 import 'ol/ol.css';
 import { calculatePolygonDimensions } from '@/lib/polygonDimensions';
 
@@ -40,6 +41,9 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         featureProjection: 'EPSG:3857',
       }),
     });
+
+    // Calculate extent first (needed for area label center)
+    const extent = vectorSource.getExtent();
 
     const vectorLayer = new VectorLayer({
       source: vectorSource,
@@ -89,6 +93,7 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         });
         pointFeature.set('label', edge.formattedLength);
         pointFeature.set('rotation', edge.angle);
+        pointFeature.set('isEdgeLabel', true);
         dimensionSource.addFeature(pointFeature);
 
         // Add small perpendicular ticks at endpoints (like survey plans)
@@ -108,18 +113,72 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         }));
         dimensionSource.addFeature(lineFeature);
       });
+
+      // Add area label at the center of the polygon
+      const centerLon = (extent[0] + extent[2]) / 2;
+      const centerLat = (extent[1] + extent[3]) / 2;
+      
+      // Calculate area using turf
+      let areaM2 = 0;
+      try {
+        let polygon;
+        if (geojson.type === 'Feature') {
+          polygon = geojson;
+        } else if (geojson.type === 'Polygon') {
+          polygon = turf.polygon(geojson.coordinates);
+        } else if (geojson.type === 'FeatureCollection' && geojson.features?.length > 0) {
+          polygon = geojson.features[0];
+        }
+        if (polygon) {
+          areaM2 = turf.area(polygon);
+        }
+      } catch (e) {
+        console.error('Error calculating area:', e);
+      }
+
+      // Format area display
+      let areaLabel = '';
+      if (areaM2 > 0) {
+        if (areaM2 < 10000) {
+          areaLabel = `${areaM2.toFixed(0)} m²`;
+        } else {
+          const hectares = areaM2 / 10000;
+          areaLabel = `${hectares.toFixed(2)} ha`;
+        }
+      }
+
+      if (areaLabel) {
+        const areaFeature = new Feature({
+          geometry: new Point([centerLon, centerLat]),
+        });
+        areaFeature.set('label', areaLabel);
+        areaFeature.set('isAreaLabel', true);
+        areaFeature.setStyle(new Style({
+          text: new Text({
+            text: areaLabel,
+            font: 'bold 14px sans-serif',
+            fill: new Fill({ color: '#ffffff' }),
+            stroke: new Stroke({ color: '#000000', width: 4 }),
+            padding: [4, 8, 4, 8],
+            textAlign: 'center',
+            textBaseline: 'middle',
+            backgroundFill: new Fill({ color: 'rgba(239, 68, 68, 0.85)' }),
+            backgroundStroke: new Stroke({ color: '#ffffff', width: 1 }),
+          }),
+        }));
+        dimensionSource.addFeature(areaFeature);
+      }
     }
 
-    // Calculate center and zoom
-    const extent = vectorSource.getExtent();
-    const centerLon = (extent[0] + extent[2]) / 2;
-    const centerLat = (extent[1] + extent[3]) / 2;
+    // Calculate center for map view
+    const mapCenterLon = (extent[0] + extent[2]) / 2;
+    const mapCenterLat = (extent[1] + extent[3]) / 2;
 
     const map = new Map({
       target: mapRef.current,
       layers: [satelliteLayer, vectorLayer, dimensionLayer],
       view: new View({
-        center: [centerLon, centerLat],
+        center: [mapCenterLon, mapCenterLat],
         zoom: 16,
       }),
       controls: [],
