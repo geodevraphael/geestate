@@ -134,11 +134,8 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         dimensionSource.addFeature(lineFeature);
       });
 
-      // Add area label at the center of the polygon
-      const centerLon = (extent[0] + extent[2]) / 2;
-      const centerLat = (extent[1] + extent[3]) / 2;
-      
-      // Calculate area using turf
+      // Calculate centroid and area using turf
+      let centroid: [number, number] | null = null;
       let areaM2 = 0;
       try {
         let polygon;
@@ -151,9 +148,11 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         }
         if (polygon) {
           areaM2 = turf.area(polygon);
+          const centroidFeature = turf.centroid(polygon);
+          centroid = centroidFeature.geometry.coordinates as [number, number];
         }
       } catch (e) {
-        console.error('Error calculating area:', e);
+        console.error('Error calculating area/centroid:', e);
       }
 
       // Format area display
@@ -167,9 +166,10 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         }
       }
 
-      if (areaLabel) {
+      if (areaLabel && centroid) {
+        const centroidCoord = fromLonLat(centroid);
         const areaFeature = new Feature({
-          geometry: new Point([centerLon, centerLat]),
+          geometry: new Point(centroidCoord),
         });
         areaFeature.set('label', areaLabel);
         areaFeature.set('isAreaLabel', true);
