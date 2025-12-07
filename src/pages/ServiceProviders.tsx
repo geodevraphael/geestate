@@ -102,7 +102,7 @@ export default function ServiceProviders() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="w-full px-4 md:px-6 lg:px-8 py-6 md:py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
