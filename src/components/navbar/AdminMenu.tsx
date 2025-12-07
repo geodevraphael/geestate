@@ -65,6 +65,12 @@ export function AdminMenu() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
+              <Link to="/admin/service-providers" className="cursor-pointer">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Service Providers
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
               <Link to="/institutional-sellers" className="cursor-pointer">
                 <Building className="mr-2 h-4 w-4" />
                 Institutions
