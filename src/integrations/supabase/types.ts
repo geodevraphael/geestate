@@ -1679,6 +1679,102 @@ export type Database = {
           },
         ]
       }
+      provider_availability: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean | null
+          provider_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_available?: boolean | null
+          provider_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          provider_id?: string
+          start_time?: string
+        }
+        Relationships: []
+      }
+      provider_blocked_dates: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          provider_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          provider_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          provider_id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      provider_services: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          duration_hours: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number | null
+          price_type: string | null
+          provider_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number | null
+          price_type?: string | null
+          provider_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number | null
+          price_type?: string | null
+          provider_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       proximity_analysis: {
         Row: {
           calculated_at: string | null
@@ -1879,6 +1975,69 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_bookings: {
+        Row: {
+          booking_date: string
+          booking_time: string
+          client_id: string
+          created_at: string | null
+          id: string
+          listing_id: string | null
+          notes: string | null
+          provider_id: string
+          provider_notes: string | null
+          service_id: string
+          status: string
+          total_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          booking_date: string
+          booking_time: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          listing_id?: string | null
+          notes?: string | null
+          provider_id: string
+          provider_notes?: string | null
+          service_id: string
+          status?: string
+          total_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          booking_date?: string
+          booking_time?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          listing_id?: string | null
+          notes?: string | null
+          provider_id?: string
+          provider_notes?: string | null
+          service_id?: string
+          status?: string
+          total_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_bookings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "provider_services"
             referencedColumns: ["id"]
           },
         ]

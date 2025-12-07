@@ -5,13 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { 
   TrendingUp, 
-  Users, 
   DollarSign, 
   Star,
   Calendar,
-  CheckCircle,
-  XCircle,
-  Clock
+  CheckCircle
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -23,8 +20,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
 
 interface ProviderAnalyticsProps {
@@ -66,31 +62,28 @@ export function ProviderAnalytics({ providerId }: ProviderAnalyticsProps) {
 
   const fetchAnalytics = async () => {
     try {
-      // Fetch bookings
-      const { data: bookings } = await supabase
-        .from('service_bookings')
+      const { data: bookings } = await (supabase
+        .from('service_bookings' as any)
         .select('*, provider_services(name)')
-        .eq('provider_id', user?.id);
+        .eq('provider_id', user?.id) as any);
 
-      // Fetch reviews
       const { data: reviews } = await supabase
         .from('service_provider_reviews')
         .select('rating')
         .eq('provider_id', providerId);
 
-      // Calculate analytics
-      const completed = bookings?.filter(b => b.status === 'completed') || [];
-      const cancelled = bookings?.filter(b => b.status === 'cancelled') || [];
-      const pending = bookings?.filter(b => b.status === 'pending') || [];
+      const bookingsArray = (bookings as any[]) || [];
+      const completed = bookingsArray.filter(b => b.status === 'completed');
+      const cancelled = bookingsArray.filter(b => b.status === 'cancelled');
+      const pending = bookingsArray.filter(b => b.status === 'pending');
 
       const totalEarnings = completed.reduce((sum, b) => sum + (b.total_price || 0), 0);
       const averageRating = reviews?.length 
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
         : 0;
 
-      // Calculate monthly data
       const monthlyMap = new Map<string, { earnings: number; bookings: number }>();
-      bookings?.forEach(booking => {
+      bookingsArray.forEach(booking => {
         const month = new Date(booking.booking_date).toLocaleDateString('en-US', { month: 'short' });
         const current = monthlyMap.get(month) || { earnings: 0, bookings: 0 };
         monthlyMap.set(month, {
@@ -104,9 +97,8 @@ export function ProviderAnalytics({ providerId }: ProviderAnalyticsProps) {
         ...data,
       }));
 
-      // Calculate service breakdown
       const serviceMap = new Map<string, { count: number; earnings: number }>();
-      bookings?.forEach(booking => {
+      bookingsArray.forEach(booking => {
         const serviceName = booking.provider_services?.name || 'Unknown';
         const current = serviceMap.get(serviceName) || { count: 0, earnings: 0 };
         serviceMap.set(serviceName, {
@@ -122,7 +114,7 @@ export function ProviderAnalytics({ providerId }: ProviderAnalyticsProps) {
 
       setAnalytics({
         totalEarnings,
-        totalBookings: bookings?.length || 0,
+        totalBookings: bookingsArray.length,
         completedBookings: completed.length,
         cancelledBookings: cancelled.length,
         pendingBookings: pending.length,
@@ -154,7 +146,6 @@ export function ProviderAnalytics({ providerId }: ProviderAnalyticsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -218,7 +209,6 @@ export function ProviderAnalytics({ providerId }: ProviderAnalyticsProps) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Monthly Earnings Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -251,7 +241,6 @@ export function ProviderAnalytics({ providerId }: ProviderAnalyticsProps) {
           </CardContent>
         </Card>
 
-        {/* Booking Status Distribution */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -289,7 +278,6 @@ export function ProviderAnalytics({ providerId }: ProviderAnalyticsProps) {
         </Card>
       </div>
 
-      {/* Service Breakdown */}
       <Card>
         <CardHeader>
           <CardTitle>Service Performance</CardTitle>

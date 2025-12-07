@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -74,24 +73,24 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
   const fetchCalendarData = async () => {
     try {
       const [slotsRes, blockedRes] = await Promise.all([
-        supabase
-          .from('provider_availability')
+        (supabase
+          .from('provider_availability' as any)
           .select('*')
           .eq('provider_id', user?.id)
-          .order('day_of_week'),
-        supabase
-          .from('provider_blocked_dates')
+          .order('day_of_week') as any),
+        (supabase
+          .from('provider_blocked_dates' as any)
           .select('*')
           .eq('provider_id', user?.id)
           .gte('date', new Date().toISOString().split('T')[0])
-          .order('date'),
+          .order('date') as any),
       ]);
 
       if (slotsRes.error) throw slotsRes.error;
       if (blockedRes.error) throw blockedRes.error;
 
-      setTimeSlots(slotsRes.data || []);
-      setBlockedDates(blockedRes.data || []);
+      setTimeSlots((slotsRes.data as TimeSlot[]) || []);
+      setBlockedDates((blockedRes.data as BlockedDate[]) || []);
     } catch (error) {
       console.error('Error fetching calendar data:', error);
     } finally {
@@ -111,12 +110,12 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
         is_available: true,
       }));
 
-      const { error } = await supabase
-        .from('provider_availability')
+      const { error } = await (supabase
+        .from('provider_availability' as any)
         .upsert(slotsToAdd, { 
           onConflict: 'provider_id,day_of_week',
           ignoreDuplicates: false 
-        });
+        }) as any);
 
       if (error) throw error;
       
@@ -133,13 +132,13 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
     e.preventDefault();
     
     try {
-      const { error } = await supabase
-        .from('provider_blocked_dates')
+      const { error } = await (supabase
+        .from('provider_blocked_dates' as any)
         .insert([{
           provider_id: user?.id,
           date: blockForm.date,
           reason: blockForm.reason,
-        }]);
+        }]) as any);
 
       if (error) throw error;
       
@@ -154,10 +153,10 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
 
   const removeSlot = async (slotId: string) => {
     try {
-      const { error } = await supabase
-        .from('provider_availability')
+      const { error } = await (supabase
+        .from('provider_availability' as any)
         .delete()
-        .eq('id', slotId);
+        .eq('id', slotId) as any);
 
       if (error) throw error;
       fetchCalendarData();
@@ -168,10 +167,10 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
 
   const unblockDate = async (blockId: string) => {
     try {
-      const { error } = await supabase
-        .from('provider_blocked_dates')
+      const { error } = await (supabase
+        .from('provider_blocked_dates' as any)
         .delete()
-        .eq('id', blockId);
+        .eq('id', blockId) as any);
 
       if (error) throw error;
       fetchCalendarData();
@@ -189,7 +188,6 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
     }));
   };
 
-  // Generate calendar view for current week
   const weekStart = startOfWeek(selectedDate);
   const weekDays = eachDayOfInterval({
     start: weekStart,
@@ -206,7 +204,6 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
 
   return (
     <div className="space-y-6">
-      {/* Weekly Schedule */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -321,7 +318,6 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
         </CardContent>
       </Card>
 
-      {/* Calendar Preview */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -432,7 +428,6 @@ export function CalendarManagement({ providerId }: CalendarManagementProps) {
             })}
           </div>
 
-          {/* Blocked Dates List */}
           {blockedDates.length > 0 && (
             <div className="mt-6">
               <h4 className="font-medium mb-2">Upcoming Blocked Dates</h4>
