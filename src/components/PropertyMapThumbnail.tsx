@@ -66,10 +66,12 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         if (feature.get('isAreaLabel') || feature.get('isLine')) return undefined;
         
         const label = feature.get('label');
-        const rotation = feature.get('rotation') || 0;
+        const bearing = feature.get('rotation') || 0;
         
-        // Convert bearing to radians and adjust for text direction along line
-        const rotationRad = -(rotation - 90) * (Math.PI / 180);
+        // Convert bearing to rotation angle parallel to line
+        // Bearing is from north clockwise, we need rotation from east counter-clockwise
+        // For text parallel to line: rotation = -(bearing - 90) in radians
+        const rotationRad = -((bearing - 90) * Math.PI / 180);
         
         return new Style({
           text: new Text({
