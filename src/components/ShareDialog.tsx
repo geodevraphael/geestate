@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { 
   Share2, Copy, Check, MessageCircle, Mail, 
-  Facebook, Instagram, Download, MapPin
+  Facebook, Instagram, MapPin
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -145,18 +145,18 @@ export function ShareDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader className="border-b pb-4">
+          <DrawerTitle className="flex items-center gap-2 justify-center">
             <Share2 className="h-5 w-5" />
             {i18n.language === 'sw' ? 'Shiriki' : 'Share'}
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
         
-        <div className="space-y-4">
+        <div className="p-4 space-y-4 overflow-y-auto">
           {/* Property Preview Card */}
-          <div className="rounded-xl overflow-hidden bg-gradient-to-br from-primary to-primary/80 text-white p-4 space-y-2">
+          <div className="rounded-xl overflow-hidden bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-4 space-y-2">
             <h3 className="font-bold text-lg line-clamp-2">{title}</h3>
             {location && (
               <p className="text-sm opacity-90 flex items-center gap-1">
@@ -208,7 +208,7 @@ export function ShareDialog({
                 <button
                   key={option.name}
                   onClick={() => handleShare(option)}
-                  className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl text-white transition-all ${option.color}`}
+                  className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl text-white transition-all active:scale-95 ${option.color}`}
                 >
                   <Icon className="h-6 w-6" />
                   <span className="text-xs font-medium">{option.name}</span>
@@ -239,7 +239,7 @@ export function ShareDialog({
             </Button>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }
