@@ -410,11 +410,11 @@ export default function ServiceProviderDetail() {
                 {provider.services_offered.length > 0 ? (
                   <div className="grid sm:grid-cols-2 gap-3">
                     {provider.services_offered.map((service, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted border border-border">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <CheckCircle2 className="h-4 w-4 text-primary" />
                         </div>
-                        <span className="font-medium">{service}</span>
+                        <span className="font-medium text-foreground">{service}</span>
                       </div>
                     ))}
                   </div>
@@ -441,7 +441,7 @@ export default function ServiceProviderDetail() {
                 {reviews.length > 0 ? (
                   <div className="space-y-4">
                     {reviews.map(review => (
-                      <div key={review.id} className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                      <div key={review.id} className="p-4 rounded-xl bg-muted border border-border">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -449,19 +449,19 @@ export default function ServiceProviderDetail() {
                                 {review.reviewer?.full_name?.charAt(0) || 'A'}
                               </span>
                             </div>
-                            <span className="font-medium">{review.reviewer?.full_name || 'Anonymous'}</span>
+                            <span className="font-medium text-foreground">{review.reviewer?.full_name || 'Anonymous'}</span>
                           </div>
                           <div className="flex">
                             {[...Array(5)].map((_, i) => (
                               <Star 
                                 key={i} 
-                                className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted'}`} 
+                                className={`h-4 w-4 ${i < review.rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} 
                               />
                             ))}
                           </div>
                         </div>
                         {review.review_text && (
-                          <p className="text-muted-foreground">{review.review_text}</p>
+                          <p className="text-foreground/80">{review.review_text}</p>
                         )}
                       </div>
                     ))}
@@ -481,30 +481,30 @@ export default function ServiceProviderDetail() {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats Card */}
-            <Card className="border-border/50 bg-gradient-to-br from-muted/50 to-muted/20">
+            <Card className="border-border bg-card">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">{i18n.language === 'sw' ? 'Takwimu' : 'Quick Stats'}</CardTitle>
+                <CardTitle className="text-lg text-foreground">{i18n.language === 'sw' ? 'Takwimu' : 'Quick Stats'}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border">
                   <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Ukadiriaji' : 'Rating'}</span>
                   <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-bold">{provider.rating.toFixed(1)}</span>
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <span className="font-bold text-foreground">{provider.rating.toFixed(1)}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border">
                   <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Maoni' : 'Reviews'}</span>
-                  <span className="font-bold">{provider.total_reviews}</span>
+                  <span className="font-bold text-foreground">{provider.total_reviews}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border">
                   <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Miradi' : 'Projects'}</span>
-                  <span className="font-bold">{provider.completed_projects}</span>
+                  <span className="font-bold text-foreground">{provider.completed_projects}</span>
                 </div>
                 {provider.years_in_business && (
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border">
                     <span className="text-muted-foreground">{i18n.language === 'sw' ? 'Miaka' : 'Years'}</span>
-                    <span className="font-bold">{provider.years_in_business}</span>
+                    <span className="font-bold text-foreground">{provider.years_in_business}</span>
                   </div>
                 )}
               </CardContent>
@@ -537,25 +537,25 @@ export default function ServiceProviderDetail() {
             </Card>
 
             {/* Contact Card */}
-            <Card className="border-primary/20 bg-primary/5">
+            <Card className="border-primary/30 bg-primary/5 dark:bg-primary/10">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">{i18n.language === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}</CardTitle>
+                <CardTitle className="text-lg text-foreground">{i18n.language === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <a href={`mailto:${provider.contact_email}`} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:bg-muted transition-colors">
+                <a href={`mailto:${provider.contact_email}`} className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border hover:bg-muted transition-colors">
                   <Mail className="h-5 w-5 text-primary" />
-                  <span className="text-sm truncate">{provider.contact_email}</span>
+                  <span className="text-sm truncate text-foreground">{provider.contact_email}</span>
                 </a>
                 {provider.contact_phone && (
-                  <a href={`tel:${provider.contact_phone}`} className="flex items-center gap-3 p-3 rounded-lg bg-background hover:bg-muted transition-colors">
+                  <a href={`tel:${provider.contact_phone}`} className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border hover:bg-muted transition-colors">
                     <Phone className="h-5 w-5 text-primary" />
-                    <span className="text-sm">{provider.contact_phone}</span>
+                    <span className="text-sm text-foreground">{provider.contact_phone}</span>
                   </a>
                 )}
                 {provider.website_url && (
-                  <a href={provider.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-background hover:bg-muted transition-colors">
+                  <a href={provider.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border hover:bg-muted transition-colors">
                     <Globe className="h-5 w-5 text-primary" />
-                    <span className="text-sm truncate">{provider.website_url}</span>
+                    <span className="text-sm truncate text-foreground">{provider.website_url}</span>
                   </a>
                 )}
               </CardContent>
