@@ -256,7 +256,7 @@ export default function ServiceProviderDetail() {
                   )}
                 </div>
                 
-                <p className="text-lg md:text-xl text-primary-foreground/80 font-medium">
+                <p className="text-lg md:text-xl text-white/90 font-medium">
                   {i18n.language === 'sw' ? typeInfo.labelSw : typeInfo.label}
                 </p>
               </div>
@@ -265,19 +265,19 @@ export default function ServiceProviderDetail() {
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
-                    <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                    <span className="text-2xl font-bold">{provider.rating.toFixed(1)}</span>
+                    <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
+                    <span className="text-2xl font-bold text-white">{provider.rating.toFixed(1)}</span>
                   </div>
-                  <span className="text-primary-foreground/70">({provider.total_reviews} {i18n.language === 'sw' ? 'maoni' : 'reviews'})</span>
+                  <span className="text-white/90">({provider.total_reviews} {i18n.language === 'sw' ? 'maoni' : 'reviews'})</span>
                 </div>
                 {provider.completed_projects > 0 && (
-                  <div className="flex items-center gap-2 text-primary-foreground/80">
+                  <div className="flex items-center gap-2 text-white/90">
                     <Briefcase className="h-5 w-5" />
                     <span className="font-medium">{provider.completed_projects} {i18n.language === 'sw' ? 'miradi' : 'projects completed'}</span>
                   </div>
                 )}
                 {provider.years_in_business && (
-                  <div className="flex items-center gap-2 text-primary-foreground/80">
+                  <div className="flex items-center gap-2 text-white/90">
                     <Clock className="h-5 w-5" />
                     <span className="font-medium">{provider.years_in_business} {i18n.language === 'sw' ? 'miaka kazini' : 'years in business'}</span>
                   </div>
