@@ -1,15 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { 
   Share2, Copy, Check, MessageCircle, Mail, 
-  Facebook, Instagram, Download, Image as ImageIcon, Loader2
+  Facebook, Instagram, Download, MapPin
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import html2canvas from 'html2canvas';
-import { PropertyMapThumbnail } from './PropertyMapThumbnail';
 
 interface ShareDialogProps {
   url: string;
@@ -46,23 +44,19 @@ export function ShareDialog({
   currency = 'TZS', 
   location, 
   area,
-  geojson,
   open, 
   onOpenChange 
 }: ShareDialogProps) {
   const { i18n } = useTranslation();
   const [copied, setCopied] = useState(false);
-  const [generatingImage, setGeneratingImage] = useState(false);
-  const [shareableImage, setShareableImage] = useState<string | null>(null);
-  const shareCardRef = useRef<HTMLDivElement>(null);
 
   const shareText = description || title;
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(shareText);
   const encodedTitle = encodeURIComponent(title);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US').format(price);
+  const formatPrice = (priceValue: number) => {
+    return new Intl.NumberFormat('en-US').format(priceValue);
   };
 
   const formatArea = (areaM2: number) => {
@@ -70,49 +64,6 @@ export function ShareDialog({
       return `${areaM2.toFixed(0)} m²`;
     }
     return `${(areaM2 / 10000).toFixed(2)} ha`;
-  };
-
-  // Generate shareable image when dialog opens
-  useEffect(() => {
-    if (open && geojson && !shareableImage) {
-      generateShareableImage();
-    }
-  }, [open, geojson]);
-
-  const generateShareableImage = async () => {
-    if (!shareCardRef.current) return;
-    
-    setGeneratingImage(true);
-    try {
-      // Wait for map to render
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const canvas = await html2canvas(shareCardRef.current, {
-        backgroundColor: '#1a1a2e',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-      });
-      
-      const imageUrl = canvas.toDataURL('image/png');
-      setShareableImage(imageUrl);
-    } catch (error) {
-      console.error('Error generating image:', error);
-      toast.error('Failed to generate shareable image');
-    } finally {
-      setGeneratingImage(false);
-    }
-  };
-
-  const handleDownloadImage = () => {
-    if (!shareableImage) return;
-    
-    const link = document.createElement('a');
-    link.href = shareableImage;
-    link.download = `${title.replace(/[^a-z0-9]/gi, '_')}_property.png`;
-    link.click();
-    toast.success(i18n.language === 'sw' ? 'Picha imepakuliwa!' : 'Image downloaded!');
   };
 
   const handleCopyLink = async () => {
@@ -126,15 +77,17 @@ export function ShareDialog({
     }
   };
 
-  const handleShareWithImage = async (platform: string) => {
-    // For platforms that support image sharing, we download first then guide user
-    if (shareableImage) {
-      handleDownloadImage();
-      toast.info(
+  const handleCopyForPlatform = async (platform: string) => {
+    const fullText = `${title}\n${location ? `📍 ${location}` : ''}\n${price ? `💰 ${currency} ${formatPrice(price)}` : ''}\n${area ? `📐 ${formatArea(area)}` : ''}\n\n${url}`;
+    try {
+      await navigator.clipboard.writeText(fullText);
+      toast.success(
         i18n.language === 'sw' 
-          ? `Picha imepakuliwa! Ipakue kwenye ${platform}` 
-          : `Image downloaded! Upload it to ${platform}`
+          ? `Maelezo yamenakiliwa! Bandika kwenye ${platform}` 
+          : `Details copied! Paste on ${platform}`
       );
+    } catch (error) {
+      toast.error('Failed to copy');
     }
   };
 
@@ -161,13 +114,13 @@ export function ShareDialog({
       name: 'Instagram',
       icon: Instagram,
       color: 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 hover:opacity-90',
-      action: () => handleShareWithImage('Instagram'),
+      action: () => handleCopyForPlatform('Instagram'),
     },
     {
       name: 'TikTok',
       icon: TikTokIcon,
       color: 'bg-black hover:bg-gray-800',
-      action: () => handleShareWithImage('TikTok'),
+      action: () => handleCopyForPlatform('TikTok'),
     },
     {
       name: 'SMS',
@@ -193,7 +146,7 @@ export function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
@@ -202,123 +155,29 @@ export function ShareDialog({
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Shareable Image Preview */}
-          {geojson && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                {i18n.language === 'sw' ? 'Picha ya Kushiriki' : 'Shareable Image'}
+          {/* Property Preview Card */}
+          <div className="rounded-xl overflow-hidden bg-gradient-to-br from-primary to-primary/80 text-white p-4 space-y-2">
+            <h3 className="font-bold text-lg line-clamp-2">{title}</h3>
+            {location && (
+              <p className="text-sm opacity-90 flex items-center gap-1">
+                <MapPin className="h-4 w-4" /> {location}
               </p>
-              
-              {/* Hidden card for capture */}
-              <div 
-                ref={shareCardRef}
-                className="relative overflow-hidden rounded-xl"
-                style={{ 
-                  width: '400px', 
-                  height: '500px',
-                  position: shareableImage ? 'absolute' : 'relative',
-                  left: shareableImage ? '-9999px' : '0',
-                }}
-              >
-                {/* Background gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary to-primary/80" />
-                
-                {/* Map section */}
-                <div className="relative h-[280px] overflow-hidden">
-                  <PropertyMapThumbnail 
-                    geojson={geojson} 
-                    className="w-full h-full"
-                    showDimensions={true}
-                  />
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-primary/90 to-transparent" />
+            )}
+            <div className="flex gap-3 pt-2">
+              {price && (
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
+                  <p className="text-xs opacity-75">Price</p>
+                  <p className="font-bold">{currency} {formatPrice(price)}</p>
                 </div>
-                
-                {/* Details section */}
-                <div className="relative p-5 text-white space-y-3">
-                  {/* Title */}
-                  <h3 className="text-xl font-bold leading-tight line-clamp-2">
-                    {title}
-                  </h3>
-                  
-                  {/* Location */}
-                  {location && (
-                    <p className="text-sm opacity-90 flex items-center gap-1">
-                      📍 {location}
-                    </p>
-                  )}
-                  
-                  {/* Price & Area */}
-                  <div className="flex items-center justify-between pt-2">
-                    {price && (
-                      <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                        <p className="text-xs opacity-75">Price</p>
-                        <p className="text-lg font-bold">
-                          {currency} {formatPrice(price)}
-                        </p>
-                      </div>
-                    )}
-                    {area && (
-                      <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                        <p className="text-xs opacity-75">Area</p>
-                        <p className="text-lg font-bold">{formatArea(area)}</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Branding & URL */}
-                  <div className="flex items-center justify-between pt-2 border-t border-white/20">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                        <span className="text-primary font-bold text-sm">G</span>
-                      </div>
-                      <span className="font-semibold">GeoEstate</span>
-                    </div>
-                    <p className="text-xs opacity-75 truncate max-w-[150px]">
-                      {url.replace('https://', '')}
-                    </p>
-                  </div>
+              )}
+              {area && (
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
+                  <p className="text-xs opacity-75">Area</p>
+                  <p className="font-bold">{formatArea(area)}</p>
                 </div>
-              </div>
-
-              {/* Preview of generated image */}
-              {generatingImage ? (
-                <div className="w-full h-48 bg-muted rounded-xl flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">
-                      {i18n.language === 'sw' ? 'Inaunda picha...' : 'Generating image...'}
-                    </p>
-                  </div>
-                </div>
-              ) : shareableImage ? (
-                <div className="space-y-2">
-                  <img 
-                    src={shareableImage} 
-                    alt="Shareable preview" 
-                    className="w-full rounded-xl shadow-lg"
-                  />
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={handleDownloadImage}
-                  >
-                    <Download className="h-4 w-4" />
-                    {i18n.language === 'sw' ? 'Pakua Picha' : 'Download Image'}
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={generateShareableImage}
-                >
-                  <ImageIcon className="h-4 w-4" />
-                  {i18n.language === 'sw' ? 'Unda Picha' : 'Generate Image'}
-                </Button>
               )}
             </div>
-          )}
+          </div>
 
           {/* Copy Link Section */}
           <div className="flex items-center gap-2">
@@ -365,24 +224,11 @@ export function ShareDialog({
               className="w-full gap-2"
               onClick={async () => {
                 try {
-                  const shareData: ShareData = {
+                  await navigator.share({
                     title,
                     text: description,
                     url,
-                  };
-                  
-                  // If we have a shareable image and can share files
-                  if (shareableImage && navigator.canShare) {
-                    const response = await fetch(shareableImage);
-                    const blob = await response.blob();
-                    const file = new File([blob], 'property.png', { type: 'image/png' });
-                    
-                    if (navigator.canShare({ files: [file] })) {
-                      shareData.files = [file];
-                    }
-                  }
-                  
-                  await navigator.share(shareData);
+                  });
                 } catch (error) {
                   // User cancelled or share failed
                 }
