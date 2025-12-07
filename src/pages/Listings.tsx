@@ -12,6 +12,7 @@ import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, 
 import { ListingWithDetails } from '@/types/database';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { MarketplaceViewToggle } from '@/components/MarketplaceViewToggle';
+import { ShareDialog } from '@/components/ShareDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -33,6 +34,8 @@ export default function Listings() {
   const [projects, setProjects] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareListingData, setShareListingData] = useState<{ id: string; title: string; location: string } | null>(null);
 
   useEffect(() => {
     setCurrentPage(1); // Reset to page 1 when filters change
@@ -194,12 +197,15 @@ export default function Listings() {
     clearOwnerFilter();
   };
 
-  const handleShareListing = (listingId: string, e: React.MouseEvent) => {
+  const handleShareListing = (listing: ListingWithDetails, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const listingUrl = `${window.location.origin}/listings/${listingId}`;
-    navigator.clipboard.writeText(listingUrl);
-    toast.success(t('listing.linkCopied'));
+    setShareListingData({
+      id: listing.id,
+      title: listing.title,
+      location: listing.location_label,
+    });
+    setShareDialogOpen(true);
   };
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -557,7 +563,7 @@ export default function Listings() {
                             size="sm" 
                             variant="outline" 
                             className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
-                            onClick={(e) => handleShareListing(listing.id, e)}
+                            onClick={(e) => handleShareListing(listing, e)}
                           >
                             <Share2 className="h-4 w-4" />
                           </Button>
@@ -599,6 +605,17 @@ export default function Listings() {
           )}
         </div>
       </div>
+
+      {/* Share Dialog */}
+      {shareListingData && (
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          url={`${window.location.origin}/listings/${shareListingData.id}`}
+          title={shareListingData.title}
+          description={`${shareListingData.title} - ${shareListingData.location}`}
+        />
+      )}
     </MainLayout>
   );
 }
