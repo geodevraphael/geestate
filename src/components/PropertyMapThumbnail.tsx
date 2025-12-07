@@ -66,12 +66,10 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         if (feature.get('isAreaLabel') || feature.get('isLine')) return undefined;
         
         const label = feature.get('label');
-        const bearing = feature.get('rotation') || 0;
+        const angleDeg = feature.get('rotation') || 0; // Degrees from horizontal
         
-        // Convert bearing to rotation angle parallel to line
-        // Bearing is from north clockwise, we need rotation from east counter-clockwise
-        // For text parallel to line: rotation = -(bearing - 90) in radians
-        const rotationRad = -((bearing - 90) * Math.PI / 180);
+        // Convert to radians - negative because OpenLayers rotation is clockwise
+        const rotationRad = -angleDeg * Math.PI / 180;
         
         return new Style({
           text: new Text({

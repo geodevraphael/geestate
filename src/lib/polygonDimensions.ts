@@ -46,18 +46,19 @@ export function calculatePolygonDimensions(geojson: any): EdgeDimension[] {
       const midpointFeature = turf.midpoint(from, to);
       const midpoint = midpointFeature.geometry.coordinates as [number, number];
 
-      // Calculate angle for label rotation (bearing from north, clockwise)
+      // Calculate bearing (degrees from north, clockwise)
+      // 0° = North, 90° = East, 180° = South, -90° = West
       const bearing = turf.bearing(from, to);
       
-      // Convert bearing to angle parallel to line
-      // Bearing: 0° = North, 90° = East, 180° = South, -90° = West
-      // We want text to be parallel to the line, so rotate by (bearing - 90)
-      let angle = bearing;
+      // Convert bearing to line angle from horizontal (East = 0°)
+      // bearing 0° (North) → lineAngle 90°
+      // bearing 90° (East) → lineAngle 0°
+      // bearing 180° (South) → lineAngle -90°
+      let lineAngle = 90 - bearing;
       
-      // Keep text readable (not upside down) - flip if pointing left
-      if (bearing > 90 || bearing < -90) {
-        angle = bearing + 180;
-      }
+      // Normalize to -90° to 90° range so text is never upside down
+      while (lineAngle > 90) lineAngle -= 180;
+      while (lineAngle < -90) lineAngle += 180;
 
       // Format length
       const formattedLength = formatDimension(distance);
@@ -67,7 +68,7 @@ export function calculatePolygonDimensions(geojson: any): EdgeDimension[] {
         endCoord: end,
         midpoint,
         length: distance,
-        angle,
+        angle: lineAngle,
         formattedLength,
       });
     }
