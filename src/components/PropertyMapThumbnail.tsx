@@ -91,6 +91,20 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
     if (showDimensions) {
       const dimensions = calculatePolygonDimensions(geojson);
       
+      // Calculate dominant orientation from longest edges
+      let dominantAngle = 0;
+      if (dimensions.length > 0) {
+        // Weight angles by edge length to get dominant orientation
+        let weightedSin = 0;
+        let weightedCos = 0;
+        dimensions.forEach((edge) => {
+          const angleRad = edge.angle * Math.PI / 180 * 2; // Double angle for circular mean
+          weightedSin += Math.sin(angleRad) * edge.length;
+          weightedCos += Math.cos(angleRad) * edge.length;
+        });
+        dominantAngle = Math.atan2(weightedSin, weightedCos) * 180 / Math.PI / 2;
+      }
+      
       dimensions.forEach((edge) => {
         // Create a point feature at the midpoint of each edge
         const midpointCoord = fromLonLat(edge.midpoint);
@@ -159,6 +173,10 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         });
         areaFeature.set('label', areaLabel);
         areaFeature.set('isAreaLabel', true);
+        
+        // Convert dominant angle to radians for rotation
+        const areaRotationRad = -dominantAngle * Math.PI / 180;
+        
         areaFeature.setStyle(new Style({
           text: new Text({
             text: areaLabel,
@@ -168,6 +186,7 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
             padding: [4, 8, 4, 8],
             textAlign: 'center',
             textBaseline: 'middle',
+            rotation: areaRotationRad,
             backgroundFill: new Fill({ color: 'rgba(239, 68, 68, 0.85)' }),
             backgroundStroke: new Stroke({ color: '#ffffff', width: 1 }),
           }),
