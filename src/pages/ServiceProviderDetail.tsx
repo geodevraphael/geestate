@@ -139,7 +139,7 @@ export default function ServiceProviderDetail() {
     try {
       // Create a general service request (not linked to a specific listing)
       const { error } = await supabase.from('service_requests').insert({
-        listing_id: '00000000-0000-0000-0000-000000000000', // Placeholder for general requests
+        listing_id: null, // General request not linked to a specific listing
         requester_id: user.id,
         service_provider_id: provider?.user_id,
         service_type: requestForm.service_type,
