@@ -23,7 +23,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, DollarSign, Clock, Package } from 'lucide-react';
+import { 
+  Plus, Pencil, Trash2, DollarSign, Clock, Package, 
+  Sparkles, Eye, EyeOff, ArrowRight
+} from 'lucide-react';
 
 interface Service {
   id: string;
@@ -49,6 +52,8 @@ const SERVICE_CATEGORIES = [
   { value: 'surveying', label: 'Land Surveying' },
   { value: 'architecture', label: 'Architecture & Design' },
   { value: 'consultation', label: 'Consultation' },
+  { value: 'documentation', label: 'Documentation' },
+  { value: 'inspection', label: 'Property Inspection' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -177,6 +182,7 @@ export function ServiceManagement({ providerId, onUpdate }: ServiceManagementPro
         .eq('id', service.id) as any);
 
       if (error) throw error;
+      toast.success(service.is_active ? 'Service hidden from public' : 'Service now visible');
       fetchServices();
       onUpdate();
     } catch (error: any) {
@@ -202,211 +208,334 @@ export function ServiceManagement({ providerId, onUpdate }: ServiceManagementPro
     return type?.label || priceType;
   };
 
+  const getCategoryLabel = (category: string) => {
+    const cat = SERVICE_CATEGORIES.find(c => c.value === category);
+    return cat?.label || category;
+  };
+
+  const activeServices = services.filter(s => s.is_active);
+  const inactiveServices = services.filter(s => !s.is_active);
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            My Services
-          </CardTitle>
-          <CardDescription>Manage services you offer to clients</CardDescription>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Service
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Service Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Land Title Search"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SERVICE_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe what this service includes..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Package className="h-5 w-5 text-primary" />
+              My Services
+            </CardTitle>
+            <CardDescription>
+              Create custom services with your own pricing. Clients can book directly.
+            </CardDescription>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25">
+                <Plus className="h-4 w-4" />
+                Add Service
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  {editingService ? 'Edit Service' : 'Create New Service'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Price (TZS)</Label>
+                  <Label htmlFor="name">Service Name *</Label>
                   <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., Full Land Survey, Title Deed Verification"
+                    className="h-11"
+                    required
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="price_type">Price Type</Label>
+                  <Label htmlFor="category">Category *</Label>
                   <Select
-                    value={formData.price_type}
-                    onValueChange={(value) => setFormData({ ...formData, price_type: value })}
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {PRICE_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
+                      {SERVICE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="duration">Estimated Duration (hours)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  value={formData.duration_hours}
-                  onChange={(e) => setFormData({ ...formData, duration_hours: e.target.value })}
-                  placeholder="e.g., 2"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe what's included in this service..."
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
 
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="is_active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
-                <Label htmlFor="is_active">Active (visible to clients)</Label>
-              </div>
-
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingService ? 'Update' : 'Add'} Service
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-        ) : services.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No services added yet</p>
-            <p className="text-sm">Add your first service to start receiving bookings</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {services.map((service) => (
-              <Card key={service.id} className={`transition-opacity ${!service.is_active && 'opacity-60'}`}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{service.name}</h3>
-                        {!service.is_active && (
-                          <Badge variant="secondary">Inactive</Badge>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="mt-1 capitalize">
-                        {service.category?.replace('_', ' ')}
-                      </Badge>
-                      {service.description && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                          {service.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 mt-3 text-sm">
-                        <span className="flex items-center gap-1 font-medium text-primary">
-                          <DollarSign className="h-4 w-4" />
-                          TZS {service.price?.toLocaleString() || 'N/A'}
-                          <span className="text-muted-foreground font-normal">
-                            ({getPriceLabel(service.price_type)})
-                          </span>
-                        </span>
-                        {service.duration_hours && (
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            {service.duration_hours}h
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(service)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleActive(service)}
-                      >
-                        <Switch checked={service.is_active} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => handleDelete(service.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price (TZS) *</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="price"
+                        type="number"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder="0"
+                        className="h-11 pl-9"
+                        required
+                      />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price_type">Price Type</Label>
+                    <Select
+                      value={formData.price_type}
+                      onValueChange={(value) => setFormData({ ...formData, price_type: value })}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRICE_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Estimated Duration (hours)</Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="duration"
+                      type="number"
+                      value={formData.duration_hours}
+                      onChange={(e) => setFormData({ ...formData, duration_hours: e.target.value })}
+                      placeholder="e.g., 2"
+                      className="h-11 pl-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    {formData.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    <Label htmlFor="is_active" className="cursor-pointer">
+                      {formData.is_active ? 'Visible to clients' : 'Hidden from public'}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1 gap-2">
+                    {editingService ? 'Update' : 'Create'} Service
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        {loading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-4 space-y-3">
+                  <div className="h-5 bg-muted rounded w-3/4" />
+                  <div className="h-4 bg-muted rounded w-1/2" />
+                  <div className="h-6 bg-muted rounded w-1/3" />
                 </CardContent>
               </Card>
             ))}
+          </div>
+        ) : services.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <Package className="h-10 w-10 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">No services yet</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Create your first service to start receiving bookings from clients.
+            </p>
+            <Button onClick={() => setDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Your First Service
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Active Services */}
+            {activeServices.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Active Services ({activeServices.length})
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {activeServices.map((service) => (
+                    <Card 
+                      key={service.id} 
+                      className="group overflow-hidden hover:shadow-md transition-all duration-300 hover:border-primary/30"
+                    >
+                      <div className="h-1 bg-gradient-to-r from-primary to-primary/50" />
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <h3 className="font-semibold truncate">{service.name}</h3>
+                              <Badge variant="secondary" className="text-xs">
+                                {getCategoryLabel(service.category)}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          {service.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {service.description}
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <div className="flex items-center gap-1 text-primary font-bold">
+                              <span>TZS {service.price?.toLocaleString()}</span>
+                              <span className="text-xs font-normal text-muted-foreground">
+                                / {getPriceLabel(service.price_type).toLowerCase()}
+                              </span>
+                            </div>
+                            {service.duration_hours && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {service.duration_hours}h
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleEdit(service)}
+                            >
+                              <Pencil className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => toggleActive(service)}
+                            >
+                              <EyeOff className="h-4 w-4 mr-1" />
+                              Hide
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(service.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Inactive Services */}
+            {inactiveServices.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                  <EyeOff className="h-4 w-4" />
+                  Hidden Services ({inactiveServices.length})
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {inactiveServices.map((service) => (
+                    <Card 
+                      key={service.id} 
+                      className="opacity-60 hover:opacity-100 transition-opacity"
+                    >
+                      <div className="h-1 bg-muted" />
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <h3 className="font-semibold">{service.name}</h3>
+                              <Badge variant="outline" className="text-xs">
+                                {getCategoryLabel(service.category)}
+                              </Badge>
+                            </div>
+                            <Badge variant="secondary">Hidden</Badge>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <span>TZS {service.price?.toLocaleString()}</span>
+                          </div>
+
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => toggleActive(service)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Show
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(service.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

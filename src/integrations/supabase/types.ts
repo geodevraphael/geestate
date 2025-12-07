@@ -1984,10 +1984,14 @@ export type Database = {
           booking_date: string
           booking_time: string
           client_id: string
+          commission_record_id: string | null
           created_at: string | null
           id: string
           listing_id: string | null
           notes: string | null
+          payment_confirmed_at: string | null
+          payment_confirmed_by: string | null
+          payment_reference: string | null
           provider_id: string
           provider_notes: string | null
           service_id: string
@@ -1999,10 +2003,14 @@ export type Database = {
           booking_date: string
           booking_time: string
           client_id: string
+          commission_record_id?: string | null
           created_at?: string | null
           id?: string
           listing_id?: string | null
           notes?: string | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          payment_reference?: string | null
           provider_id: string
           provider_notes?: string | null
           service_id: string
@@ -2014,10 +2022,14 @@ export type Database = {
           booking_date?: string
           booking_time?: string
           client_id?: string
+          commission_record_id?: string | null
           created_at?: string | null
           id?: string
           listing_id?: string | null
           notes?: string | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          payment_reference?: string | null
           provider_id?: string
           provider_notes?: string | null
           service_id?: string
@@ -2027,10 +2039,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "service_bookings_commission_record_id_fkey"
+            columns: ["commission_record_id"]
+            isOneToOne: false
+            referencedRelation: "geoinsight_income_records"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_bookings_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
