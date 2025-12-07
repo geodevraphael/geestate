@@ -199,9 +199,21 @@ All colors MUST be HSL.
       @apply active:scale-[0.98] transition-transform duration-150;
     }
     
-    /* Mobile safe area for devices with notch */
+    /* Mobile safe area for devices with notch/home indicator */
     .safe-area-bottom {
       padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    }
+    
+    .h-safe-area-bottom {
+      height: env(safe-area-inset-bottom, 0px);
+    }
+    
+    /* Floating nav island shadows */
+    .nav-island {
+      box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 20px 25px -5px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
     
     /* Better mobile spacing */
