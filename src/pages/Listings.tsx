@@ -35,7 +35,15 @@ export default function Listings() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [shareListingData, setShareListingData] = useState<{ id: string; title: string; location: string } | null>(null);
+  const [shareListingData, setShareListingData] = useState<{ 
+    id: string; 
+    title: string; 
+    location: string;
+    price?: number;
+    currency?: string;
+    area?: number;
+    geojson?: any;
+  } | null>(null);
 
   useEffect(() => {
     setCurrentPage(1); // Reset to page 1 when filters change
@@ -200,10 +208,15 @@ export default function Listings() {
   const handleShareListing = (listing: ListingWithDetails, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const polygonData = (listing as any).polygon;
     setShareListingData({
       id: listing.id,
       title: listing.title,
       location: listing.location_label,
+      price: listing.price ?? undefined,
+      currency: listing.currency ?? 'TZS',
+      area: polygonData?.area_m2 ?? undefined,
+      geojson: polygonData?.geojson ?? undefined,
     });
     setShareDialogOpen(true);
   };
@@ -614,6 +627,11 @@ export default function Listings() {
           url={`${window.location.origin}/listings/${shareListingData.id}`}
           title={shareListingData.title}
           description={`${shareListingData.title} - ${shareListingData.location}`}
+          price={shareListingData.price}
+          currency={shareListingData.currency}
+          location={shareListingData.location}
+          area={shareListingData.area}
+          geojson={shareListingData.geojson}
         />
       )}
     </MainLayout>
