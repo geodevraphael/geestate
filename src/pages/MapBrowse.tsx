@@ -54,7 +54,7 @@ export default function MapBrowse() {
   const [districtFilter, setDistrictFilter] = useState<string>('all');
   const [wardFilter, setWardFilter] = useState<string>('all');
   const [streetFilter, setStreetFilter] = useState<string>('all');
-  const [basemap, setBasemap] = useState<'osm' | 'satellite' | 'topo' | 'terrain'>('osm');
+  const [basemap, setBasemap] = useState<'osm' | 'satellite' | 'topo' | 'terrain'>('satellite');
   const [showBasemapSelector, setShowBasemapSelector] = useState(false);
   const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -284,18 +284,19 @@ export default function MapBrowse() {
     if (!mapRef.current) return;
 
     // Default to OSM
-    const osmLayer = new TileLayer({
+    // Default to satellite basemap
+    const satelliteLayer = new TileLayer({
       source: new XYZ({
-        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attributions: '© OpenStreetMap contributors',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attributions: 'Tiles © Esri',
       }),
     });
     
-    baseTileLayerRef.current = osmLayer;
+    baseTileLayerRef.current = satelliteLayer;
 
     const map = new Map({
       target: mapRef.current,
-      layers: [osmLayer],
+      layers: [satelliteLayer],
       view: new View({
         center: fromLonLat([34.888822, -6.369028]),
         zoom: 6,
@@ -879,44 +880,47 @@ export default function MapBrowse() {
             className="absolute z-50" 
             style={{ display: selectedListing ? 'block' : 'none' }}
           >
-            {selectedListing && (
-              <div className="bg-card/95 backdrop-blur-md border-2 border-red-500 rounded-2xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px] animate-scale-in">
+          {selectedListing && (
+              <div className={cn(
+                "bg-card/95 backdrop-blur-md border-2 border-red-500 rounded-2xl shadow-2xl overflow-hidden animate-scale-in",
+                isMobile ? "min-w-[200px] max-w-[220px]" : "min-w-[280px] max-w-[320px]"
+              )}>
                 {/* Header with gradient */}
-                <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-3">
-                  <h3 className="font-bold text-white text-lg line-clamp-2">{selectedListing.title}</h3>
-                  <div className="flex items-center gap-1 text-white/90 text-sm mt-1">
-                    <MapPin className="h-4 w-4" />
-                    {selectedListing.location_label}
+                <div className={cn(
+                  "bg-gradient-to-r from-red-500 to-red-600",
+                  isMobile ? "px-3 py-2" : "px-4 py-3"
+                )}>
+                  <h3 className={cn(
+                    "font-bold text-white line-clamp-1",
+                    isMobile ? "text-sm" : "text-lg"
+                  )}>{selectedListing.title}</h3>
+                  <div className={cn(
+                    "flex items-center gap-1 text-white/90 mt-0.5",
+                    isMobile ? "text-xs" : "text-sm"
+                  )}>
+                    <MapPin className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+                    <span className="line-clamp-1">{selectedListing.location_label}</span>
                   </div>
                 </div>
                 
                 {/* Content */}
-                <div className="p-4 space-y-3">
-                  {/* Verification Badge */}
-                  {selectedListing.verification_status === 'verified' ? (
-                    <Badge className="bg-green-500/10 text-green-600 border border-green-500/30">
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                      Verified Property
-                    </Badge>
-                  ) : selectedListing.verification_status === 'pending' ? (
-                    <Badge className="bg-yellow-500/10 text-yellow-600 border border-yellow-500/30">
-                      Pending Verification
-                    </Badge>
-                  ) : null}
-                  
+                <div className={cn(
+                  "space-y-2",
+                  isMobile ? "p-2" : "p-4 space-y-3"
+                )}>
                   {/* Price */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Price</span>
-                    <span className="text-xl font-bold text-primary">
+                    <span className={cn("text-muted-foreground", isMobile ? "text-xs" : "text-sm")}>Price</span>
+                    <span className={cn("font-bold text-primary", isMobile ? "text-sm" : "text-xl")}>
                       {selectedListing.price 
                         ? `${selectedListing.currency} ${selectedListing.price.toLocaleString()}` 
-                        : 'Contact for Price'}
+                        : 'Contact'}
                     </span>
                   </div>
                   
                   {/* Area if available */}
                   {selectedListing.polygon?.area_m2 && (
-                    <div className="flex items-center justify-between text-sm">
+                    <div className={cn("flex items-center justify-between", isMobile ? "text-xs" : "text-sm")}>
                       <span className="text-muted-foreground">Area</span>
                       <span className="font-medium">
                         {selectedListing.polygon.area_m2 < 10000 
@@ -927,19 +931,14 @@ export default function MapBrowse() {
                   )}
                   
                   {/* Action Button */}
-                  <Link to={`/listings/${selectedListing.id}`} className="block pt-2">
-                    <Button className="w-full bg-red-500 hover:bg-red-600 text-white gap-2">
-                      View Full Details
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <Link to={`/listings/${selectedListing.id}`} className="block pt-1">
+                    <Button size={isMobile ? "sm" : "default"} className="w-full bg-red-500 hover:bg-red-600 text-white gap-1">
+                      View Details
+                      <svg className={isMobile ? "h-3 w-3" : "h-4 w-4"} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Button>
                   </Link>
-                </div>
-                
-                {/* Close hint */}
-                <div className="text-center text-xs text-muted-foreground pb-2">
-                  Click elsewhere to close
                 </div>
               </div>
             )}

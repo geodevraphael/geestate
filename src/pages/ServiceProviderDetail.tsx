@@ -50,6 +50,17 @@ interface Review {
   reviewer: { full_name: string } | null;
 }
 
+interface ProviderService {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  price_type: string;
+  duration_hours: number | null;
+  category: string | null;
+  is_active: boolean;
+}
+
 interface UserListing {
   id: string;
   title: string;
@@ -75,6 +86,7 @@ export default function ServiceProviderDetail() {
   
   const [provider, setProvider] = useState<ServiceProvider | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [providerServices, setProviderServices] = useState<ProviderService[]>([]);
   const [userListings, setUserListings] = useState<UserListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
@@ -89,6 +101,7 @@ export default function ServiceProviderDetail() {
     if (id) {
       fetchProvider();
       fetchReviews();
+      fetchProviderServices();
     }
   }, [id]);
 
@@ -153,6 +166,40 @@ export default function ServiceProviderDetail() {
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
+  };
+
+  const fetchProviderServices = async () => {
+    if (!provider?.user_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('provider_services')
+        .select('*')
+        .eq('provider_id', provider.user_id)
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+
+      if (error) throw error;
+      setProviderServices((data || []) as ProviderService[]);
+    } catch (error) {
+      console.error('Error fetching provider services:', error);
+    }
+  };
+  
+  useEffect(() => {
+    if (provider?.user_id) {
+      fetchProviderServices();
+    }
+  }, [provider?.user_id]);
+
+  const getPriceTypeLabel = (priceType: string) => {
+    const types: Record<string, string> = {
+      fixed: 'Fixed Price',
+      hourly: 'Per Hour',
+      per_sqm: 'Per m²',
+      negotiable: 'Negotiable',
+    };
+    return types[priceType] || priceType;
   };
 
   const handleSubmitRequest = async () => {
@@ -469,16 +516,45 @@ export default function ServiceProviderDetail() {
               </CardContent>
             </Card>
 
-            {/* Services Offered */}
+            {/* Services Offered with Prices */}
             <Card className="border-border/50">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-primary" />
-                  {i18n.language === 'sw' ? 'Huduma Tunazotoa' : 'Services We Offer'}
+                  {i18n.language === 'sw' ? 'Huduma na Bei' : 'Services & Pricing'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {provider.services_offered.length > 0 ? (
+                {providerServices.length > 0 ? (
+                  <div className="space-y-3">
+                    {providerServices.map((service) => (
+                      <div key={service.id} className="p-4 rounded-xl bg-muted border border-border hover:border-primary/30 transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-foreground">{service.name}</h4>
+                            {service.description && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{service.description}</p>
+                            )}
+                            {service.duration_hours && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
+                                <Clock className="h-3 w-3" />
+                                {service.duration_hours} {i18n.language === 'sw' ? 'saa' : 'hours'}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-lg font-bold text-primary">
+                              TZS {service.price.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {getPriceTypeLabel(service.price_type)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : provider.services_offered.length > 0 ? (
                   <div className="grid sm:grid-cols-2 gap-3">
                     {provider.services_offered.map((service, idx) => (
                       <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted border border-border">
