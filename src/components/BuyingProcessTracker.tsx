@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ResponsiveModal';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -495,21 +495,21 @@ export function BuyingProcessTracker({ listingId, sellerId, approvedVisitRequest
                   <p className="text-sm text-muted-foreground">{step.description}</p>
                 </div>
                 {status === 'current' && (
-                  <Dialog open={currentStepDialog === step.id} onOpenChange={(open) => {
-                    if (!open) {
-                      setCurrentStepDialog(null);
-                      setStepFormData({});
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" onClick={() => setCurrentStepDialog(step.id)}>
-                        Mark Complete
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Complete {step.name}</DialogTitle>
-                      </DialogHeader>
+                  <>
+                    <Button size="sm" onClick={() => setCurrentStepDialog(step.id)}>
+                      Mark Complete
+                    </Button>
+                    <ResponsiveModal
+                      open={currentStepDialog === step.id}
+                      onOpenChange={(open) => {
+                        if (!open) {
+                          setCurrentStepDialog(null);
+                          setStepFormData({});
+                        }
+                      }}
+                      title={`Complete ${step.name}`}
+                      description={step.description}
+                    >
                       <form onSubmit={(e) => {
                         e.preventDefault();
                         completeStep(step.id, stepFormData);
@@ -519,7 +519,7 @@ export function BuyingProcessTracker({ listingId, sellerId, approvedVisitRequest
                           <Button
                             type="button"
                             variant="outline"
-                            className="flex-1"
+                            className="flex-1 h-11 touch-feedback"
                             onClick={() => {
                               setCurrentStepDialog(null);
                               setStepFormData({});
@@ -527,13 +527,13 @@ export function BuyingProcessTracker({ listingId, sellerId, approvedVisitRequest
                           >
                             Cancel
                           </Button>
-                          <Button type="submit" className="flex-1">
+                          <Button type="submit" className="flex-1 h-11 touch-feedback">
                             Complete Step
                           </Button>
                         </div>
                       </form>
-                    </DialogContent>
-                  </Dialog>
+                    </ResponsiveModal>
+                  </>
                 )}
                 {status === 'completed' && (
                   <Badge variant="outline" className="text-success border-success">
