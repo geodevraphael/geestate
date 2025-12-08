@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layouts/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -12,11 +12,34 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
-import { CheckCircle2, Circle, ArrowLeft, Calendar, FileCheck, Search, FileText, CreditCard, Key, MapPin, User, X } from 'lucide-react';
+import { 
+  CheckCircle2, Circle, ArrowLeft, Calendar, FileCheck, Search, 
+  FileText, CreditCard, Key, MapPin, User, X, ExternalLink,
+  Scale, Ruler, Building2, Hammer, Pencil
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { VisitRequestDialog } from '@/components/VisitRequestDialog';
 import { PaymentProofDialog } from '@/components/PaymentProofDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Map step IDs to required service provider types
+const STEP_SERVICE_PROVIDERS: Record<number, { type: string; label: string; icon: any }[]> = {
+  0: [{ type: 'surveyor', label: 'Land Surveyor', icon: MapPin }],
+  1: [{ type: 'lawyer', label: 'Lawyer', icon: Scale }],
+  2: [{ type: 'lawyer', label: 'Lawyer', icon: Scale }],
+  3: [{ type: 'lawyer', label: 'Lawyer', icon: Scale }, { type: 'land_valuer', label: 'Land Valuer', icon: Ruler }],
+  4: [],
+  5: [{ type: 'lawyer', label: 'Lawyer', icon: Scale }],
+};
+
+// Service providers for post-completion construction
+const CONSTRUCTION_PROVIDERS = [
+  { type: 'architect', label: 'Architect', icon: Pencil, description: 'Design your new building' },
+  { type: 'construction_company', label: 'Construction Company', icon: Building2, description: 'Build your project' },
+  { type: 'contractor', label: 'Contractor', icon: Hammer, description: 'Hire skilled contractors' },
+  { type: 'surveyor', label: 'Land Surveyor', icon: MapPin, description: 'Survey your land' },
+  { type: 'land_valuer', label: 'Land Valuer', icon: Ruler, description: 'Get property valuation' },
+];
 
 const steps = [
   { id: 0, name: 'Field Visit', icon: Calendar, description: 'Visit and inspect the property' },
@@ -417,6 +440,34 @@ export default function BuyingProcessDetail() {
     return null;
   };
 
+  // Helper function to render service provider links for a step
+  const renderServiceProviderLinks = (stepId: number) => {
+    const providers = STEP_SERVICE_PROVIDERS[stepId];
+    if (!providers || providers.length === 0) return null;
+
+    return (
+      <div className="p-3 border rounded-lg bg-primary/5 border-primary/20 mb-4">
+        <p className="text-sm font-medium text-foreground mb-2">Need professional help?</p>
+        <div className="flex flex-wrap gap-2">
+          {providers.map((provider) => {
+            const Icon = provider.icon;
+            return (
+              <Link 
+                key={provider.type}
+                to={`/service-providers?type=${provider.type}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-background border rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
+              >
+                <Icon className="h-3 w-3" />
+                {provider.label}
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderStepForm = (stepId: number) => {
     // For Field Visit (step 0) - integrate with visit requests
     if (stepId === 0) {
@@ -424,6 +475,8 @@ export default function BuyingProcessDetail() {
       
       return (
         <div className="space-y-4">
+          {renderServiceProviderLinks(stepId)}
+          
           {approvedVisit ? (
             <div className="p-4 border rounded-lg bg-success/5 border-success">
               <p className="text-sm font-medium text-success mb-2">✓ Visit Approved</p>
@@ -461,6 +514,8 @@ export default function BuyingProcessDetail() {
     if (stepId === 1) {
       return (
         <div className="space-y-4">
+          {renderServiceProviderLinks(stepId)}
+          
           <div>
             <Label>Title Deed Number*</Label>
             <Input
@@ -505,6 +560,8 @@ export default function BuyingProcessDetail() {
     if (stepId === 2) {
       return (
         <div className="space-y-4">
+          {renderServiceProviderLinks(stepId)}
+          
           <div>
             <Label>Search Date*</Label>
             <Input
@@ -540,6 +597,8 @@ export default function BuyingProcessDetail() {
     if (stepId === 3) {
       return (
         <div className="space-y-4">
+          {renderServiceProviderLinks(stepId)}
+          
           <div>
             <Label>Lawyer Name*</Label>
             <Input
@@ -646,6 +705,8 @@ export default function BuyingProcessDetail() {
     if (stepId === 5) {
       return (
         <div className="space-y-4">
+          {renderServiceProviderLinks(stepId)}
+          
           <div>
             <Label>Transfer Date*</Label>
             <Input
@@ -851,6 +912,44 @@ export default function BuyingProcessDetail() {
             );
           })}
         </div>
+
+        {/* Post-Completion: Construction Services Section */}
+        {processData.process_status === 'completed' && (
+          <Card className="mt-6 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Building2 className="h-5 w-5 text-primary" />
+                Ready to Build?
+              </CardTitle>
+              <CardDescription>
+                Congratulations on your property purchase! Connect with professional service providers to start your construction project.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {CONSTRUCTION_PROVIDERS.map((provider) => {
+                  const Icon = provider.icon;
+                  return (
+                    <Link
+                      key={provider.type}
+                      to={`/service-providers?type=${provider.type}`}
+                      className="flex items-start gap-3 p-4 rounded-xl border bg-background hover:border-primary hover:shadow-md transition-all group"
+                    >
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">{provider.label}</h4>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{provider.description}</p>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary flex-shrink-0" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Step Completion Dialog */}
         <ResponsiveModal
