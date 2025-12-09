@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, SlidersHorizontal, List, Navigation2, Layers, X } from 'lucide-react';
+import { MapPin, SlidersHorizontal, List, Navigation2, Layers, X, Maximize2, CheckCircle2, ExternalLink, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
@@ -38,13 +38,13 @@ interface ListingWithPolygon extends ListingWithDetails {
   street_village_id?: string | null;
 }
 
-// Polygon color schemes
+// Enhanced polygon color schemes with better visibility
 const POLYGON_COLORS = {
-  verified: { fill: '#22c55e', stroke: '#16a34a' },
-  pending: { fill: '#eab308', stroke: '#ca8a04' },
-  unverified: { fill: '#64748b', stroke: '#475569' },
-  selected: { fill: '#ef4444', stroke: '#dc2626' },
-  hovered: { fill: '#3b82f6', stroke: '#2563eb' },
+  verified: { fill: '#10b981', stroke: '#059669', glow: '#10b98140' },
+  pending: { fill: '#f59e0b', stroke: '#d97706', glow: '#f59e0b40' },
+  unverified: { fill: '#6b7280', stroke: '#4b5563', glow: '#6b728040' },
+  selected: { fill: '#f97316', stroke: '#ea580c', glow: '#f9731660' },
+  hovered: { fill: '#3b82f6', stroke: '#2563eb', glow: '#3b82f640' },
 };
 
 export default function MapBrowse() {
@@ -551,13 +551,20 @@ export default function MapBrowse() {
 
   return (
     <MainLayout>
-      <div className="flex h-[calc(100vh-64px)] relative">
+      <div className="flex h-[calc(100vh-64px)] relative overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <div className="w-80 border-r bg-background flex flex-col z-10">
-            <div className="p-4 border-b">
-              <h2 className="font-semibold text-lg">Map Browser</h2>
-              <p className="text-sm text-muted-foreground">Find properties on the map</p>
+          <div className="w-80 border-r bg-background/95 backdrop-blur-sm flex flex-col z-10 shadow-lg">
+            <div className="p-4 border-b bg-gradient-to-r from-accent/5 to-transparent">
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg">Map Browser</h2>
+                  <p className="text-xs text-muted-foreground">Find your perfect property</p>
+                </div>
+              </div>
             </div>
             
             <ScrollArea className="flex-1 p-4">
@@ -597,7 +604,7 @@ export default function MapBrowse() {
             </ScrollArea>
 
             {/* Property List */}
-            <div className="border-t h-[40%]">
+            <div className="border-t h-[40%] bg-muted/20">
               <PropertyList
                 listings={sortedListings}
                 viewMode={viewMode}
@@ -608,6 +615,7 @@ export default function MapBrowse() {
                 onHoverListing={setHoveredListingId}
                 onSelectListing={zoomToListing}
                 userLocation={userLocation}
+                loading={loading}
               />
             </div>
           </div>
@@ -619,18 +627,25 @@ export default function MapBrowse() {
             {/* Filters Sheet */}
             <Sheet open={showFilters} onOpenChange={setShowFilters}>
               <SheetTrigger asChild>
-                <Button size="icon" className="fixed top-20 left-4 z-20 rounded-full shadow-xl">
+                <Button 
+                  size="icon" 
+                  className="fixed top-20 left-4 z-20 rounded-full shadow-xl h-12 w-12 bg-background border-2 hover:bg-muted"
+                  variant="outline"
+                >
                   <SlidersHorizontal className="h-5 w-5" />
                   {activeFiltersCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center font-bold animate-scale-in">
                       {activeFiltersCount}
                     </span>
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-80 p-0">
-                <SheetHeader className="p-4 border-b">
-                  <SheetTitle>Filters</SheetTitle>
+              <SheetContent side="left" className="w-[85vw] max-w-sm p-0">
+                <SheetHeader className="p-4 border-b bg-gradient-to-r from-accent/5 to-transparent">
+                  <SheetTitle className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-5 w-5 text-accent" />
+                    Filters
+                  </SheetTitle>
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] p-4">
                   <MapFilters
@@ -673,14 +688,20 @@ export default function MapBrowse() {
             {/* Properties Drawer */}
             <Drawer open={showPropertyList} onOpenChange={setShowPropertyList}>
               <DrawerTrigger asChild>
-                <Button size="lg" className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 rounded-full shadow-xl">
-                  <List className="h-5 w-5 mr-2" />
+                <Button 
+                  size="lg" 
+                  className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 rounded-full shadow-xl gap-2 px-6 bg-foreground text-background hover:bg-foreground/90"
+                >
+                  <Sparkles className="h-4 w-4" />
                   {sortedListings.length} Properties
                 </Button>
               </DrawerTrigger>
               <DrawerContent className="max-h-[85vh]">
-                <DrawerHeader className="border-b">
-                  <DrawerTitle>Properties</DrawerTitle>
+                <DrawerHeader className="border-b bg-gradient-to-r from-accent/5 to-transparent">
+                  <DrawerTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-accent" />
+                    Available Properties
+                  </DrawerTitle>
                 </DrawerHeader>
                 <PropertyList
                   listings={sortedListings}
@@ -692,13 +713,19 @@ export default function MapBrowse() {
                   onHoverListing={setHoveredListingId}
                   onSelectListing={(l) => { zoomToListing(l); setShowPropertyList(false); }}
                   userLocation={userLocation}
+                  loading={loading}
                 />
               </DrawerContent>
             </Drawer>
 
             {/* Location Button */}
             {!locationPermissionAsked && (
-              <Button size="icon" onClick={requestUserLocation} className="fixed top-20 right-4 z-20 rounded-full shadow-xl">
+              <Button 
+                size="icon" 
+                onClick={requestUserLocation} 
+                className="fixed top-20 right-4 z-20 rounded-full shadow-xl h-12 w-12 bg-background border-2 hover:bg-muted"
+                variant="outline"
+              >
                 <Navigation2 className="h-5 w-5" />
               </Button>
             )}
@@ -706,61 +733,185 @@ export default function MapBrowse() {
             {/* Basemap Switcher */}
             <Popover open={showBasemapSelector} onOpenChange={setShowBasemapSelector}>
               <PopoverTrigger asChild>
-                <Button size="icon" variant="secondary" className="fixed top-32 right-4 z-20 rounded-full shadow-xl">
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  className="fixed top-36 right-4 z-20 rounded-full shadow-xl h-12 w-12 bg-background border-2 hover:bg-muted"
+                >
                   <Layers className="h-5 w-5" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="left" className="w-40 p-2">
-                {(['osm', 'satellite', 'topo', 'terrain'] as const).map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => { setBasemap(opt); setShowBasemapSelector(false); }}
-                    className={cn("w-full text-left px-2 py-1.5 rounded-md text-sm", basemap === opt ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-                  >
-                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                  </button>
-                ))}
+              <PopoverContent side="left" className="w-44 p-2" align="start">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground px-2 pb-1">Map Style</p>
+                  {([
+                    { key: 'satellite', label: '🛰️ Satellite', desc: 'Aerial imagery' },
+                    { key: 'osm', label: '🗺️ Street', desc: 'OpenStreetMap' },
+                    { key: 'topo', label: '⛰️ Topo', desc: 'Terrain details' },
+                    { key: 'terrain', label: '🏔️ Terrain', desc: 'Natural features' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.key}
+                      onClick={() => { setBasemap(opt.key); setShowBasemapSelector(false); }}
+                      className={cn(
+                        "w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200",
+                        basemap === opt.key 
+                          ? "bg-accent text-accent-foreground" 
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <div className="font-medium">{opt.label}</div>
+                      <div className="text-xs opacity-70">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
               </PopoverContent>
             </Popover>
           </>
         )}
 
         {/* Map Container */}
-        <div className={cn("h-full w-full", !isMobile && "pl-0")}>
+        <div className={cn("h-full w-full relative", !isMobile && "pl-0")}>
           <div ref={mapRef} className="w-full h-full" />
 
-          {/* Popup */}
+          {/* Desktop Basemap Control */}
+          {!isMobile && (
+            <div className="absolute top-4 right-4 z-10">
+              <Popover open={showBasemapSelector} onOpenChange={setShowBasemapSelector}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    className="rounded-xl shadow-xl h-10 w-10 bg-background/90 backdrop-blur-sm border"
+                  >
+                    <Layers className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="left" className="w-44 p-2" align="start">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground px-2 pb-1">Map Style</p>
+                    {([
+                      { key: 'satellite', label: '🛰️ Satellite' },
+                      { key: 'osm', label: '🗺️ Street' },
+                      { key: 'topo', label: '⛰️ Topo' },
+                      { key: 'terrain', label: '🏔️ Terrain' },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.key}
+                        onClick={() => { setBasemap(opt.key); setShowBasemapSelector(false); }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded-lg text-sm transition-all",
+                          basemap === opt.key 
+                            ? "bg-accent text-accent-foreground" 
+                            : "hover:bg-muted"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
+          {/* Enhanced Popup */}
           <div ref={popupRef} className="absolute z-50" style={{ display: selectedListing ? 'block' : 'none' }}>
             {selectedListing && (
-              <div className={cn("bg-card/95 backdrop-blur-md border-2 rounded-2xl shadow-2xl overflow-hidden", isMobile ? "min-w-[200px] max-w-[220px]" : "min-w-[280px] max-w-[320px]")}
-                style={{ borderColor: POLYGON_COLORS.selected.stroke }}>
-                <div className={cn("bg-gradient-to-r from-red-500 to-red-600", isMobile ? "px-3 py-2" : "px-4 py-3")}>
-                  <div className="flex items-start justify-between">
-                    <h3 className={cn("font-bold text-white line-clamp-1 flex-1", isMobile ? "text-sm" : "text-lg")}>{selectedListing.title}</h3>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 text-white/80 hover:text-white hover:bg-white/20 -mr-1" onClick={() => { setSelectedListing(null); overlayRef.current?.setPosition(undefined); }}>
+              <div 
+                className={cn(
+                  "bg-card/95 backdrop-blur-md border-2 rounded-2xl shadow-2xl overflow-hidden animate-scale-in",
+                  isMobile ? "min-w-[220px] max-w-[260px]" : "min-w-[300px] max-w-[340px]"
+                )}
+                style={{ 
+                  borderColor: POLYGON_COLORS.selected.stroke,
+                  boxShadow: `0 20px 50px -12px ${POLYGON_COLORS.selected.glow}`
+                }}
+              >
+                {/* Header with gradient */}
+                <div 
+                  className="px-4 py-3"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${POLYGON_COLORS.selected.fill}, ${POLYGON_COLORS.selected.stroke})`
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-white line-clamp-1 text-base">
+                        {selectedListing.title}
+                      </h3>
+                      <div className="flex items-center gap-1 text-white/90 text-xs mt-0.5">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="line-clamp-1">{selectedListing.location_label}</span>
+                      </div>
+                    </div>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20 shrink-0 rounded-full" 
+                      onClick={() => { setSelectedListing(null); overlayRef.current?.setPosition(undefined); }}
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className={cn("flex items-center gap-1 text-white/90", isMobile ? "text-xs" : "text-sm")}>
-                    <MapPin className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
-                    <span className="line-clamp-1">{selectedListing.location_label}</span>
+                  
+                  {/* Badges */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge className={cn(
+                      "text-[10px] px-2 py-0 border-0",
+                      selectedListing.listing_type === 'sale' 
+                        ? "bg-white/20 text-white" 
+                        : "bg-white/20 text-white"
+                    )}>
+                      {selectedListing.listing_type === 'sale' ? 'For Sale' : 'For Rent'}
+                    </Badge>
+                    {selectedListing.verification_status === 'verified' && (
+                      <Badge className="bg-emerald-500/80 text-white text-[10px] px-2 py-0 border-0 gap-0.5">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Verified
+                      </Badge>
+                    )}
                   </div>
                 </div>
-                <div className={cn("space-y-2", isMobile ? "p-2" : "p-4 space-y-3")}>
+                
+                {/* Content */}
+                <div className="p-4 space-y-3">
+                  {/* Price */}
                   <div className="flex items-center justify-between">
-                    <span className={cn("text-muted-foreground", isMobile ? "text-xs" : "text-sm")}>Price</span>
-                    <span className={cn("font-bold text-primary", isMobile ? "text-sm" : "text-xl")}>
-                      {selectedListing.price ? `${selectedListing.currency} ${selectedListing.price.toLocaleString()}` : 'Contact'}
+                    <span className="text-xs text-muted-foreground">Price</span>
+                    <span className="font-bold text-lg text-foreground">
+                      {selectedListing.price 
+                        ? `${selectedListing.currency || 'TZS'} ${selectedListing.price.toLocaleString()}`
+                        : 'Contact for price'}
                     </span>
                   </div>
+                  
+                  {/* Area */}
                   {selectedListing.polygon?.area_m2 && (
-                    <div className={cn("flex items-center justify-between", isMobile ? "text-xs" : "text-sm")}>
-                      <span className="text-muted-foreground">Area</span>
-                      <span className="font-medium">{selectedListing.polygon.area_m2 < 10000 ? `${selectedListing.polygon.area_m2.toLocaleString()} m²` : `${(selectedListing.polygon.area_m2 / 10000).toFixed(2)} ha`}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Maximize2 className="h-3 w-3" />
+                        Land Area
+                      </span>
+                      <span className="font-medium text-sm">
+                        {selectedListing.polygon.area_m2 < 10000 
+                          ? `${selectedListing.polygon.area_m2.toLocaleString()} m²` 
+                          : `${(selectedListing.polygon.area_m2 / 10000).toFixed(2)} hectares`}
+                      </span>
                     </div>
                   )}
+                  
+                  {/* CTA Button */}
                   <Link to={`/listings/${selectedListing.id}`} className="block pt-1">
-                    <Button size={isMobile ? "sm" : "default"} className="w-full bg-red-500 hover:bg-red-600">View Details</Button>
+                    <Button 
+                      className="w-full gap-2 rounded-xl font-semibold"
+                      style={{ 
+                        backgroundColor: POLYGON_COLORS.selected.fill,
+                      }}
+                    >
+                      View Full Details
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
                   </Link>
                 </div>
               </div>
@@ -770,13 +921,34 @@ export default function MapBrowse() {
           {/* Empty state */}
           {sortedListings.length === 0 && !loading && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <Card className="pointer-events-auto shadow-xl">
-                <CardContent className="p-6 text-center">
-                  <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-2" />
-                  <p className="text-muted-foreground">No properties match your filters</p>
-                  <Button variant="link" onClick={resetFilters}>Reset filters</Button>
+              <Card className="pointer-events-auto shadow-2xl border-2 animate-scale-in">
+                <CardContent className="p-8 text-center">
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <MapPin className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-1">No Properties Found</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Try adjusting your filters to see more results
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={resetFilters}
+                    className="rounded-full"
+                  >
+                    Reset All Filters
+                  </Button>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* Loading overlay */}
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-12 w-12 rounded-full border-4 border-accent border-t-transparent animate-spin" />
+                <p className="text-sm font-medium">Loading properties...</p>
+              </div>
             </div>
           )}
         </div>
