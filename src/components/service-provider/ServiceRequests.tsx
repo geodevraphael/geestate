@@ -36,6 +36,8 @@ interface ServiceRequest {
   quoted_currency: string | null;
   estimated_completion_date: string | null;
   created_at: string;
+  service_price: number | null;
+  selected_service_id: string | null;
   listings?: {
     title: string;
     location_label: string;
@@ -44,6 +46,12 @@ interface ServiceRequest {
     full_name: string;
     email: string;
     phone: string | null;
+  } | null;
+  provider_services?: {
+    name: string;
+    price: number;
+    description: string | null;
+    category: string | null;
   } | null;
 }
 
@@ -73,12 +81,13 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['provider-service-requests', providerId],
     queryFn: async () => {
-      // Query service requests where service_provider_id matches the provider profile id
+      // Query service requests with related data
       const { data, error } = await supabase
         .from('service_requests')
         .select(`
           *,
-          listings (title, location_label)
+          listings (title, location_label),
+          provider_services:selected_service_id (name, price, description, category)
         `)
         .eq('service_provider_id', providerId)
         .order('created_at', { ascending: false });
@@ -251,9 +260,9 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-medium capitalize">{request.service_type.replace(/_/g, ' ')}</h4>
-                        <p className="text-sm text-muted-foreground capitalize">
-                          {request.service_category.replace(/_/g, ' ')}
+                        <h4 className="font-medium">{request.provider_services?.name || request.service_type.replace(/_/g, ' ')}</h4>
+                        <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                          {request.provider_services?.category || request.service_category.replace(/_/g, ' ')}
                         </p>
                       </div>
                       <Badge variant="outline" className={config.color}>
@@ -261,13 +270,30 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                       </Badge>
                     </div>
 
-                    {request.requester && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <User className="h-4 w-4" />
-                        <span>{request.requester.full_name}</span>
+                    {/* Service Price - Always show if available */}
+                    {(request.service_price || request.provider_services?.price) && (
+                      <div className="p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Service Price</span>
+                          <span className="font-semibold text-emerald-600">
+                            TZS {(request.service_price || request.provider_services?.price || 0).toLocaleString()}
+                          </span>
+                        </div>
                       </div>
                     )}
 
+                    {/* Requester Info */}
+                    {request.requester && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex flex-col">
+                          <span className="font-medium">{request.requester.full_name}</span>
+                          <span className="text-xs text-muted-foreground">{request.requester.email}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Listing Info */}
                     {request.listings && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="h-4 w-4" />
@@ -275,10 +301,19 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                       </div>
                     )}
 
+                    {/* Request Notes */}
+                    {request.request_notes && (
+                      <div className="flex items-start gap-2 text-sm p-2 bg-muted/50 rounded-md">
+                        <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <span className="text-muted-foreground line-clamp-2">{request.request_notes}</span>
+                      </div>
+                    )}
+
+                    {/* Quoted Price if provider already quoted */}
                     {request.quoted_price && (
                       <div className="flex items-center gap-2 text-sm font-medium text-purple-600">
                         <DollarSign className="h-4 w-4" />
-                        <span>{request.quoted_currency || 'TZS'} {request.quoted_price.toLocaleString()}</span>
+                        <span>Your Quote: {request.quoted_currency || 'TZS'} {request.quoted_price.toLocaleString()}</span>
                       </div>
                     )}
 
@@ -288,7 +323,8 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                         <span>{format(new Date(request.created_at), 'MMM d, yyyy')}</span>
                       </div>
                       <Button variant="ghost" size="sm" className="gap-1">
-                        Respond <ArrowRight className="h-4 w-4" />
+                        {request.status === 'pending' || request.status === 'assigned' ? 'Respond' : 'View'} 
+                        <ArrowRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
