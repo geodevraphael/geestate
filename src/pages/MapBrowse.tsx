@@ -989,27 +989,21 @@ export default function MapBrowse() {
             )}
           </div>
 
-          {/* Empty state */}
-          {sortedListings.length === 0 && !loading && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <Card className="pointer-events-auto shadow-2xl border-2 animate-scale-in">
-                <CardContent className="p-8 text-center">
-                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                    <MapPin className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-1">No Properties Found</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    Try adjusting your filters to see more results
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={resetFilters}
-                    className="rounded-full"
-                  >
-                    Reset All Filters
-                  </Button>
-                </CardContent>
-              </Card>
+          {/* Empty state - only show if filters are active and no results */}
+          {sortedListings.length === 0 && !loading && activeFiltersCount > 0 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <div className="pointer-events-auto bg-card/95 backdrop-blur-md border border-border rounded-full px-4 py-2 shadow-lg flex items-center gap-3 animate-fade-in">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">No properties in this area</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={resetFilters}
+                  className="h-7 text-xs text-primary hover:text-primary"
+                >
+                  Show all
+                </Button>
+              </div>
             </div>
           )}
 
