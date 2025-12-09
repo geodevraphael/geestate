@@ -103,20 +103,32 @@ export function BookingRequests({ providerId, onUpdate }: BookingRequestsProps) 
 
   const fetchBookings = async () => {
     try {
-      const { data, error } = await (supabase
-        .from('service_bookings' as any)
+      const { data, error } = await supabase
+        .from('service_bookings')
         .select(`
           *,
           provider_services (name, price, price_type),
-          profiles!service_bookings_client_id_fkey (full_name, email, phone),
           listings (id, title, location_label)
         `)
         .eq('provider_id', user?.id)
         .order('booking_date', { ascending: true })
-        .order('booking_time', { ascending: true }) as any);
+        .order('booking_time', { ascending: true });
 
       if (error) throw error;
-      setBookings((data as Booking[]) || []);
+      
+      // Fetch client details separately
+      const bookingsWithClients = await Promise.all(
+        (data || []).map(async (booking: any) => {
+          const { data: client } = await supabase
+            .from('profiles')
+            .select('full_name, email, phone')
+            .eq('id', booking.client_id)
+            .single();
+          return { ...booking, profiles: client };
+        })
+      );
+      
+      setBookings(bookingsWithClients as Booking[]);
     } catch (error) {
       console.error('Error fetching bookings:', error);
     } finally {
