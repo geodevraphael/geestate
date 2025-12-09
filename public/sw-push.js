@@ -1,8 +1,9 @@
-// Push notification service worker additions
-// This file is loaded by the main service worker
+// Push notification service worker for GeoEstate Tanzania
+// Compatible with iOS 16.4+, Android, and Desktop browsers
 
+// Handle push events
 self.addEventListener('push', (event) => {
-  console.log('Push event received:', event);
+  console.log('[SW Push] Push event received:', event);
 
   let data = {
     title: 'GeoEstate Tanzania',
@@ -14,9 +15,10 @@ self.addEventListener('push', (event) => {
 
   if (event.data) {
     try {
-      data = { ...data, ...event.data.json() };
+      const payload = event.data.json();
+      data = { ...data, ...payload };
     } catch (e) {
-      data.body = event.data.text();
+      data.body = event.data.text() || data.body;
     }
   }
 
@@ -26,19 +28,23 @@ self.addEventListener('push', (event) => {
     badge: data.badge,
     vibrate: [200, 100, 200],
     data: {
-      url: data.url || '/'
+      url: data.url || '/',
+      dateOfArrival: Date.now()
     },
     actions: [
       {
         action: 'open',
-        title: 'View'
+        title: 'View',
+        icon: '/icon-192x192.png'
       },
       {
         action: 'dismiss',
         title: 'Dismiss'
       }
     ],
-    requireInteraction: true
+    requireInteraction: true,
+    tag: data.tag || 'geoestate-notification',
+    renotify: true
   };
 
   event.waitUntil(
@@ -46,8 +52,9 @@ self.addEventListener('push', (event) => {
   );
 });
 
+// Handle notification click
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification click:', event);
+  console.log('[SW Push] Notification click:', event);
 
   event.notification.close();
 
@@ -58,12 +65,14 @@ self.addEventListener('notificationclick', (event) => {
   const url = event.notification.data?.url || '/';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    clients.matchAll({ 
+      type: 'window', 
+      includeUncontrolled: true 
+    }).then((clientList) => {
       // Check if there's already a window/tab open
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(url);
-          return client.focus();
+          return client.navigate(url).then(() => client.focus());
         }
       }
       // Open new window if none exists
@@ -74,6 +83,11 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+// Handle notification close
+self.addEventListener('notificationclose', (event) => {
+  console.log('[SW Push] Notification closed:', event.notification.tag);
+});
+
 // Handle background sync for offline notifications
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-notifications') {
@@ -82,6 +96,19 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncNotifications() {
-  // Sync pending notifications when back online
-  console.log('Syncing notifications...');
+  console.log('[SW Push] Syncing notifications...');
+  // Implement sync logic if needed
 }
+
+// Handle messages from the main app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    self.registration.showNotification(title, {
+      icon: '/icon-192x192.png',
+      badge: '/icon-192x192.png',
+      vibrate: [200, 100, 200],
+      ...options
+    });
+  }
+});
