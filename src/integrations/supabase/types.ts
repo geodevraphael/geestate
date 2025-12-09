@@ -2341,10 +2341,13 @@ export type Database = {
       service_requests: {
         Row: {
           actual_completion_date: string | null
+          client_payment_reference: string | null
           created_at: string
           estimated_completion_date: string | null
           id: string
           listing_id: string | null
+          payment_amount: number | null
+          payment_confirmed_at: string | null
           provider_notes: string | null
           quoted_currency: string | null
           quoted_price: number | null
@@ -2361,10 +2364,13 @@ export type Database = {
         }
         Insert: {
           actual_completion_date?: string | null
+          client_payment_reference?: string | null
           created_at?: string
           estimated_completion_date?: string | null
           id?: string
           listing_id?: string | null
+          payment_amount?: number | null
+          payment_confirmed_at?: string | null
           provider_notes?: string | null
           quoted_currency?: string | null
           quoted_price?: number | null
@@ -2381,10 +2387,13 @@ export type Database = {
         }
         Update: {
           actual_completion_date?: string | null
+          client_payment_reference?: string | null
           created_at?: string
           estimated_completion_date?: string | null
           id?: string
           listing_id?: string | null
+          payment_amount?: number | null
+          payment_confirmed_at?: string | null
           provider_notes?: string | null
           quoted_currency?: string | null
           quoted_price?: number | null

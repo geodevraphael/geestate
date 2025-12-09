@@ -39,6 +39,9 @@ interface ServiceRequest {
   report_file_url: string | null;
   created_at: string;
   updated_at: string;
+  service_price: number | null;
+  payment_confirmed_at: string | null;
+  payment_amount: number | null;
   listings?: {
     title: string;
     location_label: string;
@@ -53,28 +56,34 @@ interface ServiceRequest {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType; progress: number }> = {
   pending: { 
-    label: 'Pending Review', 
+    label: 'Awaiting Response', 
     color: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
     icon: Clock,
-    progress: 15
+    progress: 33
   },
   assigned: { 
-    label: 'Provider Assigned', 
+    label: 'Awaiting Response', 
+    color: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    icon: Clock,
+    progress: 33
+  },
+  accepted: { 
+    label: 'Accepted - Pay Provider', 
     color: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-    icon: User,
-    progress: 30
+    icon: DollarSign,
+    progress: 66
   },
   quoted: { 
-    label: 'Quote Received', 
-    color: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+    label: 'Accepted - Pay Provider', 
+    color: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
     icon: DollarSign,
-    progress: 45
+    progress: 66
   },
   in_progress: { 
     label: 'In Progress', 
     color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
     icon: FileSearch,
-    progress: 65
+    progress: 66
   },
   completed: { 
     label: 'Completed', 
@@ -83,7 +92,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
     progress: 100
   },
   cancelled: { 
-    label: 'Cancelled', 
+    label: 'Declined', 
     color: 'bg-red-500/10 text-red-600 border-red-500/20',
     icon: XCircle,
     progress: 0
@@ -91,11 +100,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 const STEPS = [
-  { key: 'pending', label: 'Request Submitted' },
-  { key: 'assigned', label: 'Provider Assigned' },
-  { key: 'quoted', label: 'Quote Received' },
-  { key: 'in_progress', label: 'Work In Progress' },
-  { key: 'completed', label: 'Completed' },
+  { key: 'pending', label: 'Request Sent' },
+  { key: 'accepted', label: 'Provider Accepted' },
+  { key: 'completed', label: 'Service Completed' },
 ];
 
 export default function MyServiceRequests() {
@@ -120,14 +127,14 @@ export default function MyServiceRequests() {
 
       if (error) throw error;
 
-      // Fetch provider details for each request
+      // Fetch provider details for each request (now using profile id directly)
       const requestsWithProviders = await Promise.all(
         (data || []).map(async (request) => {
           if (request.service_provider_id) {
             const { data: provider } = await supabase
               .from('service_provider_profiles')
               .select('company_name, contact_phone, contact_email, logo_url')
-              .eq('user_id', request.service_provider_id)
+              .eq('id', request.service_provider_id)
               .single();
             return { ...request, service_provider_profiles: provider };
           }
@@ -142,21 +149,24 @@ export default function MyServiceRequests() {
 
   const filteredRequests = requests.filter(r => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'active') return ['pending', 'assigned', 'quoted', 'in_progress'].includes(r.status);
+    if (activeTab === 'active') return ['pending', 'assigned', 'accepted', 'quoted', 'in_progress'].includes(r.status);
     if (activeTab === 'completed') return r.status === 'completed';
     return true;
   });
 
   const getStepIndex = (status: string) => {
-    const index = STEPS.findIndex(s => s.key === status);
-    return index >= 0 ? index : 0;
+    // Map all statuses to simplified 3-step flow
+    if (['pending', 'assigned'].includes(status)) return 0;
+    if (['accepted', 'quoted', 'in_progress'].includes(status)) return 1;
+    if (status === 'completed') return 2;
+    return 0;
   };
 
   const stats = {
     total: requests.length,
-    active: requests.filter(r => ['pending', 'assigned', 'quoted', 'in_progress'].includes(r.status)).length,
+    active: requests.filter(r => ['pending', 'assigned', 'accepted', 'quoted', 'in_progress'].includes(r.status)).length,
     completed: requests.filter(r => r.status === 'completed').length,
-    pendingQuote: requests.filter(r => r.status === 'quoted').length,
+    pendingPayment: requests.filter(r => ['accepted', 'quoted', 'in_progress'].includes(r.status)).length,
   };
 
   return (
@@ -218,8 +228,8 @@ export default function MyServiceRequests() {
                   <DollarSign className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.pendingQuote}</p>
-                  <p className="text-xs text-muted-foreground">Awaiting Response</p>
+                  <p className="text-2xl font-bold">{stats.pendingPayment}</p>
+                  <p className="text-xs text-muted-foreground">Awaiting Payment</p>
                 </div>
               </div>
             </CardContent>
@@ -335,13 +345,21 @@ export default function MyServiceRequests() {
                           </div>
                         )}
 
-                        {/* Quote Info */}
-                        {request.quoted_price && (
-                          <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/10">
-                            <span className="text-sm text-purple-700">Quoted Price</span>
-                            <span className="font-bold text-purple-700">
-                              {request.quoted_currency || 'TZS'} {request.quoted_price.toLocaleString()}
+                        {/* Service Price Info */}
+                        {(request.service_price || request.quoted_price) && (
+                          <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/10">
+                            <span className="text-sm text-emerald-700">Service Price</span>
+                            <span className="font-bold text-emerald-700">
+                              TZS {(request.service_price || request.quoted_price || 0).toLocaleString()}
                             </span>
+                          </div>
+                        )}
+
+                        {/* Payment Status for Accepted */}
+                        {['accepted', 'quoted', 'in_progress'].includes(request.status) && (
+                          <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                            <span className="text-sm text-blue-700">Action Required</span>
+                            <span className="text-xs font-medium text-blue-600">Pay Provider Directly</span>
                           </div>
                         )}
 
@@ -452,27 +470,38 @@ export default function MyServiceRequests() {
                   </div>
                 )}
 
-                {/* Quote Details */}
-                {selectedRequest.quoted_price && (
-                  <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                    <h4 className="font-medium mb-2 flex items-center gap-2 text-purple-700">
+                {/* Service Price & Payment Instructions */}
+                {(selectedRequest.service_price || selectedRequest.quoted_price) && (
+                  <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <h4 className="font-medium mb-2 flex items-center gap-2 text-emerald-700">
                       <DollarSign className="h-4 w-4" />
-                      Quote Details
+                      Service Price
                     </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Quoted Price</p>
-                        <p className="text-lg font-bold text-purple-700">
-                          {selectedRequest.quoted_currency || 'TZS'} {selectedRequest.quoted_price.toLocaleString()}
+                    <p className="text-2xl font-bold text-emerald-700">
+                      TZS {(selectedRequest.service_price || selectedRequest.quoted_price || 0).toLocaleString()}
+                    </p>
+                    
+                    {['accepted', 'quoted', 'in_progress'].includes(selectedRequest.status) && (
+                      <div className="mt-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/20">
+                        <p className="text-sm font-medium text-blue-700">Next Step: Pay the Provider</p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Contact the provider using the details above and pay them directly. 
+                          Once they confirm payment, your service will be marked as completed.
                         </p>
                       </div>
-                      {selectedRequest.estimated_completion_date && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Est. Completion</p>
-                          <p className="font-medium">{format(new Date(selectedRequest.estimated_completion_date), 'PPP')}</p>
-                        </div>
-                      )}
-                    </div>
+                    )}
+
+                    {selectedRequest.payment_confirmed_at && (
+                      <div className="mt-3 p-3 rounded-md bg-emerald-500/20 border border-emerald-500/30">
+                        <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Payment Confirmed
+                        </p>
+                        <p className="text-xs text-emerald-600 mt-1">
+                          TZS {selectedRequest.payment_amount?.toLocaleString()} received
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
