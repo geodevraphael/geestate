@@ -195,6 +195,13 @@ export default function MapBrowse() {
               
               if (wardParam) {
                 setWardFilter(wardParam);
+                // Zoom to the selected ward immediately after setting filter and wards
+                const targetWard = wardData.find(w => w.id === wardParam);
+                if (targetWard?.geometry && mapInstance.current) {
+                  setTimeout(() => {
+                    renderBoundaries([targetWard], 'ward');
+                  }, 500);
+                }
               }
             }
           }
@@ -531,14 +538,14 @@ export default function MapBrowse() {
     return () => map.setTarget(undefined);
   }, []);
 
-  // Basemap switcher
+  // Basemap switcher - using label-free versions
   useEffect(() => {
     if (!baseTileLayerRef.current) return;
     const sources: Record<string, string> = {
       satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      topo: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      topo: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',
       terrain: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
-      osm: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      osm: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     };
     baseTileLayerRef.current.setSource(new XYZ({ url: sources[basemap] }));
   }, [basemap]);
