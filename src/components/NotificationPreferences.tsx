@@ -72,16 +72,18 @@ export function NotificationPreferences() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('notification_preferences')
+          .select('*')
           .eq('id', user.id)
           .single();
 
         if (error) throw error;
         
-        if (data?.notification_preferences) {
+        // Cast to access notification_preferences (newly added column)
+        const prefs = (data as Record<string, unknown>)?.notification_preferences;
+        if (prefs && typeof prefs === 'object') {
           setPreferences({
             ...defaultPreferences,
-            ...(data.notification_preferences as Partial<NotificationPreference>),
+            ...(prefs as Partial<NotificationPreference>),
           });
         }
       } catch (error) {
@@ -123,12 +125,13 @@ export function NotificationPreferences() {
     
     setSaving(true);
     try {
+      // Use type assertion for newly added column
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          notification_preferences: preferences,
-          updated_at: new Date().toISOString()
-        })
+          updated_at: new Date().toISOString(),
+          ...({ notification_preferences: preferences } as Record<string, unknown>)
+        } as never)
         .eq('id', user.id);
 
       if (error) throw error;
