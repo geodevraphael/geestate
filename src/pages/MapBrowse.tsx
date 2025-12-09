@@ -43,8 +43,8 @@ const POLYGON_COLORS = {
   verified: { fill: '#10b981', stroke: '#059669', glow: '#10b98140' },
   pending: { fill: '#f59e0b', stroke: '#d97706', glow: '#f59e0b40' },
   unverified: { fill: '#6b7280', stroke: '#4b5563', glow: '#6b728040' },
-  selected: { fill: '#f97316', stroke: '#ea580c', glow: '#f9731660' },
-  hovered: { fill: '#3b82f6', stroke: '#2563eb', glow: '#3b82f640' },
+  selected: { fill: '#3b82f6', stroke: '#2563eb', glow: '#3b82f660' },
+  hovered: { fill: '#60a5fa', stroke: '#3b82f6', glow: '#60a5fa40' },
 };
 
 export default function MapBrowse() {
