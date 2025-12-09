@@ -141,23 +141,24 @@ export function PropertyList({
         </div>
       </div>
 
-      {/* Listings - using native scroll for better mobile support */}
+      {/* Listings - optimized for mobile scrolling */}
       <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
+        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain"
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y'
+          touchAction: 'pan-y',
+          scrollbarWidth: 'thin'
         }}
       >
-        <div className="p-3">
+        <div className="p-2 sm:p-3">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="h-10 w-10 rounded-full border-3 border-accent border-t-transparent animate-spin" />
-              <p className="text-sm text-muted-foreground">Loading properties...</p>
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <div className="h-8 w-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+              <p className="text-xs text-muted-foreground">Loading...</p>
             </div>
           ) : listings.length > 0 ? (
             <div className={cn(
-              "gap-3",
+              "gap-2 sm:gap-3",
               viewMode === 'grid' 
                 ? "grid grid-cols-2" 
                 : "flex flex-col"
@@ -176,13 +177,13 @@ export function PropertyList({
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 space-y-3">
-              <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-muted">
-                <MapPin className="h-8 w-8 text-muted-foreground" />
+            <div className="text-center py-8 space-y-2">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-muted">
+                <MapPin className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium">No properties found</p>
-                <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
+                <p className="font-medium text-sm">No properties found</p>
+                <p className="text-xs text-muted-foreground">Adjust your filters</p>
               </div>
             </div>
           )}
