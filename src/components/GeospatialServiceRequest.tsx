@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveModal } from '@/components/ResponsiveModal';
-import { DialogTrigger } from '@/components/ui/dialog';
+
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -112,9 +112,7 @@ export function GeospatialServiceRequest({ listingId, sellerId }: GeospatialServ
           title="Request Geospatial Service"
           description="Select a service and choose from our verified providers"
           trigger={
-            <DialogTrigger asChild>
-              <Button className="w-full">Request Service</Button>
-            </DialogTrigger>
+            <Button className="w-full">Request Service</Button>
           }
         >
           <div className="space-y-6 pt-4">

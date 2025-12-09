@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ResponsiveModal } from '@/components/ResponsiveModal';
-import { DialogTrigger } from '@/components/ui/dialog';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -98,12 +98,10 @@ export function VisitRequestDialog({ listingId, sellerId }: VisitRequestDialogPr
       title="Request Site Visit"
       description="Schedule a visit to view this property in person"
       trigger={
-        <DialogTrigger asChild>
           <Button className="w-full sm:w-auto flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Request Site Visit
           </Button>
-        </DialogTrigger>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">

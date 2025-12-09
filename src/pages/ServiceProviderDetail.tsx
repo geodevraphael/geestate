@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveModal } from '@/components/ResponsiveModal';
-import { DialogTrigger } from '@/components/ui/dialog';
+
 import { useToast } from '@/hooks/use-toast';
 import { 
   Scale, Building2, Hammer, Package, MapPin, Ruler, 
@@ -421,12 +421,10 @@ export default function ServiceProviderDetail() {
                   ? 'Tuma ombi lako kwa mtoa huduma huyu'
                   : 'Send your service request to this provider'}
                 trigger={
-                  <DialogTrigger asChild>
                     <Button size="lg" className="w-full lg:w-auto shadow-lg">
                       <Send className="mr-2 h-5 w-5" />
                       {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
                     </Button>
-                  </DialogTrigger>
                 }
               >
                 <div className="space-y-4 pt-4">
