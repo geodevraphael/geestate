@@ -2351,7 +2351,9 @@ export type Database = {
           report_file_url: string | null
           request_notes: string | null
           requester_id: string
+          selected_service_id: string | null
           service_category: string
+          service_price: number | null
           service_provider_id: string | null
           service_type: string
           status: string
@@ -2369,7 +2371,9 @@ export type Database = {
           report_file_url?: string | null
           request_notes?: string | null
           requester_id: string
+          selected_service_id?: string | null
           service_category: string
+          service_price?: number | null
           service_provider_id?: string | null
           service_type: string
           status?: string
@@ -2387,7 +2391,9 @@ export type Database = {
           report_file_url?: string | null
           request_notes?: string | null
           requester_id?: string
+          selected_service_id?: string | null
           service_category?: string
+          service_price?: number | null
           service_provider_id?: string | null
           service_type?: string
           status?: string
@@ -2402,10 +2408,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_requests_selected_service_id_fkey"
+            columns: ["selected_service_id"]
+            isOneToOne: false
+            referencedRelation: "provider_services"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_requests_service_provider_id_fkey"
             columns: ["service_provider_id"]
             isOneToOne: false
-            referencedRelation: "service_providers"
+            referencedRelation: "service_provider_profiles"
             referencedColumns: ["id"]
           },
         ]

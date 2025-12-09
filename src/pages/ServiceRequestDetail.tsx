@@ -32,8 +32,8 @@ export default function ServiceRequestDetail() {
         .from('service_requests')
         .select(`
           *,
-          listings!inner(title, location_label, owner_id),
-          service_providers(company_name, contact_person, contact_email)
+          listings(title, location_label, owner_id),
+          provider:service_provider_profiles(company_name, contact_phone, contact_email)
         `)
         .eq('id', id)
         .single();
@@ -51,7 +51,7 @@ export default function ServiceRequestDetail() {
         ...data,
         listing: data.listings,
         requester: profile,
-        provider: data.service_providers
+        provider: data.provider
       };
     },
   });
@@ -399,7 +399,9 @@ export default function ServiceRequestDetail() {
                 </CardHeader>
                 <CardContent>
                   <p className="font-medium">{request.provider.company_name}</p>
-                  <p className="text-sm text-muted-foreground">{request.provider.contact_person}</p>
+                  {request.provider.contact_phone && (
+                    <p className="text-sm text-muted-foreground">{request.provider.contact_phone}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">{request.provider.contact_email}</p>
                 </CardContent>
               </Card>

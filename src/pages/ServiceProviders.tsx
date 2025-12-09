@@ -168,114 +168,107 @@ export default function ServiceProviders() {
 
   return (
     <MainLayout>
-      <div className="w-full">
-        {/* Hero Section */}
-        <div className="relative bg-gradient-to-br from-primary/10 via-background to-secondary/10 border-b">
-          <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-          <div className="relative px-4 md:px-6 lg:px-8 py-12 md:py-16">
-            <div className="max-w-4xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <Briefcase className="h-4 w-4" />
-                {totalProviders} {i18n.language === 'sw' ? 'Watoa Huduma Walioidhinishwa' : 'Verified Professionals'}
+      <div className="w-full min-h-screen bg-gradient-to-b from-background to-muted/30">
+        {/* Mobile App-like Header */}
+        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b safe-area-top">
+          <div className="px-4 py-3 md:py-4">
+            <div className="flex items-center justify-between mb-3 md:mb-0">
+              <div>
+                <h1 className="text-xl md:text-3xl font-bold">
+                  {i18n.language === 'sw' ? 'Watoa Huduma' : 'Service Providers'}
+                </h1>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  {totalProviders} {i18n.language === 'sw' ? 'walioidhinishwa' : 'verified'}
+                </p>
               </div>
-              <h1 className="text-3xl md:text-5xl font-display font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                {i18n.language === 'sw' ? 'Pata Wataalamu Bora' : 'Find Top Professionals'}
-              </h1>
-              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-                {i18n.language === 'sw' 
-                  ? 'Wasiliana na wataalamu wa ardhi na ujenzi walioidhinishwa kwa mradi wako' 
-                  : 'Connect with verified land and construction experts for your next project'}
-              </p>
-              
-              {/* Search Bar */}
-              <div className="relative max-w-xl mx-auto mb-4">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder={i18n.language === 'sw' ? 'Tafuta watoa huduma, huduma, au eneo...' : 'Search providers, services, or location...'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-4 h-14 text-base rounded-2xl border-2 focus:border-primary shadow-lg"
-                />
-              </div>
-
-              {/* Proximity Search Button */}
-              <div className="flex justify-center">
-                <Button
-                  variant={sortByProximity ? "default" : "outline"}
-                  onClick={() => {
-                    if (!userLocation) {
-                      enableLocationSearch();
-                    } else {
-                      setSortByProximity(!sortByProximity);
-                    }
-                  }}
-                  disabled={locationLoading}
-                  className="gap-2"
-                >
-                  <MapPin className="h-4 w-4" />
-                  {locationLoading 
-                    ? (i18n.language === 'sw' ? 'Inatafuta...' : 'Finding location...') 
-                    : sortByProximity 
-                      ? (i18n.language === 'sw' ? 'Karibu Nawe ✓' : 'Near Me ✓')
-                      : (i18n.language === 'sw' ? 'Tafuta Karibu Nawe' : 'Find Near Me')
-                  }
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-4 md:px-6 lg:px-8 py-8">
-          {/* Category Pills */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                {i18n.language === 'sw' ? 'Chagua Aina' : 'Browse by Category'}
-              </h2>
               <Link to="/become-service-provider">
-                <Button variant="ghost" size="sm" className="gap-2 text-primary hover:text-primary">
+                <Button size="sm" variant="outline" className="gap-1.5 rounded-full">
                   <UserPlus className="h-4 w-4" />
-                  {i18n.language === 'sw' ? 'Jiunge' : 'Join as Provider'}
+                  <span className="hidden md:inline">{i18n.language === 'sw' ? 'Jiunge' : 'Join'}</span>
                 </Button>
               </Link>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedType('all')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-                  selectedType === 'all' 
-                    ? 'bg-foreground text-background shadow-lg scale-105' 
-                    : 'bg-muted hover:bg-muted/80 text-foreground'
-                }`}
-              >
-                <Building2 className="h-4 w-4" />
-                {i18n.language === 'sw' ? 'Wote' : 'All'}
-                <Badge variant="secondary" className={`ml-1 ${selectedType === 'all' ? 'bg-background/20 text-background' : ''}`}>
-                  {totalProviders}
-                </Badge>
-              </button>
-              {PROVIDER_TYPES.map(type => {
-                const Icon = type.icon;
-                const count = providers.filter(p => p.provider_type === type.value).length;
-                const isSelected = selectedType === type.value;
-                return (
-                  <button
-                    key={type.value}
-                    onClick={() => setSelectedType(isSelected ? 'all' : type.value)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-                      isSelected 
-                        ? `bg-gradient-to-r ${type.color} text-white shadow-lg scale-105` 
-                        : 'bg-muted hover:bg-muted/80 text-foreground'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {i18n.language === 'sw' ? type.labelSw : type.label}
-                    <Badge variant="secondary" className={`ml-1 ${isSelected ? 'bg-white/20 text-white' : ''}`}>
-                      {count}
-                    </Badge>
-                  </button>
-                );
-              })}
+            
+            {/* Search Bar - Fixed on mobile */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={i18n.language === 'sw' ? 'Tafuta...' : 'Search providers...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-10 md:h-11 rounded-full border-border/50 bg-muted/50 focus:bg-background"
+              />
+            </div>
+          </div>
+          
+          {/* Location Button - Mobile style */}
+          <div className="px-4 pb-3 flex gap-2">
+            <Button
+              variant={sortByProximity ? "default" : "secondary"}
+              size="sm"
+              onClick={() => {
+                if (!userLocation) {
+                  enableLocationSearch();
+                } else {
+                  setSortByProximity(!sortByProximity);
+                }
+              }}
+              disabled={locationLoading}
+              className="gap-1.5 rounded-full flex-shrink-0"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              {locationLoading 
+                ? '...' 
+                : sortByProximity 
+                  ? (i18n.language === 'sw' ? 'Karibu' : 'Near Me')
+                  : (i18n.language === 'sw' ? 'Mahali' : 'Location')
+              }
+            </Button>
+          </div>
+        </div>
+
+        <div className="px-4 md:px-6 lg:px-8 py-4 md:py-8">
+          {/* Category Pills - Horizontal scroll on mobile */}
+          <div className="mb-6">
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+              <div className="flex gap-2 min-w-max">
+                <button
+                  onClick={() => setSelectedType('all')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                    selectedType === 'all' 
+                      ? 'bg-foreground text-background shadow-lg' 
+                      : 'bg-muted hover:bg-muted/80 text-foreground'
+                  }`}
+                >
+                  <Building2 className="h-4 w-4" />
+                  {i18n.language === 'sw' ? 'Wote' : 'All'}
+                  <Badge variant="secondary" className={`text-xs ${selectedType === 'all' ? 'bg-background/20 text-background' : ''}`}>
+                    {totalProviders}
+                  </Badge>
+                </button>
+                {PROVIDER_TYPES.map(type => {
+                  const Icon = type.icon;
+                  const count = providers.filter(p => p.provider_type === type.value).length;
+                  const isSelected = selectedType === type.value;
+                  return (
+                    <button
+                      key={type.value}
+                      onClick={() => setSelectedType(isSelected ? 'all' : type.value)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                        isSelected 
+                          ? `bg-gradient-to-r ${type.color} text-white shadow-lg` 
+                          : 'bg-muted hover:bg-muted/80 text-foreground'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {i18n.language === 'sw' ? type.labelSw : type.label}
+                      <Badge variant="secondary" className={`text-xs ${isSelected ? 'bg-white/20 text-white' : ''}`}>
+                        {count}
+                      </Badge>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
