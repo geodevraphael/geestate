@@ -4,7 +4,6 @@ import { Bot, MapPin, Navigation, Loader2, X, Sparkles, ChevronRight, Target } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { useTranslation } from 'react-i18next';
 
 interface LocationInfo {
   region: { id: string; name: string } | null;
@@ -16,7 +15,6 @@ interface LocationInfo {
 }
 
 export const LocationAwareWelcome: React.FC = () => {
-  const { t } = useTranslation();
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,88 +40,79 @@ export const LocationAwareWelcome: React.FC = () => {
           let foundDistrict: { id: string; name: string } | null = null;
           let foundWard: { id: string; name: string } | null = null;
 
-          // Query all regions with geometry
-          const { data: regions } = await supabase
-            .from('regions')
-            .select('id, name, geometry');
+          // Query ALL wards with geometry - geometry is only stored at ward level
+          // Join with districts and regions to get names
+          const { data: wards, error: wardsError } = await supabase
+            .from('wards')
+            .select(`
+              id, 
+              name, 
+              geometry,
+              district_id,
+              districts!inner (
+                id,
+                name,
+                region_id,
+                regions!inner (
+                  id,
+                  name
+                )
+              )
+            `)
+            .not('geometry', 'is', null);
 
-          if (regions) {
-            for (const region of regions) {
-              if (region.geometry) {
-                const geom = typeof region.geometry === 'string' 
-                  ? JSON.parse(region.geometry) 
-                  : region.geometry;
+          if (wardsError) {
+            console.error('Error fetching wards:', wardsError);
+            throw new Error('Could not fetch location data');
+          }
+
+          console.log(`Checking ${wards?.length || 0} wards for point (${latitude}, ${longitude})`);
+
+          // Find which ward contains the user's location
+          if (wards) {
+            for (const ward of wards) {
+              if (ward.geometry) {
+                const geom = typeof ward.geometry === 'string' 
+                  ? JSON.parse(ward.geometry) 
+                  : ward.geometry;
                 
                 if (isPointInGeometry(latitude, longitude, geom)) {
-                  foundRegion = { id: region.id, name: region.name };
+                  foundWard = { id: ward.id, name: ward.name };
+                  
+                  // Get district and region from the joined data
+                  const district = ward.districts as any;
+                  if (district) {
+                    foundDistrict = { id: district.id, name: district.name };
+                    
+                    const region = district.regions as any;
+                    if (region) {
+                      foundRegion = { id: region.id, name: region.name };
+                    }
+                  }
+                  
+                  console.log(`Found ward: ${ward.name}, District: ${foundDistrict?.name}, Region: ${foundRegion?.name}`);
                   break;
                 }
               }
             }
           }
 
-          // If region found, search for district
-          if (foundRegion) {
-            const { data: districts } = await supabase
-              .from('districts')
-              .select('id, name, geometry')
-              .eq('region_id', foundRegion.id);
-
-            if (districts) {
-              for (const district of districts) {
-                if (district.geometry) {
-                  const geom = typeof district.geometry === 'string'
-                    ? JSON.parse(district.geometry)
-                    : district.geometry;
-                  
-                  if (isPointInGeometry(latitude, longitude, geom)) {
-                    foundDistrict = { id: district.id, name: district.name };
-                    break;
-                  }
-                }
-              }
-            }
-          }
-
-          // If district found, search for ward
-          if (foundDistrict) {
-            const { data: wards } = await supabase
-              .from('wards')
-              .select('id, name, geometry')
-              .eq('district_id', foundDistrict.id);
-
-            if (wards) {
-              for (const ward of wards) {
-                if (ward.geometry) {
-                  const geom = typeof ward.geometry === 'string'
-                    ? JSON.parse(ward.geometry)
-                    : ward.geometry;
-                  
-                  if (isPointInGeometry(latitude, longitude, geom)) {
-                    foundWard = { id: ward.id, name: ward.name };
-                    break;
-                  }
-                }
-              }
-            }
-          }
-
           // Get property count for the area
-          if (foundRegion || foundDistrict || foundWard) {
-            let query = supabase
+          if (foundWard) {
+            const { count } = await supabase
               .from('listings')
               .select('id', { count: 'exact', head: true })
-              .eq('status', 'published');
+              .eq('status', 'published')
+              .eq('ward_id', foundWard.id);
             
-            if (foundWard) {
-              query = query.eq('ward_id', foundWard.id);
-            } else if (foundDistrict) {
-              query = query.eq('district_id', foundDistrict.id);
-            } else if (foundRegion) {
-              query = query.eq('region_id', foundRegion.id);
-            }
+            setPropertyCount(count || 0);
+          } else if (foundDistrict) {
+            const { count } = await supabase
+              .from('listings')
+              .select('id', { count: 'exact', head: true })
+              .eq('status', 'published')
+              .eq('district_id', foundDistrict.id);
             
-            const { count } = await query;
             setPropertyCount(count || 0);
           }
 
@@ -160,23 +149,24 @@ export const LocationAwareWelcome: React.FC = () => {
 
   const isPointInGeometry = (lat: number, lng: number, geometry: any): boolean => {
     try {
-      let coordinates: number[][][] = [];
+      let polygons: number[][][] = [];
       
       if (geometry.type === 'Polygon') {
-        coordinates = [geometry.coordinates[0]];
+        polygons = [geometry.coordinates[0]];
       } else if (geometry.type === 'MultiPolygon') {
-        coordinates = geometry.coordinates.map((p: number[][][]) => p[0]);
+        polygons = geometry.coordinates.map((p: number[][][]) => p[0]);
       } else {
         return false;
       }
 
-      for (const ring of coordinates) {
+      for (const ring of polygons) {
         if (pointInPolygon([lng, lat], ring)) {
           return true;
         }
       }
       return false;
-    } catch {
+    } catch (e) {
+      console.error('Error checking point in geometry:', e);
       return false;
     }
   };
@@ -266,7 +256,7 @@ export const LocationAwareWelcome: React.FC = () => {
                     Pinpointing your location...
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Finding properties near you
+                    Matching with ward boundaries
                   </p>
                 </div>
               </div>
@@ -287,26 +277,21 @@ export const LocationAwareWelcome: React.FC = () => {
                         📍 Location Detected
                       </p>
                       <p className="text-sm md:text-base font-medium text-foreground leading-snug">
+                        You're in{' '}
                         {locationInfo.ward && (
-                          <>
-                            You're in <span className="text-primary font-bold">{locationInfo.ward.name}</span> ward
-                          </>
+                          <span className="text-primary font-bold">{locationInfo.ward.name}</span>
                         )}
+                        {locationInfo.ward && locationInfo.district && ' ward, '}
                         {locationInfo.district && (
-                          <>
-                            {locationInfo.ward ? ', ' : "You're in "}
-                            <span className="font-semibold">{locationInfo.district.name}</span> district
-                          </>
+                          <span className="font-semibold">{locationInfo.district.name}</span>
                         )}
+                        {locationInfo.district && ' District'}
                         {locationInfo.region && (
-                          <>
-                            {(locationInfo.district || locationInfo.ward) ? ', ' : "You're in "}
-                            <span className="font-semibold">{locationInfo.region.name}</span>
-                          </>
+                          <>, <span className="font-semibold">{locationInfo.region.name}</span> Region</>
                         )}
                         {propertyCount > 0 && (
-                          <span className="text-muted-foreground">
-                            {' '}— {propertyCount} {propertyCount === 1 ? 'property' : 'properties'} available nearby!
+                          <span className="text-muted-foreground block mt-0.5">
+                            🏠 {propertyCount} {propertyCount === 1 ? 'property' : 'properties'} available nearby!
                           </span>
                         )}
                       </p>
@@ -314,10 +299,10 @@ export const LocationAwareWelcome: React.FC = () => {
                   ) : (
                     <div className="space-y-1">
                       <p className="text-xs uppercase tracking-wider text-amber-500 font-semibold">
-                        🌍 Location Found
+                        🌍 Outside Coverage Area
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        We found you at coordinates ({locationInfo.latitude.toFixed(4)}, {locationInfo.longitude.toFixed(4)}) but this area isn't in our database yet. Explore the map to find properties!
+                        Your location ({locationInfo.latitude.toFixed(4)}°, {locationInfo.longitude.toFixed(4)}°) isn't within our mapped wards yet. Browse the map to explore available properties!
                       </p>
                     </div>
                   )}
