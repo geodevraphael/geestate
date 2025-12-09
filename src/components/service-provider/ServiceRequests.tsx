@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -18,10 +17,10 @@ import {
 import { toast } from 'sonner';
 import { 
   FileSearch, Clock, CheckCircle2, MapPin, Calendar, 
-  DollarSign, MessageSquare, ArrowRight, AlertCircle, User
+  DollarSign, MessageSquare, ArrowRight, User, Phone, Mail, 
+  CreditCard, AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 
 interface ServiceRequest {
   id: string;
@@ -38,6 +37,9 @@ interface ServiceRequest {
   created_at: string;
   service_price: number | null;
   selected_service_id: string | null;
+  payment_confirmed_at: string | null;
+  payment_amount: number | null;
+  client_payment_reference: string | null;
   listings?: {
     title: string;
     location_label: string;
@@ -59,29 +61,28 @@ interface ServiceRequestsProps {
   providerId: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending: { label: 'Pending', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-  assigned: { label: 'Assigned', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-  quoted: { label: 'Quoted', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
-  in_progress: { label: 'In Progress', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' },
-  completed: { label: 'Completed', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-  cancelled: { label: 'Cancelled', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
+const STATUS_CONFIG: Record<string, { label: string; color: string; step: number }> = {
+  pending: { label: 'New Request', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20', step: 1 },
+  accepted: { label: 'Accepted', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', step: 2 },
+  completed: { label: 'Completed', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', step: 3 },
+  cancelled: { label: 'Cancelled', color: 'bg-red-500/10 text-red-600 border-red-500/20', step: 0 },
+  // Legacy statuses mapped to new flow
+  assigned: { label: 'New Request', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20', step: 1 },
+  quoted: { label: 'Accepted', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', step: 2 },
+  in_progress: { label: 'Accepted', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', step: 2 },
 };
 
 export function ServiceRequests({ providerId }: ServiceRequestsProps) {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
-  const [quotedPrice, setQuotedPrice] = useState('');
-  const [quotedCurrency, setQuotedCurrency] = useState('TZS');
-  const [estimatedDate, setEstimatedDate] = useState('');
   const [providerNotes, setProviderNotes] = useState('');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['provider-service-requests', providerId],
     queryFn: async () => {
-      // Query service requests with related data
       const { data, error } = await supabase
         .from('service_requests')
         .select(`
@@ -112,7 +113,7 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (updates: any) => {
+    mutationFn: async (updates: Record<string, unknown>) => {
       const { error } = await supabase
         .from('service_requests')
         .update(updates)
@@ -132,53 +133,56 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
   });
 
   const resetForm = () => {
-    setQuotedPrice('');
-    setQuotedCurrency('TZS');
-    setEstimatedDate('');
     setProviderNotes('');
+    setPaymentAmount('');
+    setPaymentReference('');
   };
 
-  const handleSubmitQuote = () => {
-    if (!quotedPrice) {
-      toast.error('Please enter a price');
+  const handleAccept = () => {
+    updateMutation.mutate({ 
+      status: 'accepted',
+      provider_notes: providerNotes || null
+    });
+  };
+
+  const handleConfirmPaymentAndComplete = () => {
+    const amount = parseFloat(paymentAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter the payment amount received');
       return;
     }
 
-    const updates: any = {
-      quoted_price: parseFloat(quotedPrice),
-      quoted_currency: quotedCurrency,
-      status: 'quoted',
-    };
-
-    if (estimatedDate) updates.estimated_completion_date = estimatedDate;
-    if (providerNotes) updates.provider_notes = providerNotes;
-
-    updateMutation.mutate(updates);
-  };
-
-  const handleStartWork = () => {
-    updateMutation.mutate({ status: 'in_progress' });
-  };
-
-  const handleComplete = () => {
     updateMutation.mutate({ 
       status: 'completed',
+      payment_confirmed_at: new Date().toISOString(),
+      payment_amount: amount,
+      client_payment_reference: paymentReference || null,
       actual_completion_date: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  const handleDecline = () => {
+    updateMutation.mutate({ 
+      status: 'cancelled',
+      provider_notes: providerNotes || 'Declined by provider'
     });
   };
 
   const filteredRequests = requests.filter(r => {
     if (statusFilter === 'all') return true;
-    if (statusFilter === 'active') return ['assigned', 'quoted', 'in_progress'].includes(r.status);
+    if (statusFilter === 'active') return ['pending', 'accepted', 'assigned', 'quoted', 'in_progress'].includes(r.status);
     return r.status === statusFilter;
   });
 
   const stats = {
     total: requests.length,
-    pending: requests.filter(r => r.status === 'assigned').length,
-    quoted: requests.filter(r => r.status === 'quoted').length,
-    inProgress: requests.filter(r => r.status === 'in_progress').length,
+    pending: requests.filter(r => ['pending', 'assigned'].includes(r.status)).length,
+    accepted: requests.filter(r => ['accepted', 'quoted', 'in_progress'].includes(r.status)).length,
     completed: requests.filter(r => r.status === 'completed').length,
+  };
+
+  const getServicePrice = (request: ServiceRequest) => {
+    return request.service_price || request.provider_services?.price || 0;
   };
 
   if (isLoading) {
@@ -204,31 +208,42 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
               Service Requests
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage incoming service requests from clients
+              Manage incoming service requests
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2 text-sm">
-              <Badge variant="outline">{stats.pending} New</Badge>
-              <Badge variant="outline" className="bg-purple-500/10">{stats.quoted} Quoted</Badge>
-              <Badge variant="outline" className="bg-indigo-500/10">{stats.inProgress} In Progress</Badge>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Filter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="assigned">New</SelectItem>
-                <SelectItem value="quoted">Quoted</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-600">
+              {stats.pending} New
+            </Badge>
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600">
+              {stats.accepted} In Progress
+            </Badge>
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600">
+              {stats.completed} Completed
+            </Badge>
           </div>
         </div>
+
+        {/* Filter Tabs */}
+        <div className="flex gap-1 mt-4 p-1 bg-muted rounded-lg w-fit">
+          {[
+            { value: 'all', label: 'All' },
+            { value: 'active', label: 'Active' },
+            { value: 'completed', label: 'Completed' },
+          ].map((tab) => (
+            <Button
+              key={tab.value}
+              variant={statusFilter === tab.value ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter(tab.value)}
+              className="h-8"
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </div>
       </CardHeader>
+
       <CardContent>
         {filteredRequests.length === 0 ? (
           <div className="text-center py-12">
@@ -237,31 +252,36 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
             <p className="text-muted-foreground">
               {statusFilter === 'all' 
                 ? "You haven't received any service requests yet."
-                : `No ${statusFilter.replace('_', ' ')} requests found.`}
+                : `No ${statusFilter} requests found.`}
             </p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {filteredRequests.map((request) => {
               const config = STATUS_CONFIG[request.status] || STATUS_CONFIG.pending;
+              const price = getServicePrice(request);
 
               return (
                 <Card 
                   key={request.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  className="hover:shadow-md transition-shadow cursor-pointer border-l-4"
+                  style={{ borderLeftColor: request.status === 'pending' || request.status === 'assigned' ? '#f59e0b' : 
+                           request.status === 'completed' ? '#10b981' : '#3b82f6' }}
                   onClick={() => {
                     setSelectedRequest(request);
-                    if (request.quoted_price) setQuotedPrice(request.quoted_price.toString());
-                    if (request.quoted_currency) setQuotedCurrency(request.quoted_currency);
-                    if (request.estimated_completion_date) setEstimatedDate(request.estimated_completion_date);
+                    if (request.payment_amount) setPaymentAmount(request.payment_amount.toString());
+                    else if (price) setPaymentAmount(price.toString());
                     if (request.provider_notes) setProviderNotes(request.provider_notes);
                   }}
                 >
                   <CardContent className="p-4 space-y-3">
+                    {/* Header */}
                     <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium">{request.provider_services?.name || request.service_type.replace(/_/g, ' ')}</h4>
-                        <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-base">
+                          {request.provider_services?.name || request.service_type}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {request.provider_services?.category || request.service_category.replace(/_/g, ' ')}
                         </p>
                       </div>
@@ -270,61 +290,55 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                       </Badge>
                     </div>
 
-                    {/* Service Price - Always show if available */}
-                    {(request.service_price || request.provider_services?.price) && (
-                      <div className="p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Service Price</span>
-                          <span className="font-semibold text-emerald-600">
-                            TZS {(request.service_price || request.provider_services?.price || 0).toLocaleString()}
-                          </span>
-                        </div>
+                    {/* Price */}
+                    {price > 0 && (
+                      <div className="flex items-center justify-between p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="text-xs text-muted-foreground">Service Price</span>
+                        <span className="font-bold text-emerald-600">
+                          TZS {price.toLocaleString()}
+                        </span>
                       </div>
                     )}
 
-                    {/* Requester Info */}
+                    {/* Client Info */}
                     {request.requester && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span className="font-medium">{request.requester.full_name}</span>
-                          <span className="text-xs text-muted-foreground">{request.requester.email}</span>
+                      <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{request.requester.full_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{request.requester.email}</p>
                         </div>
                       </div>
                     )}
 
-                    {/* Listing Info */}
+                    {/* Listing if any */}
                     {request.listings && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
+                        <MapPin className="h-4 w-4 shrink-0" />
                         <span className="truncate">{request.listings.title}</span>
                       </div>
                     )}
 
-                    {/* Request Notes */}
-                    {request.request_notes && (
-                      <div className="flex items-start gap-2 text-sm p-2 bg-muted/50 rounded-md">
-                        <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <span className="text-muted-foreground line-clamp-2">{request.request_notes}</span>
+                    {/* Payment confirmed indicator */}
+                    {request.payment_confirmed_at && (
+                      <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-500/10 p-2 rounded-md">
+                        <CreditCard className="h-4 w-4" />
+                        <span>Payment confirmed: TZS {request.payment_amount?.toLocaleString()}</span>
                       </div>
                     )}
 
-                    {/* Quoted Price if provider already quoted */}
-                    {request.quoted_price && (
-                      <div className="flex items-center gap-2 text-sm font-medium text-purple-600">
-                        <DollarSign className="h-4 w-4" />
-                        <span>Your Quote: {request.quoted_currency || 'TZS'} {request.quoted_price.toLocaleString()}</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-2 border-t text-sm">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
                         <span>{format(new Date(request.created_at), 'MMM d, yyyy')}</span>
                       </div>
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        {request.status === 'pending' || request.status === 'assigned' ? 'Respond' : 'View'} 
-                        <ArrowRight className="h-4 w-4" />
+                      <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs">
+                        {['pending', 'assigned'].includes(request.status) ? 'Respond' : 
+                         ['accepted', 'quoted', 'in_progress'].includes(request.status) ? 'Complete' : 'View'}
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </CardContent>
@@ -338,17 +352,64 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
         <Dialog open={!!selectedRequest} onOpenChange={() => { setSelectedRequest(null); resetForm(); }}>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="capitalize">
-                {selectedRequest?.service_type.replace(/_/g, ' ')} Request
+              <DialogTitle>
+                {selectedRequest?.provider_services?.name || selectedRequest?.service_type}
               </DialogTitle>
               <DialogDescription>
-                Respond to this service request from {selectedRequest?.requester?.full_name}
+                {['pending', 'assigned'].includes(selectedRequest?.status || '') 
+                  ? 'Review and respond to this service request'
+                  : ['accepted', 'quoted', 'in_progress'].includes(selectedRequest?.status || '')
+                  ? 'Confirm payment and complete this request'
+                  : 'Service request details'}
               </DialogDescription>
             </DialogHeader>
 
             {selectedRequest && (
               <div className="space-y-4 py-4">
-                {/* Request Info */}
+                {/* Progress Steps */}
+                <div className="flex items-center justify-between mb-6">
+                  {[
+                    { step: 1, label: 'Request', status: 'pending' },
+                    { step: 2, label: 'Accepted', status: 'accepted' },
+                    { step: 3, label: 'Completed', status: 'completed' },
+                  ].map((s, i) => {
+                    const currentStep = STATUS_CONFIG[selectedRequest.status]?.step || 1;
+                    const isActive = s.step <= currentStep;
+                    const isCurrent = s.step === currentStep;
+                    
+                    return (
+                      <div key={s.step} className="flex items-center">
+                        <div className={`flex flex-col items-center ${i > 0 ? 'ml-2' : ''}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                            isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                          } ${isCurrent ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
+                            {s.step === 3 && isActive ? <CheckCircle2 className="h-4 w-4" /> : s.step}
+                          </div>
+                          <span className={`text-xs mt-1 ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                            {s.label}
+                          </span>
+                        </div>
+                        {i < 2 && (
+                          <div className={`h-0.5 w-12 mx-2 ${s.step < currentStep ? 'bg-primary' : 'bg-muted'}`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Service Price Display */}
+                {getServicePrice(selectedRequest) > 0 && (
+                  <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Service Price</span>
+                      <span className="text-xl font-bold text-emerald-600">
+                        TZS {getServicePrice(selectedRequest).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Request Details */}
                 <div className="p-3 rounded-lg bg-muted/50 space-y-2">
                   {selectedRequest.listings && (
                     <div className="flex items-center gap-2 text-sm">
@@ -368,122 +429,148 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                   </div>
                 </div>
 
-                {/* Requester Contact */}
+                {/* Client Contact */}
                 {selectedRequest.requester && (
                   <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                    <h4 className="font-medium text-sm mb-2">Client Contact</h4>
-                    <p className="text-sm">{selectedRequest.requester.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedRequest.requester.email}</p>
-                    {selectedRequest.requester.phone && (
-                      <p className="text-sm text-muted-foreground">{selectedRequest.requester.phone}</p>
-                    )}
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Client Contact
+                    </h4>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{selectedRequest.requester.full_name}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-3.5 w-3.5" />
+                        <a href={`mailto:${selectedRequest.requester.email}`} className="hover:underline">
+                          {selectedRequest.requester.email}
+                        </a>
+                      </div>
+                      {selectedRequest.requester.phone && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-3.5 w-3.5" />
+                          <a href={`tel:${selectedRequest.requester.phone}`} className="hover:underline">
+                            {selectedRequest.requester.phone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* Quote Form */}
-                {(selectedRequest.status === 'assigned' || selectedRequest.status === 'quoted') && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Quote Price *</Label>
-                        <Input
-                          type="number"
-                          placeholder="Enter amount"
-                          value={quotedPrice}
-                          onChange={(e) => setQuotedPrice(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label>Currency</Label>
-                        <Select value={quotedCurrency} onValueChange={setQuotedCurrency}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="TZS">TZS</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
+                {/* PENDING: Accept or Decline */}
+                {['pending', 'assigned'].includes(selectedRequest.status) && (
+                  <div className="space-y-4 pt-2">
                     <div>
-                      <Label>Estimated Completion Date</Label>
-                      <Input
-                        type="date"
-                        value={estimatedDate}
-                        onChange={(e) => setEstimatedDate(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Response Notes</Label>
+                      <Label>Response Notes (Optional)</Label>
                       <Textarea
                         placeholder="Add notes for the client..."
                         value={providerNotes}
                         onChange={(e) => setProviderNotes(e.target.value)}
-                        rows={3}
+                        rows={2}
                       />
                     </div>
-
-                    <Button 
-                      className="w-full" 
-                      onClick={handleSubmitQuote}
-                      disabled={updateMutation.isPending}
-                    >
-                      {updateMutation.isPending ? 'Submitting...' : 'Submit Quote'}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Actions for quoted requests */}
-                {selectedRequest.status === 'quoted' && (
-                  <Button 
-                    className="w-full gap-2" 
-                    variant="outline"
-                    onClick={handleStartWork}
-                    disabled={updateMutation.isPending}
-                  >
-                    <Clock className="h-4 w-4" />
-                    Start Work
-                  </Button>
-                )}
-
-                {/* Actions for in-progress requests */}
-                {selectedRequest.status === 'in_progress' && (
-                  <div className="space-y-3">
-                    <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                      <p className="text-sm text-indigo-700 flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Work in progress
-                      </p>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        variant="outline"
+                        className="flex-1 border-red-500/30 text-red-600 hover:bg-red-500/10"
+                        onClick={handleDecline}
+                        disabled={updateMutation.isPending}
+                      >
+                        Decline
+                      </Button>
+                      <Button 
+                        className="flex-1"
+                        onClick={handleAccept}
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? 'Processing...' : 'Accept Request'}
+                      </Button>
                     </div>
+                  </div>
+                )}
+
+                {/* ACCEPTED: Confirm Payment & Complete */}
+                {['accepted', 'quoted', 'in_progress'].includes(selectedRequest.status) && (
+                  <div className="space-y-4 pt-2">
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-amber-700">Service in Progress</p>
+                          <p className="text-amber-600 text-xs mt-0.5">
+                            Once the client pays you, confirm the payment below to complete the service. A 2% platform fee will be charged.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Payment Amount Received (TZS) *</Label>
+                        <Input
+                          type="number"
+                          placeholder="Enter amount received from client"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Payment Reference (Optional)</Label>
+                        <Input
+                          placeholder="Transaction ID, M-Pesa code, etc."
+                          value={paymentReference}
+                          onChange={(e) => setPaymentReference(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {paymentAmount && parseFloat(paymentAmount) > 0 && (
+                      <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Payment received</span>
+                          <span>TZS {parseFloat(paymentAmount).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-amber-600">
+                          <span>Platform fee (2%)</span>
+                          <span>TZS {(parseFloat(paymentAmount) * 0.02).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
+
                     <Button 
-                      className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" 
-                      onClick={handleComplete}
-                      disabled={updateMutation.isPending}
+                      className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+                      onClick={handleConfirmPaymentAndComplete}
+                      disabled={updateMutation.isPending || !paymentAmount}
                     >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Mark as Completed
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setSelectedRequest(null);
-                        navigate(`/service-requests/${selectedRequest.id}`);
-                      }}
-                    >
-                      Upload Report & Complete
+                      <CreditCard className="h-4 w-4" />
+                      {updateMutation.isPending ? 'Processing...' : 'Confirm Payment & Complete'}
                     </Button>
                   </div>
                 )}
 
-                {/* Completed status */}
+                {/* COMPLETED */}
                 {selectedRequest.status === 'completed' && (
-                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
-                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
-                    <p className="font-medium text-emerald-700">Request Completed</p>
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                      <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-emerald-600" />
+                      <p className="font-medium text-emerald-700">Service Completed</p>
+                      {selectedRequest.payment_confirmed_at && (
+                        <p className="text-sm text-emerald-600 mt-1">
+                          Payment of TZS {selectedRequest.payment_amount?.toLocaleString()} confirmed
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* CANCELLED */}
+                {selectedRequest.status === 'cancelled' && (
+                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
+                    <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-600" />
+                    <p className="font-medium text-red-700">Request Cancelled</p>
+                    {selectedRequest.provider_notes && (
+                      <p className="text-sm text-red-600 mt-1">{selectedRequest.provider_notes}</p>
+                    )}
                   </div>
                 )}
               </div>
