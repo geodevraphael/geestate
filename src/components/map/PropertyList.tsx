@@ -57,7 +57,7 @@ export function PropertyList({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full max-h-full min-h-0 bg-background overflow-hidden">
       {/* Header with stats and controls */}
       <div className="p-3 border-b bg-muted/30 space-y-2">
         {/* Stats row */}
@@ -141,13 +141,11 @@ export function PropertyList({
         </div>
       </div>
 
-      {/* Listings - optimized for mobile scrolling */}
+      {/* Listings - scrollable container */}
       <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
         style={{ 
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y',
-          scrollbarWidth: 'thin'
+          WebkitOverflowScrolling: 'touch'
         }}
       >
         <div className="p-2 sm:p-3">
