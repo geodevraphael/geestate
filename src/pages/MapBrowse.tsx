@@ -50,6 +50,9 @@ const POLYGON_COLORS = {
 export default function MapBrowse() {
   const [searchParams] = useSearchParams();
   const listingParam = searchParams.get('listing');
+  const regionParam = searchParams.get('region');
+  const districtParam = searchParams.get('district');
+  const wardParam = searchParams.get('ward');
   
   // Data states
   const [listings, setListings] = useState<ListingWithPolygon[]>([]);
@@ -58,6 +61,7 @@ export default function MapBrowse() {
   const [districts, setDistricts] = useState<any[]>([]);
   const [wards, setWards] = useState<any[]>([]);
   const [streets, setStreets] = useState<any[]>([]);
+  const [initialFiltersApplied, setInitialFiltersApplied] = useState(false);
   
   // Filter states
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
@@ -157,6 +161,51 @@ export default function MapBrowse() {
     requestUserLocation();
     fetchLocations();
   }, []);
+
+  // Apply URL location filters on initial load
+  useEffect(() => {
+    if (initialFiltersApplied || regions.length === 0) return;
+    
+    const applyUrlFilters = async () => {
+      if (regionParam) {
+        setRegionFilter(regionParam);
+        
+        // Fetch districts for this region
+        const { data: districtData } = await supabase
+          .from('districts')
+          .select('*')
+          .eq('region_id', regionParam)
+          .order('name');
+        
+        if (districtData) {
+          setDistricts(districtData);
+          
+          if (districtParam) {
+            setDistrictFilter(districtParam);
+            
+            // Fetch wards for this district
+            const { data: wardData } = await supabase
+              .from('wards')
+              .select('id, name, code, district_id, geometry')
+              .eq('district_id', districtParam)
+              .order('name');
+            
+            if (wardData) {
+              setWards(wardData);
+              
+              if (wardParam) {
+                setWardFilter(wardParam);
+              }
+            }
+          }
+        }
+      }
+      
+      setInitialFiltersApplied(true);
+    };
+    
+    applyUrlFilters();
+  }, [regions, regionParam, districtParam, wardParam, initialFiltersApplied]);
 
   const fetchLocations = async () => {
     const { data } = await supabase.from('regions').select('*').order('name');
