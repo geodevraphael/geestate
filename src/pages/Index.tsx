@@ -3,15 +3,21 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { LocationAwareWelcome } from '@/components/LocationAwareWelcome';
 import { useTranslation } from 'react-i18next';
+
 const Index = () => {
-  const {
-    t
-  } = useTranslation();
-  return <div className="min-h-screen bg-background overflow-hidden">
+  const { t } = useTranslation();
+  
+  return (
+    <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       <MobileBottomNav />
       
+      {/* Location-Aware Welcome Message */}
+      <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40">
+        <LocationAwareWelcome />
+      </div>
       {/* Hero Section with Advanced Design */}
       <section className="relative min-h-[85vh] md:min-h-screen flex items-center justify-center overflow-hidden pt-8 md:pt-0">
         {/* Animated Background Mesh */}
@@ -96,14 +102,13 @@ const Index = () => {
         </div>
 
         {/* Scroll Indicator */}
-        
       </section>
 
       {/* CTA Section */}
-      
 
       {/* Footer */}
-      
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
