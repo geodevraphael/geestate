@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ResponsiveModal } from '@/components/ResponsiveModal';
-import { DialogTrigger } from '@/components/ui/dialog';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,12 +149,10 @@ export function PaymentProofDialog({ listing, onSuccess }: PaymentProofDialogPro
       title="Submit Payment Proof"
       description="Upload proof of payment to the seller. This can be a mobile money screenshot, bank receipt, or any payment confirmation."
       trigger={
-        <DialogTrigger asChild>
           <Button className="w-full" size="lg">
             <DollarSign className="mr-2 h-5 w-5" />
             I Have Paid the Seller
           </Button>
-        </DialogTrigger>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6">
