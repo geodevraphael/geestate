@@ -14,10 +14,6 @@ const Index = () => {
       <Navbar />
       <MobileBottomNav />
       
-      {/* Location-Aware Welcome Message */}
-      <div className="fixed bottom-24 md:bottom-8 left-3 right-3 md:left-auto md:right-8 md:max-w-sm lg:max-w-md z-40 animate-fade-in-up" style={{ animationDelay: '1s' }}>
-        <LocationAwareWelcome />
-      </div>
       {/* Hero Section with Advanced Design */}
       <section className="relative min-h-[85vh] md:min-h-screen flex items-center justify-center overflow-hidden pt-8 md:pt-0">
         {/* Animated Background Mesh */}
@@ -36,6 +32,11 @@ const Index = () => {
 
         <div className="container relative z-10 mx-auto px-4 md:px-6 py-12 md:py-20">
           <div className="max-w-5xl mx-auto">
+            {/* Location-Aware Welcome - Above Trust Badge */}
+            <div className="mb-6 md:mb-8 max-w-md animate-fade-in" style={{ animationDelay: '0.5s' }}>
+              <LocationAwareWelcome />
+            </div>
+
             {/* Trust Badge */}
             <div className="mb-6 md:mb-8 inline-flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 glass rounded-full animate-fade-in border border-primary/20 text-xs md:text-sm">
               <div className="relative flex h-3 w-3">

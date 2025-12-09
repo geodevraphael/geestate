@@ -41,3 +41,18 @@ verify_jwt = true
 
 [functions.generate-monthly-fees]
 verify_jwt = false
+
+[functions.detect-user-location]
+verify_jwt = false
+
+[functions.calculate-proximity-analysis]
+verify_jwt = true
+
+[functions.update-listings-with-valuation]
+verify_jwt = true
+
+[functions.generate-sample-data]
+verify_jwt = true
+
+[functions.check-listing-expiry]
+verify_jwt = false

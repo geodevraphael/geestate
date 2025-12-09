@@ -3084,6 +3084,17 @@ export type Database = {
         }
         Returns: string
       }
+      find_ward_by_point: {
+        Args: { lat: number; lng: number }
+        Returns: {
+          district_id: string
+          district_name: string
+          region_id: string
+          region_name: string
+          ward_id: string
+          ward_name: string
+        }[]
+      }
       generate_institution_slug: {
         Args: { institution_name: string }
         Returns: string

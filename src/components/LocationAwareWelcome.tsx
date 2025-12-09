@@ -4,46 +4,16 @@ import { Bot, MapPin, Navigation, Loader2, X, Sparkles, ChevronRight, Target } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import * as turf from '@turf/turf';
 
 interface LocationInfo {
   region: { id: string; name: string } | null;
   district: { id: string; name: string } | null;
   ward: { id: string; name: string } | null;
+  propertyCount: number;
   accuracy: number;
   latitude: number;
   longitude: number;
 }
-
-// Fast bounding box pre-check to skip wards that can't contain the point
-const isPointInBBox = (lat: number, lng: number, geometry: any): boolean => {
-  try {
-    const bbox = turf.bbox(geometry);
-    // bbox = [minLng, minLat, maxLng, maxLat]
-    return lng >= bbox[0] && lng <= bbox[2] && lat >= bbox[1] && lat <= bbox[3];
-  } catch {
-    return true; // If bbox fails, proceed to full check
-  }
-};
-
-// Use Turf.js optimized point-in-polygon
-const isPointInGeometry = (lat: number, lng: number, geometry: any): boolean => {
-  if (!geometry?.type || !geometry?.coordinates) return false;
-  
-  try {
-    const point = turf.point([lng, lat]);
-    
-    if (geometry.type === 'Polygon') {
-      return turf.booleanPointInPolygon(point, turf.polygon(geometry.coordinates));
-    } else if (geometry.type === 'MultiPolygon') {
-      return turf.booleanPointInPolygon(point, turf.multiPolygon(geometry.coordinates));
-    }
-  } catch (e) {
-    console.error('Geometry check error:', e);
-  }
-  
-  return false;
-};
 
 export const LocationAwareWelcome: React.FC = () => {
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
@@ -51,7 +21,6 @@ export const LocationAwareWelcome: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const [propertyCount, setPropertyCount] = useState<number>(0);
 
   const detectLocation = async () => {
     if (!navigator.geolocation) {
@@ -68,119 +37,32 @@ export const LocationAwareWelcome: React.FC = () => {
         const startTime = performance.now();
         
         try {
-          let foundRegion: { id: string; name: string } | null = null;
-          let foundDistrict: { id: string; name: string } | null = null;
-          let foundWard: { id: string; name: string } | null = null;
-
-          // Fetch ALL wards with pagination
-          let allWards: any[] = [];
-          let offset = 0;
-          const pageSize = 1000;
-          let hasMore = true;
-
-          while (hasMore) {
-            const { data: wards, error: wardsError } = await supabase
-              .from('wards')
-              .select(`
-                id, 
-                name, 
-                geometry,
-                district_id,
-                districts!inner (
-                  id,
-                  name,
-                  region_id,
-                  regions!inner (
-                    id,
-                    name
-                  )
-                )
-              `)
-              .not('geometry', 'is', null)
-              .range(offset, offset + pageSize - 1);
-
-            if (wardsError) {
-              console.error('Error fetching wards:', wardsError);
-              throw new Error('Could not fetch location data');
-            }
-
-            if (wards && wards.length > 0) {
-              allWards = [...allWards, ...wards];
-              offset += pageSize;
-              hasMore = wards.length === pageSize;
-            } else {
-              hasMore = false;
-            }
-          }
-
-          const fetchTime = performance.now();
-          console.log(`Fetched ${allWards.length} wards in ${(fetchTime - startTime).toFixed(0)}ms`);
-
-          // Find ward using bbox pre-filter + Turf.js
-          let bboxChecks = 0;
-          let fullChecks = 0;
-
-          for (const ward of allWards) {
-            if (ward.geometry) {
-              const geom = typeof ward.geometry === 'string' 
-                ? JSON.parse(ward.geometry) 
-                : ward.geometry;
-              
-              // Fast bbox check first
-              if (!isPointInBBox(latitude, longitude, geom)) {
-                bboxChecks++;
-                continue;
-              }
-              
-              // Full point-in-polygon check
-              fullChecks++;
-              if (isPointInGeometry(latitude, longitude, geom)) {
-                foundWard = { id: ward.id, name: ward.name };
-                
-                const district = ward.districts as any;
-                if (district) {
-                  foundDistrict = { id: district.id, name: district.name };
-                  const region = district.regions as any;
-                  if (region) {
-                    foundRegion = { id: region.id, name: region.name };
-                  }
-                }
-                
-                const totalTime = performance.now() - startTime;
-                console.log(`Found: ${ward.name}, ${foundDistrict?.name}, ${foundRegion?.name}`);
-                console.log(`Geofencing: ${bboxChecks} bbox skips, ${fullChecks} full checks, ${totalTime.toFixed(0)}ms total`);
-                break;
-              }
-            }
-          }
-
-          // Get property count for the area
-          if (foundWard) {
-            const { count } = await supabase
-              .from('listings')
-              .select('id', { count: 'exact', head: true })
-              .eq('status', 'published')
-              .eq('ward_id', foundWard.id);
-            
-            setPropertyCount(count || 0);
-          } else if (foundDistrict) {
-            const { count } = await supabase
-              .from('listings')
-              .select('id', { count: 'exact', head: true })
-              .eq('status', 'published')
-              .eq('district_id', foundDistrict.id);
-            
-            setPropertyCount(count || 0);
-          }
-
-          setLocationInfo({
-            region: foundRegion,
-            district: foundDistrict,
-            ward: foundWard,
-            accuracy,
-            latitude,
-            longitude,
+          // Use edge function for fast server-side lookup
+          const { data, error: funcError } = await supabase.functions.invoke('detect-user-location', {
+            body: { latitude, longitude }
           });
+
+          const totalTime = performance.now() - startTime;
+          console.log(`Location detection completed in ${totalTime.toFixed(0)}ms`);
+
+          if (funcError) {
+            console.error('Location detection error:', funcError);
+            setError('Could not determine your area');
+            setLoading(false);
+            return;
+          }
+
+          if (data) {
+            setLocationInfo({
+              region: data.region,
+              district: data.district,
+              ward: data.ward,
+              propertyCount: data.propertyCount || 0,
+              accuracy,
+              latitude,
+              longitude,
+            });
+          }
         } catch (err) {
           console.error('Error detecting location:', err);
           setError('Could not determine your area');
@@ -197,17 +79,18 @@ export const LocationAwareWelcome: React.FC = () => {
         }
       },
       {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 300000,
+        enableHighAccuracy: false, // Faster with lower accuracy
+        timeout: 10000,
+        maximumAge: 600000, // Cache for 10 minutes
       }
-    )
+    );
   };
 
   useEffect(() => {
+    // Start detection after a short delay
     const timer = setTimeout(() => {
       detectLocation();
-    }, 1500);
+    }, 500);
     
     return () => clearTimeout(timer);
   }, []);
@@ -270,10 +153,10 @@ export const LocationAwareWelcome: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Pinpointing your location...
+                    Detecting your location...
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Matching with Tanzania ward boundaries
+                    This will only take a moment
                   </p>
                 </div>
               </div>
@@ -306,9 +189,9 @@ export const LocationAwareWelcome: React.FC = () => {
                         {locationInfo.region && (
                           <>, <span className="font-semibold">{locationInfo.region.name}</span> Region</>
                         )}
-                        {propertyCount > 0 && (
+                        {locationInfo.propertyCount > 0 && (
                           <span className="text-muted-foreground block mt-0.5">
-                            🏠 {propertyCount} {propertyCount === 1 ? 'property' : 'properties'} available nearby!
+                            🏠 {locationInfo.propertyCount} {locationInfo.propertyCount === 1 ? 'property' : 'properties'} available nearby!
                           </span>
                         )}
                       </p>
