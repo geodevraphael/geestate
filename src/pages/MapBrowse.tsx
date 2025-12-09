@@ -62,6 +62,7 @@ export default function MapBrowse() {
   const [dealerSearchOpen, setDealerSearchOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showPropertyList, setShowPropertyList] = useState(false);
+  const [spatialFilterMode, setSpatialFilterMode] = useState<'boundary' | 'id'>('boundary');
   const [regions, setRegions] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [wards, setWards] = useState<any[]>([]);
@@ -323,6 +324,48 @@ export default function MapBrowse() {
     return R * c; // Distance in km
   };
 
+  // Point-in-polygon check using ray casting algorithm
+  const isPointInPolygon = (point: [number, number], polygon: [number, number][]): boolean => {
+    const [x, y] = point;
+    let inside = false;
+    
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+      
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+        inside = !inside;
+      }
+    }
+    
+    return inside;
+  };
+
+  // Check if a listing falls within any of the given ward geometries
+  const isListingInWards = (listing: ListingWithPolygon, wardGeometries: any[]): boolean => {
+    if (!listing.polygon?.centroid_lat || !listing.polygon?.centroid_lng) return false;
+    
+    const point: [number, number] = [listing.polygon.centroid_lng, listing.polygon.centroid_lat];
+    
+    for (const ward of wardGeometries) {
+      if (!ward.geometry) continue;
+      
+      try {
+        const geometry = typeof ward.geometry === 'string' 
+          ? JSON.parse(ward.geometry) 
+          : ward.geometry;
+        
+        if (geometry?.coordinates?.[0] && isPointInPolygon(point, geometry.coordinates[0])) {
+          return true;
+        }
+      } catch (e) {
+        console.error('Error parsing ward geometry:', e);
+      }
+    }
+    
+    return false;
+  };
+
   const getSortedListings = (listings: ListingWithPolygon[]): ListingWithPolygon[] => {
     if (!userLocation) return listings;
 
@@ -351,19 +394,56 @@ export default function MapBrowse() {
     return Object.values(dealersMap);
   }, [listings]);
 
+  // Get current active ward geometries for spatial filtering
+  const activeWardGeometries = useMemo(() => {
+    if (wardFilter !== 'all') {
+      return wards.filter(w => w.id === wardFilter);
+    }
+    if (districtFilter !== 'all') {
+      return wards;
+    }
+    return [];
+  }, [wardFilter, districtFilter, wards]);
+
   const filteredListings = useMemo(() => {
     const filtered = listings.filter((listing) => {
       const matchesListingType = listingTypeFilter === 'all' || listing.listing_type === listingTypeFilter;
       const matchesPropertyType = propertyTypeFilter === 'all' || listing.property_type === propertyTypeFilter;
       const matchesDealer = dealerFilter === 'all' || listing.owner_id === dealerFilter;
-      const matchesRegion = regionFilter === 'all' || listing.region_id === regionFilter;
-      const matchesDistrict = districtFilter === 'all' || listing.district_id === districtFilter;
-      const matchesWard = wardFilter === 'all' || listing.ward_id === wardFilter;
+      
+      // Location filtering logic based on spatial filter mode
+      let matchesLocation = true;
+      
+      if (spatialFilterMode === 'boundary' && activeWardGeometries.length > 0) {
+        // Spatial filtering: check if listing falls within selected ward boundaries
+        if (wardFilter !== 'all') {
+          const matchesByAssignedId = listing.ward_id === wardFilter;
+          const matchesBySpatial = isListingInWards(listing, activeWardGeometries);
+          matchesLocation = matchesByAssignedId || matchesBySpatial;
+        } else if (districtFilter !== 'all') {
+          const matchesByAssignedId = listing.district_id === districtFilter;
+          const matchesBySpatial = isListingInWards(listing, activeWardGeometries);
+          matchesLocation = matchesByAssignedId || matchesBySpatial;
+        } else if (regionFilter !== 'all') {
+          matchesLocation = listing.region_id === regionFilter;
+        }
+      } else {
+        // ID-based filtering only
+        if (wardFilter !== 'all') {
+          matchesLocation = listing.ward_id === wardFilter;
+        } else if (districtFilter !== 'all') {
+          matchesLocation = listing.district_id === districtFilter;
+        } else if (regionFilter !== 'all') {
+          matchesLocation = listing.region_id === regionFilter;
+        }
+      }
+      
       const matchesStreet = streetFilter === 'all' || listing.street_village_id === streetFilter;
-      return matchesListingType && matchesPropertyType && matchesDealer && matchesRegion && matchesDistrict && matchesWard && matchesStreet;
+      
+      return matchesListingType && matchesPropertyType && matchesDealer && matchesLocation && matchesStreet;
     });
     return getSortedListings(filtered);
-  }, [listings, listingTypeFilter, propertyTypeFilter, dealerFilter, regionFilter, districtFilter, wardFilter, streetFilter, userLocation]);
+  }, [listings, listingTypeFilter, propertyTypeFilter, dealerFilter, regionFilter, districtFilter, wardFilter, streetFilter, userLocation, activeWardGeometries, spatialFilterMode]);
 
   const zoomToListing = (listing: ListingWithPolygon) => {
     if (!mapInstance.current || !listing.polygon) return;
@@ -702,7 +782,40 @@ export default function MapBrowse() {
       </div>
 
       <div className="pt-4 border-t border-border space-y-4">
-        <h3 className="text-sm font-semibold">Location Filters</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Location Filters</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Mode:</span>
+            <Select 
+              value={spatialFilterMode} 
+              onValueChange={(value: 'boundary' | 'id') => setSpatialFilterMode(value)}
+            >
+              <SelectTrigger className="h-7 w-[100px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="boundary">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Spatial
+                  </span>
+                </SelectItem>
+                <SelectItem value="id">
+                  <span className="flex items-center gap-1">
+                    <Check className="h-3 w-3" />
+                    Assigned
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        {spatialFilterMode === 'boundary' && (
+          <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+            Spatial mode finds all properties within ward boundaries, even if not formally assigned.
+          </p>
+        )}
         
         <div>
           <label className="text-sm font-medium mb-2 block">Region</label>
