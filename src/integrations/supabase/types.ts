@@ -1178,7 +1178,9 @@ export type Database = {
           description_sw: string | null
           district: string | null
           district_id: string | null
+          has_electricity: boolean | null
           has_title: boolean | null
+          has_water: boolean | null
           id: string
           is_polygon_verified: boolean | null
           listing_type: Database["public"]["Enums"]["listing_type"]
@@ -1215,7 +1217,9 @@ export type Database = {
           description_sw?: string | null
           district?: string | null
           district_id?: string | null
+          has_electricity?: boolean | null
           has_title?: boolean | null
+          has_water?: boolean | null
           id?: string
           is_polygon_verified?: boolean | null
           listing_type: Database["public"]["Enums"]["listing_type"]
@@ -1252,7 +1256,9 @@ export type Database = {
           description_sw?: string | null
           district?: string | null
           district_id?: string | null
+          has_electricity?: boolean | null
           has_title?: boolean | null
+          has_water?: boolean | null
           id?: string
           is_polygon_verified?: boolean | null
           listing_type?: Database["public"]["Enums"]["listing_type"]

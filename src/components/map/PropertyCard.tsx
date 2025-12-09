@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Maximize2, CheckCircle2, Eye, Clock, TrendingUp, Star } from 'lucide-react';
+import { MapPin, Maximize2, CheckCircle2, Eye, Clock, TrendingUp, Star, Zap, Droplet } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,8 @@ interface PropertyCardProps {
     property_type?: string;
     verification_status?: string | null;
     created_at?: string;
+    has_electricity?: boolean | null;
+    has_water?: boolean | null;
     polygon?: {
       area_m2?: number | null;
     } | null;
@@ -167,7 +169,7 @@ export function PropertyCard({
         </p>
 
         {/* Stats row */}
-        <div className="flex items-center gap-3 flex-wrap mt-2">
+        <div className="flex items-center gap-2 flex-wrap mt-2">
           {listing.polygon?.area_m2 && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Maximize2 className="h-3 w-3" />
@@ -179,6 +181,33 @@ export function PropertyCard({
               <Clock className="h-3 w-3" />
               {formatDistance(distance)}
             </span>
+          )}
+          {/* Utilities Indicators */}
+          {listing.has_electricity !== null && listing.has_electricity !== undefined && (
+            <div 
+              className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] ${
+                listing.has_electricity 
+                  ? 'bg-yellow-500/20 text-yellow-600' 
+                  : 'bg-muted text-muted-foreground'
+              }`}
+              title={listing.has_electricity ? 'Electricity Available' : 'No Electricity'}
+            >
+              <Zap className="h-2.5 w-2.5" />
+              {listing.has_electricity ? '1' : '0'}
+            </div>
+          )}
+          {listing.has_water !== null && listing.has_water !== undefined && (
+            <div 
+              className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] ${
+                listing.has_water 
+                  ? 'bg-blue-500/20 text-blue-600' 
+                  : 'bg-muted text-muted-foreground'
+              }`}
+              title={listing.has_water ? 'Water Available' : 'No Water'}
+            >
+              <Droplet className="h-2.5 w-2.5" />
+              {listing.has_water ? '1' : '0'}
+            </div>
           )}
         </div>
 
