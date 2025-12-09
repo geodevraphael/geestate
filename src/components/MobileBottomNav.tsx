@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, MapPin, MessageSquare, ShoppingBag, Plus } from 'lucide-react';
+import { Home, Search, MapPin, MessageSquare, ClipboardList, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -53,7 +53,7 @@ export function MobileBottomNav() {
     { icon: Search, label: 'Browse', path: '/listings', activePattern: /^\/listings/ },
     { icon: MapPin, label: 'Map', path: '/map', activePattern: /^\/map/ },
     { icon: MessageSquare, label: 'Chat', path: '/messages', activePattern: /^\/messages/, requireAuth: true },
-    { icon: ShoppingBag, label: 'Deals', path: '/deals', activePattern: /^\/deals/, requireAuth: true },
+    { icon: ClipboardList, label: 'Requests', path: '/my-service-requests', activePattern: /^\/(my-service-requests|service-requests)/, requireAuth: true },
   ];
 
   const canCreateListing = user && (hasRole('seller') || hasRole('broker') || hasRole('admin'));
