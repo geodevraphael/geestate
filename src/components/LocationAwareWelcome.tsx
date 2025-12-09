@@ -4,6 +4,7 @@ import { Bot, MapPin, Navigation, Loader2, X, Sparkles, ChevronRight, Target } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import * as turf from '@turf/turf';
 
 interface LocationInfo {
   region: { id: string; name: string } | null;
@@ -13,6 +14,36 @@ interface LocationInfo {
   latitude: number;
   longitude: number;
 }
+
+// Fast bounding box pre-check to skip wards that can't contain the point
+const isPointInBBox = (lat: number, lng: number, geometry: any): boolean => {
+  try {
+    const bbox = turf.bbox(geometry);
+    // bbox = [minLng, minLat, maxLng, maxLat]
+    return lng >= bbox[0] && lng <= bbox[2] && lat >= bbox[1] && lat <= bbox[3];
+  } catch {
+    return true; // If bbox fails, proceed to full check
+  }
+};
+
+// Use Turf.js optimized point-in-polygon
+const isPointInGeometry = (lat: number, lng: number, geometry: any): boolean => {
+  if (!geometry?.type || !geometry?.coordinates) return false;
+  
+  try {
+    const point = turf.point([lng, lat]);
+    
+    if (geometry.type === 'Polygon') {
+      return turf.booleanPointInPolygon(point, turf.polygon(geometry.coordinates));
+    } else if (geometry.type === 'MultiPolygon') {
+      return turf.booleanPointInPolygon(point, turf.multiPolygon(geometry.coordinates));
+    }
+  } catch (e) {
+    console.error('Geometry check error:', e);
+  }
+  
+  return false;
+};
 
 export const LocationAwareWelcome: React.FC = () => {
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
@@ -34,13 +65,14 @@ export const LocationAwareWelcome: React.FC = () => {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
+        const startTime = performance.now();
         
         try {
           let foundRegion: { id: string; name: string } | null = null;
           let foundDistrict: { id: string; name: string } | null = null;
           let foundWard: { id: string; name: string } | null = null;
 
-          // Fetch ALL wards with pagination (Supabase default limit is 1000)
+          // Fetch ALL wards with pagination
           let allWards: any[] = [];
           let offset = 0;
           const pageSize = 1000;
@@ -81,30 +113,42 @@ export const LocationAwareWelcome: React.FC = () => {
             }
           }
 
-          console.log(`Checking ${allWards.length} wards for point (${latitude}, ${longitude})`);
+          const fetchTime = performance.now();
+          console.log(`Fetched ${allWards.length} wards in ${(fetchTime - startTime).toFixed(0)}ms`);
 
-          // Find which ward contains the user's location
+          // Find ward using bbox pre-filter + Turf.js
+          let bboxChecks = 0;
+          let fullChecks = 0;
+
           for (const ward of allWards) {
             if (ward.geometry) {
               const geom = typeof ward.geometry === 'string' 
                 ? JSON.parse(ward.geometry) 
                 : ward.geometry;
               
+              // Fast bbox check first
+              if (!isPointInBBox(latitude, longitude, geom)) {
+                bboxChecks++;
+                continue;
+              }
+              
+              // Full point-in-polygon check
+              fullChecks++;
               if (isPointInGeometry(latitude, longitude, geom)) {
                 foundWard = { id: ward.id, name: ward.name };
                 
-                // Get district and region from the joined data
                 const district = ward.districts as any;
                 if (district) {
                   foundDistrict = { id: district.id, name: district.name };
-                  
                   const region = district.regions as any;
                   if (region) {
                     foundRegion = { id: region.id, name: region.name };
                   }
                 }
                 
-                console.log(`Found: ${ward.name} ward, ${foundDistrict?.name} District, ${foundRegion?.name} Region`);
+                const totalTime = performance.now() - startTime;
+                console.log(`Found: ${ward.name}, ${foundDistrict?.name}, ${foundRegion?.name}`);
+                console.log(`Geofencing: ${bboxChecks} bbox skips, ${fullChecks} full checks, ${totalTime.toFixed(0)}ms total`);
                 break;
               }
             }
@@ -157,47 +201,7 @@ export const LocationAwareWelcome: React.FC = () => {
         timeout: 15000,
         maximumAge: 300000,
       }
-    );
-  };
-
-  const isPointInGeometry = (lat: number, lng: number, geometry: any): boolean => {
-    try {
-      let polygons: number[][][] = [];
-      
-      if (geometry.type === 'Polygon') {
-        polygons = [geometry.coordinates[0]];
-      } else if (geometry.type === 'MultiPolygon') {
-        polygons = geometry.coordinates.map((p: number[][][]) => p[0]);
-      } else {
-        return false;
-      }
-
-      for (const ring of polygons) {
-        if (pointInPolygon([lng, lat], ring)) {
-          return true;
-        }
-      }
-      return false;
-    } catch (e) {
-      console.error('Error checking point in geometry:', e);
-      return false;
-    }
-  };
-
-  const pointInPolygon = (point: number[], polygon: number[][]): boolean => {
-    const [x, y] = point;
-    let inside = false;
-    
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const [xi, yi] = polygon[i];
-      const [xj, yj] = polygon[j];
-      
-      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
-        inside = !inside;
-      }
-    }
-    
-    return inside;
+    )
   };
 
   useEffect(() => {
