@@ -194,6 +194,43 @@ export default function MapBrowse() {
     const features: Feature[] = [];
     const allCoordinates: number[][] = [];
 
+    // Helper to create a feature from polygon coordinates
+    const createFeatureFromCoords = (coords: [number, number][], boundary: any, strokeColor: string, fillOpacity: string) => {
+      const transformedCoords = coords.map((coord: [number, number]) => {
+        const projected = fromLonLat([coord[0], coord[1]]);
+        allCoordinates.push(projected as number[]);
+        return projected;
+      });
+
+      const polygon = new Polygon([transformedCoords]);
+      const feature = new Feature({
+        geometry: polygon,
+        boundary: boundary,
+      });
+
+      feature.setStyle(
+        new Style({
+          fill: new Fill({
+            color: strokeColor + fillOpacity,
+          }),
+          stroke: new Stroke({
+            color: strokeColor,
+            width: level === 'ward' ? 3 : 2,
+            lineDash: level === 'district' ? [8, 4] : undefined,
+          }),
+          text: new Text({
+            text: boundary.name,
+            font: 'bold 11px sans-serif',
+            fill: new Fill({ color: '#ffffff' }),
+            stroke: new Stroke({ color: strokeColor, width: 3 }),
+            overflow: true,
+          }),
+        })
+      );
+
+      return feature;
+    };
+
     boundaries.forEach((boundary) => {
       if (!boundary.geometry) return;
 
@@ -204,44 +241,22 @@ export default function MapBrowse() {
 
         if (!geometry.coordinates) return;
 
-        const coords = geometry.coordinates[0];
-        const transformedCoords = coords.map((coord: [number, number]) => {
-          const projected = fromLonLat([coord[0], coord[1]]);
-          allCoordinates.push(projected as number[]);
-          return projected;
-        });
-
-        const polygon = new Polygon([transformedCoords]);
-        const feature = new Feature({
-          geometry: polygon,
-          boundary: boundary,
-        });
-
-        // Style based on level
         const strokeColor = level === 'ward' ? '#3b82f6' : '#8b5cf6';
         const fillOpacity = level === 'ward' ? '20' : '10';
-        
-        feature.setStyle(
-          new Style({
-            fill: new Fill({
-              color: strokeColor + fillOpacity,
-            }),
-            stroke: new Stroke({
-              color: strokeColor,
-              width: level === 'ward' ? 3 : 2,
-              lineDash: level === 'district' ? [8, 4] : undefined,
-            }),
-            text: new Text({
-              text: boundary.name,
-              font: 'bold 11px sans-serif',
-              fill: new Fill({ color: '#ffffff' }),
-              stroke: new Stroke({ color: strokeColor, width: 3 }),
-              overflow: true,
-            }),
-          })
-        );
 
-        features.push(feature);
+        // Handle both Polygon and MultiPolygon geometry types
+        if (geometry.type === 'Polygon') {
+          const feature = createFeatureFromCoords(geometry.coordinates[0], boundary, strokeColor, fillOpacity);
+          features.push(feature);
+        } else if (geometry.type === 'MultiPolygon') {
+          // MultiPolygon: create a feature for each polygon part
+          geometry.coordinates.forEach((polygonCoords: [number, number][][]) => {
+            if (polygonCoords?.[0]) {
+              const feature = createFeatureFromCoords(polygonCoords[0], boundary, strokeColor, fillOpacity);
+              features.push(feature);
+            }
+          });
+        }
       } catch (error) {
         console.error('Error rendering boundary:', error);
       }
@@ -355,8 +370,18 @@ export default function MapBrowse() {
           ? JSON.parse(ward.geometry) 
           : ward.geometry;
         
-        if (geometry?.coordinates?.[0] && isPointInPolygon(point, geometry.coordinates[0])) {
-          return true;
+        // Handle both Polygon and MultiPolygon geometry types
+        if (geometry?.type === 'Polygon' && geometry?.coordinates?.[0]) {
+          if (isPointInPolygon(point, geometry.coordinates[0])) {
+            return true;
+          }
+        } else if (geometry?.type === 'MultiPolygon' && geometry?.coordinates) {
+          // MultiPolygon has an array of polygons
+          for (const polygonCoords of geometry.coordinates) {
+            if (polygonCoords?.[0] && isPointInPolygon(point, polygonCoords[0])) {
+              return true;
+            }
+          }
         }
       } catch (e) {
         console.error('Error parsing ward geometry:', e);
