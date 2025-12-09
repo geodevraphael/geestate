@@ -146,8 +146,9 @@ export function PropertyList({
       <ScrollArea className="flex-1">
         <div className="p-3">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="h-10 w-10 rounded-full border-3 border-accent border-t-transparent animate-spin" />
+              <p className="text-sm text-muted-foreground">Loading properties...</p>
             </div>
           ) : listings.length > 0 ? (
             <div className={cn(
