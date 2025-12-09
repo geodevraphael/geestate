@@ -21,7 +21,10 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  FileSearch
+  FileSearch,
+  MessageSquare,
+  Receipt,
+  Wallet
 } from 'lucide-react';
 import { ServiceManagement } from '@/components/service-provider/ServiceManagement';
 import { CalendarManagement } from '@/components/service-provider/CalendarManagement';
@@ -29,10 +32,13 @@ import { BookingRequests } from '@/components/service-provider/BookingRequests';
 import { ServiceRequests } from '@/components/service-provider/ServiceRequests';
 import { ProviderAnalytics } from '@/components/service-provider/ProviderAnalytics';
 import { ProviderProfileSettings } from '@/components/service-provider/ProviderProfileSettings';
+import { ProviderEarnings } from '@/components/service-provider/ProviderEarnings';
+import { ClientMessaging } from '@/components/service-provider/ClientMessaging';
 import { Link } from 'react-router-dom';
 
 interface ProviderProfile {
   id: string;
+  user_id: string;
   company_name: string;
   provider_type: string;
   is_verified: boolean;
@@ -48,29 +54,39 @@ interface ProviderProfile {
 }
 
 interface DashboardStats {
-  pendingBookings: number;
-  totalBookings: number;
-  monthlyEarnings: number;
+  pendingRequests: number;
+  acceptedRequests: number;
+  completedRequests: number;
+  totalEarnings: number;
   activeServices: number;
+  pendingFees: number;
 }
 
 export default function ServiceProviderDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
-    pendingBookings: 0,
-    totalBookings: 0,
-    monthlyEarnings: 0,
-    activeServices: 0
+    pendingRequests: 0,
+    acceptedRequests: 0,
+    completedRequests: 0,
+    totalEarnings: 0,
+    activeServices: 0,
+    pendingFees: 0
   });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('requests');
 
   useEffect(() => {
     if (user) {
       fetchProviderProfile();
-      fetchDashboardStats();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (profile) {
+      fetchDashboardStats();
+    }
+  }, [profile]);
 
   const fetchProviderProfile = async () => {
     try {
@@ -90,18 +106,21 @@ export default function ServiceProviderDashboard() {
   };
 
   const fetchDashboardStats = async () => {
-    try {
-      // Fetch booking stats
-      const { data: bookings } = await supabase
-        .from('service_bookings')
-        .select('id, status, total_price')
-        .eq('provider_id', user?.id);
+    if (!profile) return;
 
-      const pendingBookings = bookings?.filter(b => b.status === 'pending').length || 0;
-      const totalBookings = bookings?.length || 0;
-      const monthlyEarnings = bookings
-        ?.filter(b => b.status === 'completed')
-        .reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
+    try {
+      // Fetch service request stats using the profile ID
+      const { data: requests } = await supabase
+        .from('service_requests')
+        .select('id, status, payment_amount, payment_confirmed_at')
+        .eq('service_provider_id', profile.id);
+
+      const pendingRequests = requests?.filter(r => ['pending', 'assigned'].includes(r.status)).length || 0;
+      const acceptedRequests = requests?.filter(r => ['accepted', 'quoted', 'in_progress'].includes(r.status)).length || 0;
+      const completedRequests = requests?.filter(r => r.status === 'completed').length || 0;
+      const totalEarnings = requests
+        ?.filter(r => r.status === 'completed' && r.payment_confirmed_at)
+        .reduce((sum, r) => sum + (r.payment_amount || 0), 0) || 0;
 
       // Fetch active services count
       const { count: activeServices } = await supabase
@@ -110,11 +129,22 @@ export default function ServiceProviderDashboard() {
         .eq('provider_id', user?.id)
         .eq('is_active', true);
 
+      // Fetch pending platform fees
+      const { data: fees } = await supabase
+        .from('geoinsight_income_records')
+        .select('amount_due')
+        .eq('user_id', user?.id)
+        .in('status', ['pending', 'awaiting_review']);
+
+      const pendingFees = fees?.reduce((sum, f) => sum + f.amount_due, 0) || 0;
+
       setStats({
-        pendingBookings,
-        totalBookings,
-        monthlyEarnings,
-        activeServices: activeServices || 0
+        pendingRequests,
+        acceptedRequests,
+        completedRequests,
+        totalEarnings,
+        activeServices: activeServices || 0,
+        pendingFees
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -166,7 +196,7 @@ export default function ServiceProviderDashboard() {
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl md:text-3xl font-bold">{profile.company_name}</h1>
                 {profile.is_verified ? (
-                  <Badge className="bg-green-100 text-green-800">
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Verified
                   </Badge>
@@ -188,7 +218,15 @@ export default function ServiceProviderDashboard() {
                 <span className="text-muted-foreground">{profile.completed_projects} projects</span>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {stats.pendingFees > 0 && (
+                <Link to="/geoinsight-payments">
+                  <Button variant="outline" className="gap-2 border-amber-500/50 text-amber-600">
+                    <Receipt className="h-4 w-4" />
+                    Fees Due: TZS {stats.pendingFees.toLocaleString()}
+                  </Button>
+                </Link>
+              )}
               <Link to={`/service-providers/${profile.id}`}>
                 <Button variant="outline">
                   <Eye className="h-4 w-4 mr-2" />
@@ -200,82 +238,132 @@ export default function ServiceProviderDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200/50">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${activeTab === 'requests' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setActiveTab('requests')}
+          >
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending Bookings</p>
-                  <p className="text-2xl font-bold">{stats.pendingBookings}</p>
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <Bell className="h-5 w-5 text-amber-600" />
+                  <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+                    {stats.pendingRequests}
+                  </Badge>
                 </div>
-                <div className="h-10 w-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-                  <Bell className="h-5 w-5 text-blue-600" />
-                </div>
+                <p className="text-2xl font-bold mt-2">{stats.pendingRequests}</p>
+                <p className="text-xs text-muted-foreground">New Requests</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200/50">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${activeTab === 'requests' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setActiveTab('requests')}
+          >
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Bookings</p>
-                  <p className="text-2xl font-bold">{stats.totalBookings}</p>
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <Clock className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="h-10 w-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-green-600" />
-                </div>
+                <p className="text-2xl font-bold mt-2">{stats.acceptedRequests}</p>
+                <p className="text-xs text-muted-foreground">In Progress</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border-purple-200/50">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md`}
+            onClick={() => setActiveTab('requests')}
+          >
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Monthly Earnings</p>
-                  <p className="text-2xl font-bold">TZS {stats.monthlyEarnings.toLocaleString()}</p>
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
                 </div>
-                <div className="h-10 w-10 bg-purple-500/10 rounded-full flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-purple-600" />
-                </div>
+                <p className="text-2xl font-bold mt-2">{stats.completedRequests}</p>
+                <p className="text-xs text-muted-foreground">Completed</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/20 border-orange-200/50">
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${activeTab === 'earnings' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setActiveTab('earnings')}
+          >
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Services</p>
-                  <p className="text-2xl font-bold">{stats.activeServices}</p>
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <Wallet className="h-5 w-5 text-emerald-600" />
                 </div>
-                <div className="h-10 w-10 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <Briefcase className="h-5 w-5 text-orange-600" />
+                <p className="text-lg font-bold mt-2">TZS {(stats.totalEarnings / 1000).toFixed(0)}K</p>
+                <p className="text-xs text-muted-foreground">Total Earnings</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${activeTab === 'services' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setActiveTab('services')}
+          >
+            <CardContent className="p-4">
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <Briefcase className="h-5 w-5 text-purple-600" />
                 </div>
+                <p className="text-2xl font-bold mt-2">{stats.activeServices}</p>
+                <p className="text-xs text-muted-foreground">Active Services</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${stats.pendingFees > 0 ? 'border-amber-500/50' : ''}`}
+            onClick={() => setActiveTab('earnings')}
+          >
+            <CardContent className="p-4">
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <Receipt className="h-5 w-5 text-amber-600" />
+                  {stats.pendingFees > 0 && (
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                  )}
+                </div>
+                <p className="text-lg font-bold mt-2 text-amber-600">
+                  TZS {stats.pendingFees.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">Fees Due</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="requests" className="space-y-4">
-          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
             <TabsTrigger value="requests" className="gap-2">
               <FileSearch className="h-4 w-4" />
               <span className="hidden sm:inline">Requests</span>
             </TabsTrigger>
-            <TabsTrigger value="bookings" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Bookings</span>
+            <TabsTrigger value="earnings" className="gap-2">
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Earnings</span>
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Messages</span>
             </TabsTrigger>
             <TabsTrigger value="services" className="gap-2">
               <Briefcase className="h-4 w-4" />
               <span className="hidden sm:inline">Services</span>
             </TabsTrigger>
             <TabsTrigger value="calendar" className="gap-2">
-              <Clock className="h-4 w-4" />
+              <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="bookings" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Bookings</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
               <TrendingUp className="h-4 w-4" />
@@ -291,8 +379,12 @@ export default function ServiceProviderDashboard() {
             <ServiceRequests providerId={profile.id} />
           </TabsContent>
 
-          <TabsContent value="bookings">
-            <BookingRequests providerId={profile.id} onUpdate={fetchDashboardStats} />
+          <TabsContent value="earnings">
+            <ProviderEarnings providerId={profile.id} userId={user?.id || ''} />
+          </TabsContent>
+
+          <TabsContent value="messages">
+            <ClientMessaging providerId={profile.id} />
           </TabsContent>
 
           <TabsContent value="services">
@@ -301,6 +393,10 @@ export default function ServiceProviderDashboard() {
 
           <TabsContent value="calendar">
             <CalendarManagement providerId={profile.id} />
+          </TabsContent>
+
+          <TabsContent value="bookings">
+            <BookingRequests providerId={profile.id} onUpdate={fetchDashboardStats} />
           </TabsContent>
 
           <TabsContent value="analytics">

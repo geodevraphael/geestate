@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { 
   FileSearch, Clock, CheckCircle2, MapPin, Calendar, 
   DollarSign, MessageSquare, ArrowRight, User, Phone, Mail, 
-  CreditCard, AlertCircle
+  CreditCard, AlertCircle, Upload, FileText, Download, X
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -40,6 +40,7 @@ interface ServiceRequest {
   payment_confirmed_at: string | null;
   payment_amount: number | null;
   client_payment_reference: string | null;
+  report_file_url: string | null;
   listings?: {
     title: string;
     location_label: string;
@@ -79,6 +80,8 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [uploadingReport, setUploadingReport] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['provider-service-requests', providerId],
@@ -136,6 +139,42 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
     setProviderNotes('');
     setPaymentAmount('');
     setPaymentReference('');
+  };
+
+  const handleUploadReport = async (file: File) => {
+    if (!selectedRequest) return;
+    
+    setUploadingReport(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${selectedRequest.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('survey-plans')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('survey-plans')
+        .getPublicUrl(filePath);
+
+      // Update the request with the report URL
+      const { error: updateError } = await supabase
+        .from('service_requests')
+        .update({ report_file_url: publicUrl })
+        .eq('id', selectedRequest.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Report uploaded successfully');
+      queryClient.invalidateQueries({ queryKey: ['provider-service-requests'] });
+      setSelectedRequest(prev => prev ? { ...prev, report_file_url: publicUrl } as ServiceRequest : null);
+    } catch (error: any) {
+      toast.error('Failed to upload report: ' + error.message);
+    } finally {
+      setUploadingReport(false);
+    }
   };
 
   const handleAccept = () => {
