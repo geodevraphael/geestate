@@ -107,7 +107,7 @@ export function MapFilters({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Search Bar */}
       <div className="relative group">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-accent" />
@@ -115,23 +115,23 @@ export function MapFilters({
           placeholder="Search by title or location..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 pr-8 h-10 bg-muted/50 border-muted focus:bg-background transition-all"
+          className="pl-10 pr-9 h-11 bg-muted/50 border-muted focus:bg-background transition-all rounded-xl"
         />
         {searchQuery && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 hover:bg-destructive/10 hover:text-destructive rounded-full"
             onClick={() => setSearchQuery('')}
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
 
       {/* Active filters badge & reset */}
       {activeFiltersCount > 0 && (
-        <div className="flex items-center justify-between bg-accent/10 rounded-lg px-3 py-2.5 border border-accent/20">
+        <div className="flex items-center justify-between bg-accent/10 rounded-xl px-4 py-3 border border-accent/20">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-accent" />
             <span className="text-sm font-medium">
@@ -142,60 +142,60 @@ export function MapFilters({
             variant="ghost" 
             size="sm" 
             onClick={onReset} 
-            className="h-7 text-xs hover:bg-destructive/10 hover:text-destructive gap-1"
+            className="h-8 text-xs hover:bg-destructive/10 hover:text-destructive gap-1.5 rounded-lg"
           >
-            <RotateCcw className="h-3 w-3" />
+            <RotateCcw className="h-3.5 w-3.5" />
             Reset
           </Button>
         </div>
       )}
 
-      {/* Quick Filters - Listing Type Pills */}
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Listing Type</label>
-        <div className="flex gap-2">
+      {/* Quick Filters - Listing Type */}
+      <div className="space-y-2.5">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Listing Type</label>
+        <div className="grid grid-cols-3 gap-2">
           {[
             { value: 'all', label: 'All', icon: '🏠' },
-            { value: 'sale', label: 'For Sale', icon: '💰' },
-            { value: 'rent', label: 'For Rent', icon: '🔑' },
+            { value: 'sale', label: 'Sale', icon: '💰' },
+            { value: 'rent', label: 'Rent', icon: '🔑' },
           ].map(option => (
             <button
               key={option.value}
               onClick={() => setListingTypeFilter(option.value)}
               className={cn(
-                "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200",
-                "border-2",
+                "py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-200",
+                "border-2 flex flex-col items-center gap-1",
                 listingTypeFilter === option.value
-                  ? "border-accent bg-accent/10 text-foreground"
-                  : "border-border bg-muted/30 text-muted-foreground hover:border-border/80 hover:bg-muted/50"
+                  ? "border-accent bg-accent/10 text-foreground shadow-sm"
+                  : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/30 hover:bg-muted/50"
               )}
             >
-              <span className="mr-1">{option.icon}</span>
-              {option.label}
+              <span className="text-lg">{option.icon}</span>
+              <span className="text-xs">{option.label}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Property Type */}
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Property Type</label>
+      <div className="space-y-2.5">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Property Type</label>
         <div className="flex flex-wrap gap-2">
           {[
             { value: 'all', label: 'All' },
             { value: 'land', label: '🌍 Land' },
             { value: 'house', label: '🏡 House' },
-            { value: 'apartment', label: '🏢 Apartment' },
+            { value: 'apartment', label: '🏢 Apt' },
             { value: 'commercial', label: '🏪 Commercial' },
           ].map(option => (
             <Badge
               key={option.value}
               variant={propertyTypeFilter === option.value ? "default" : "outline"}
               className={cn(
-                "cursor-pointer transition-all duration-200 py-1.5 px-3",
+                "cursor-pointer transition-all duration-200 py-1.5 px-3 rounded-lg text-xs",
                 propertyTypeFilter === option.value
-                  ? "bg-foreground text-background hover:bg-foreground/90"
-                  : "hover:bg-muted"
+                  ? "bg-foreground text-background hover:bg-foreground/90 shadow-sm"
+                  : "hover:bg-muted hover:border-muted-foreground/30"
               )}
               onClick={() => setPropertyTypeFilter(option.value)}
             >
@@ -206,14 +206,14 @@ export function MapFilters({
       </div>
 
       {/* Price Range */}
-      <div className="space-y-3 p-3 rounded-lg bg-muted/30 border">
+      <div className="space-y-3 p-4 rounded-xl bg-muted/30 border">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium flex items-center gap-2">
+          <label className="text-sm font-semibold flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-accent" />
             Price Range
           </label>
-          <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded">
-            TZS {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
+          <span className="text-xs text-muted-foreground bg-background px-2.5 py-1 rounded-lg font-medium">
+            {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
           </span>
         </div>
         <Slider
@@ -222,22 +222,22 @@ export function MapFilters({
           max={maxPrice}
           step={maxPrice / 100}
           onValueChange={(v) => setPriceRange(v as [number, number])}
-          className="mt-2"
+          className="mt-3"
         />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>0</span>
-          <span>{formatPrice(maxPrice)}</span>
+        <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+          <span>TZS 0</span>
+          <span>TZS {formatPrice(maxPrice)}</span>
         </div>
       </div>
 
       {/* Area Range */}
-      <div className="space-y-3 p-3 rounded-lg bg-muted/30 border">
+      <div className="space-y-3 p-4 rounded-xl bg-muted/30 border">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium flex items-center gap-2">
+          <label className="text-sm font-semibold flex items-center gap-2">
             <Ruler className="h-4 w-4 text-accent" />
             Land Area
           </label>
-          <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded">
+          <span className="text-xs text-muted-foreground bg-background px-2.5 py-1 rounded-lg font-medium">
             {formatArea(areaRange[0])} - {formatArea(areaRange[1])}
           </span>
         </div>
@@ -247,35 +247,35 @@ export function MapFilters({
           max={maxArea}
           step={maxArea / 100}
           onValueChange={(v) => setAreaRange(v as [number, number])}
-          className="mt-2"
+          className="mt-3"
         />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>0</span>
+        <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+          <span>0 m²</span>
           <span>{formatArea(maxArea)}</span>
         </div>
       </div>
 
-      {/* Dealer Filter */}
+      {/* Advanced Filters */}
       <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between h-10 px-3 bg-muted/30">
-            <span className="text-sm font-medium">Advanced Filters</span>
+          <Button variant="ghost" className="w-full justify-between h-11 px-4 bg-muted/30 rounded-xl hover:bg-muted/50">
+            <span className="text-sm font-semibold">Advanced Filters</span>
             <ChevronsUpDown className={cn(
               "h-4 w-4 transition-transform duration-200",
               showAdvancedFilters && "rotate-180"
             )} />
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Seller / Dealer</label>
+        <CollapsibleContent className="space-y-4 pt-4 animate-fade-in">
+          <div className="space-y-2.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Seller / Dealer</label>
             <Popover open={dealerSearchOpen} onOpenChange={setDealerSearchOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={dealerSearchOpen}
-                  className="w-full justify-between h-10"
+                  className="w-full justify-between h-11 rounded-xl"
                 >
                   {dealerFilter === 'all'
                     ? 'All Sellers'
@@ -283,7 +283,7 @@ export function MapFilters({
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[280px] p-0">
+              <PopoverContent className="w-[320px] p-0">
                 <Command>
                   <CommandInput placeholder="Search seller..." />
                   <CommandList>
@@ -315,8 +315,8 @@ export function MapFilters({
       {/* Location Filters Section */}
       <Collapsible open={showLocationFilters} onOpenChange={setShowLocationFilters}>
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between h-10 px-3 bg-muted/30">
-            <span className="text-sm font-medium flex items-center gap-2">
+          <Button variant="ghost" className="w-full justify-between h-11 px-4 bg-muted/30 rounded-xl hover:bg-muted/50">
+            <span className="text-sm font-semibold flex items-center gap-2">
               <MapPin className="h-4 w-4 text-accent" />
               Location Filters
             </span>
@@ -326,46 +326,46 @@ export function MapFilters({
             )} />
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-4 pt-4">
+        <CollapsibleContent className="space-y-4 pt-4 animate-fade-in">
           {/* Filter Mode Toggle */}
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setSpatialFilterMode('boundary')}
               className={cn(
-                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 border",
+                "py-2.5 px-3 rounded-xl text-xs font-medium transition-all duration-200 border-2",
                 spatialFilterMode === 'boundary'
                   ? "border-accent bg-accent/10 text-foreground"
-                  : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
+                  : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/30"
               )}
             >
-              <MapPin className="h-3 w-3 inline mr-1" />
+              <MapPin className="h-3.5 w-3.5 inline mr-1.5" />
               Spatial
             </button>
             <button
               onClick={() => setSpatialFilterMode('id')}
               className={cn(
-                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 border",
+                "py-2.5 px-3 rounded-xl text-xs font-medium transition-all duration-200 border-2",
                 spatialFilterMode === 'id'
                   ? "border-accent bg-accent/10 text-foreground"
-                  : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
+                  : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/30"
               )}
             >
-              <Check className="h-3 w-3 inline mr-1" />
+              <Check className="h-3.5 w-3.5 inline mr-1.5" />
               Assigned
             </button>
           </div>
           
           {spatialFilterMode === 'boundary' && (
-            <p className="text-xs text-muted-foreground bg-muted/50 p-2.5 rounded-lg border border-dashed">
-              💡 Spatial mode finds all properties within administrative boundaries.
+            <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-xl border border-dashed">
+              💡 Finds all properties within administrative boundaries.
             </p>
           )}
           
           {/* Region */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Region</label>
+            <label className="text-xs font-semibold text-muted-foreground">Region</label>
             <Select value={regionFilter} onValueChange={setRegionFilter}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-10 rounded-xl">
                 <SelectValue placeholder="All Regions" />
               </SelectTrigger>
               <SelectContent>
@@ -380,9 +380,9 @@ export function MapFilters({
           {/* District */}
           {regionFilter !== 'all' && districts.length > 0 && (
             <div className="space-y-2 animate-fade-in">
-              <label className="text-xs font-medium text-muted-foreground">District</label>
+              <label className="text-xs font-semibold text-muted-foreground">District</label>
               <Select value={districtFilter} onValueChange={setDistrictFilter}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-10 rounded-xl">
                   <SelectValue placeholder="All Districts" />
                 </SelectTrigger>
                 <SelectContent>
@@ -398,9 +398,9 @@ export function MapFilters({
           {/* Ward */}
           {districtFilter !== 'all' && wards.length > 0 && (
             <div className="space-y-2 animate-fade-in">
-              <label className="text-xs font-medium text-muted-foreground">Ward</label>
+              <label className="text-xs font-semibold text-muted-foreground">Ward</label>
               <Select value={wardFilter} onValueChange={setWardFilter}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-10 rounded-xl">
                   <SelectValue placeholder="All Wards" />
                 </SelectTrigger>
                 <SelectContent>
@@ -416,9 +416,9 @@ export function MapFilters({
           {/* Street */}
           {wardFilter !== 'all' && streets.length > 0 && (
             <div className="space-y-2 animate-fade-in">
-              <label className="text-xs font-medium text-muted-foreground">Street/Village</label>
+              <label className="text-xs font-semibold text-muted-foreground">Street/Village</label>
               <Select value={streetFilter} onValueChange={setStreetFilter}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-10 rounded-xl">
                   <SelectValue placeholder="All Streets" />
                 </SelectTrigger>
                 <SelectContent>

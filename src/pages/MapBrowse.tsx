@@ -554,57 +554,63 @@ export default function MapBrowse() {
       <div className="flex h-[calc(100vh-64px)] relative overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <div className="w-80 border-r bg-background/95 backdrop-blur-sm flex flex-col z-10 shadow-lg">
-            <div className="p-4 border-b bg-gradient-to-r from-accent/5 to-transparent">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                  <MapPin className="h-5 w-5 text-accent" />
+          <div className="w-96 border-r bg-background flex flex-col z-10 shadow-lg">
+            {/* Header */}
+            <div className="p-4 border-b bg-gradient-to-br from-accent/10 via-accent/5 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-accent flex items-center justify-center shadow-md">
+                  <MapPin className="h-5 w-5 text-accent-foreground" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-lg">Map Browser</h2>
-                  <p className="text-xs text-muted-foreground">Find your perfect property</p>
+                  <h2 className="font-bold text-lg tracking-tight">Map Browser</h2>
+                  <p className="text-xs text-muted-foreground">Explore {sortedListings.length} properties</p>
                 </div>
               </div>
             </div>
             
-            <ScrollArea className="flex-1 p-4">
-              <MapFilters
-                listingTypeFilter={listingTypeFilter}
-                setListingTypeFilter={setListingTypeFilter}
-                propertyTypeFilter={propertyTypeFilter}
-                setPropertyTypeFilter={setPropertyTypeFilter}
-                dealerFilter={dealerFilter}
-                setDealerFilter={setDealerFilter}
-                uniqueDealers={uniqueDealers}
-                spatialFilterMode={spatialFilterMode}
-                setSpatialFilterMode={setSpatialFilterMode}
-                regionFilter={regionFilter}
-                setRegionFilter={setRegionFilter}
-                districtFilter={districtFilter}
-                setDistrictFilter={setDistrictFilter}
-                wardFilter={wardFilter}
-                setWardFilter={setWardFilter}
-                streetFilter={streetFilter}
-                setStreetFilter={setStreetFilter}
-                regions={regions}
-                districts={districts}
-                wards={wards}
-                streets={streets}
-                priceRange={priceRange}
-                setPriceRange={setPriceRange}
-                maxPrice={maxPrice}
-                areaRange={areaRange}
-                setAreaRange={setAreaRange}
-                maxArea={maxArea}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                onReset={resetFilters}
-                activeFiltersCount={activeFiltersCount}
-              />
-            </ScrollArea>
+            {/* Filters Section */}
+            <div className="flex-1 min-h-0 flex flex-col">
+              <ScrollArea className="flex-1">
+                <div className="p-4 space-y-4">
+                  <MapFilters
+                    listingTypeFilter={listingTypeFilter}
+                    setListingTypeFilter={setListingTypeFilter}
+                    propertyTypeFilter={propertyTypeFilter}
+                    setPropertyTypeFilter={setPropertyTypeFilter}
+                    dealerFilter={dealerFilter}
+                    setDealerFilter={setDealerFilter}
+                    uniqueDealers={uniqueDealers}
+                    spatialFilterMode={spatialFilterMode}
+                    setSpatialFilterMode={setSpatialFilterMode}
+                    regionFilter={regionFilter}
+                    setRegionFilter={setRegionFilter}
+                    districtFilter={districtFilter}
+                    setDistrictFilter={setDistrictFilter}
+                    wardFilter={wardFilter}
+                    setWardFilter={setWardFilter}
+                    streetFilter={streetFilter}
+                    setStreetFilter={setStreetFilter}
+                    regions={regions}
+                    districts={districts}
+                    wards={wards}
+                    streets={streets}
+                    priceRange={priceRange}
+                    setPriceRange={setPriceRange}
+                    maxPrice={maxPrice}
+                    areaRange={areaRange}
+                    setAreaRange={setAreaRange}
+                    maxArea={maxArea}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    onReset={resetFilters}
+                    activeFiltersCount={activeFiltersCount}
+                  />
+                </div>
+              </ScrollArea>
+            </div>
 
-            {/* Property List */}
-            <div className="border-t h-[40%] bg-muted/20">
+            {/* Property List Section */}
+            <div className="border-t h-[45%] min-h-[280px] bg-muted/10">
               <PropertyList
                 listings={sortedListings}
                 viewMode={viewMode}
