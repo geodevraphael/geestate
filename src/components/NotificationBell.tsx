@@ -138,8 +138,11 @@ export function NotificationBell() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <div className="p-2 border-b">
+        <div className="p-2 border-b flex items-center justify-between">
           <h3 className="font-semibold">Notifications</h3>
+          <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => navigate('/notifications')}>
+            View All
+          </Button>
         </div>
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (

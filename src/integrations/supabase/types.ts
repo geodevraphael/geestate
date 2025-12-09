@@ -1564,6 +1564,7 @@ export type Database = {
           full_name: string
           id: string
           national_id_number: string | null
+          notification_preferences: Json | null
           organization_name: string | null
           phone: string | null
           preferred_locale: string | null
@@ -1582,6 +1583,7 @@ export type Database = {
           full_name: string
           id: string
           national_id_number?: string | null
+          notification_preferences?: Json | null
           organization_name?: string | null
           phone?: string | null
           preferred_locale?: string | null
@@ -1600,6 +1602,7 @@ export type Database = {
           full_name?: string
           id?: string
           national_id_number?: string | null
+          notification_preferences?: Json | null
           organization_name?: string | null
           phone?: string | null
           preferred_locale?: string | null

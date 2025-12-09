@@ -66,6 +66,7 @@ import AdminServiceProviders from './pages/AdminServiceProviders';
 import ServiceProviderDashboard from './pages/dashboards/ServiceProviderDashboard';
 import MyBookings from './pages/MyBookings';
 import MyServiceRequests from './pages/MyServiceRequests';
+import Notifications from './pages/Notifications';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -142,6 +143,7 @@ const App = () => (
             <Route path="/service-provider/dashboard" element={<ProtectedRoute requireRole={['service_provider', 'admin']}><ServiceProviderDashboard /></ProtectedRoute>} />
             <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
             <Route path="/my-service-requests" element={<ProtectedRoute><MyServiceRequests /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
