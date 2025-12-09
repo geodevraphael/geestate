@@ -95,6 +95,8 @@ export default function ServiceProviderDetail() {
     service_type: '',
     notes: '',
     listing_id: '',
+    selected_service_id: '',
+    service_price: 0,
   });
 
   useEffect(() => {
@@ -169,28 +171,37 @@ export default function ServiceProviderDetail() {
   };
 
   const fetchProviderServices = async () => {
-    if (!provider?.user_id) return;
+    if (!id) return;
     
     try {
-      const { data, error } = await supabase
-        .from('provider_services')
-        .select('*')
-        .eq('provider_id', provider.user_id)
-        .eq('is_active', true)
-        .order('price', { ascending: true });
+      // First, get services by user_id (linked to provider_profiles.user_id)
+      const { data: profileData } = await supabase
+        .from('service_provider_profiles')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+      
+      if (profileData?.user_id) {
+        const { data, error } = await supabase
+          .from('provider_services')
+          .select('*')
+          .eq('provider_id', profileData.user_id)
+          .eq('is_active', true)
+          .order('price', { ascending: true });
 
-      if (error) throw error;
-      setProviderServices((data || []) as ProviderService[]);
+        if (error) throw error;
+        setProviderServices((data || []) as ProviderService[]);
+      }
     } catch (error) {
       console.error('Error fetching provider services:', error);
     }
   };
   
   useEffect(() => {
-    if (provider?.user_id) {
+    if (id) {
       fetchProviderServices();
     }
-  }, [provider?.user_id]);
+  }, [id]);
 
   const getPriceTypeLabel = (priceType: string) => {
     const types: Record<string, string> = {
@@ -219,20 +230,22 @@ export default function ServiceProviderDetail() {
 
     setSubmitting(true);
     try {
-      // Create service request with optional listing
+      // Create service request with the provider profile id (not user_id)
       const { error } = await supabase.from('service_requests').insert({
         listing_id: requestForm.listing_id || null,
         requester_id: user.id,
-        service_provider_id: provider?.user_id,
+        service_provider_id: provider?.id, // Use provider.id (service_provider_profiles.id)
         service_type: requestForm.service_type,
         service_category: 'external_provider',
         status: 'pending',
         request_notes: requestForm.notes,
+        selected_service_id: requestForm.selected_service_id || null,
+        service_price: requestForm.service_price || null,
       });
 
       if (error) throw error;
 
-      // Notify the provider
+      // Notify the provider using their user_id
       if (provider?.user_id) {
         await supabase.from('notifications').insert({
           user_id: provider.user_id,
@@ -251,7 +264,7 @@ export default function ServiceProviderDetail() {
       });
       
       setRequestOpen(false);
-      setRequestForm({ service_type: '', notes: '', listing_id: '' });
+      setRequestForm({ service_type: '', notes: '', listing_id: '', selected_service_id: '', service_price: 0 });
     } catch (error: any) {
       console.error('Error submitting request:', error);
       toast({
@@ -448,23 +461,77 @@ export default function ServiceProviderDetail() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label>{i18n.language === 'sw' ? 'Aina ya Huduma' : 'Service Type'}</Label>
-                    <Select 
-                      value={requestForm.service_type} 
-                      onValueChange={(v) => setRequestForm({ ...requestForm, service_type: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={i18n.language === 'sw' ? 'Chagua huduma' : 'Select service'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {provider.services_offered.map(service => (
-                          <SelectItem key={service} value={service}>{service}</SelectItem>
+                  {/* Service Selection - Show priced services if available */}
+                  {providerServices.length > 0 ? (
+                    <div className="space-y-2">
+                      <Label>{i18n.language === 'sw' ? 'Chagua Huduma' : 'Select Service'}</Label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {providerServices.map((service) => (
+                          <div
+                            key={service.id}
+                            onClick={() => setRequestForm({
+                              ...requestForm,
+                              selected_service_id: service.id,
+                              service_type: service.name,
+                              service_price: service.price,
+                            })}
+                            className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                              requestForm.selected_service_id === service.id
+                                ? 'border-primary bg-primary/10'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{service.name}</p>
+                                {service.description && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{service.description}</p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-primary text-sm">
+                                  TZS {service.price.toLocaleString()}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {getPriceTypeLabel(service.price_type)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         ))}
-                        <SelectItem value="other">{i18n.language === 'sw' ? 'Nyingine' : 'Other'}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      </div>
+                      {requestForm.service_price > 0 && (
+                        <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">
+                              {i18n.language === 'sw' ? 'Bei ya Huduma:' : 'Service Price:'}
+                            </span>
+                            <span className="font-bold text-primary">
+                              TZS {requestForm.service_price.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>{i18n.language === 'sw' ? 'Aina ya Huduma' : 'Service Type'}</Label>
+                      <Select 
+                        value={requestForm.service_type} 
+                        onValueChange={(v) => setRequestForm({ ...requestForm, service_type: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={i18n.language === 'sw' ? 'Chagua huduma' : 'Select service'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {provider.services_offered.map(service => (
+                            <SelectItem key={service} value={service}>{service}</SelectItem>
+                          ))}
+                          <SelectItem value="other">{i18n.language === 'sw' ? 'Nyingine' : 'Other'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label>{i18n.language === 'sw' ? 'Maelezo ya Ombi' : 'Request Details'}</Label>

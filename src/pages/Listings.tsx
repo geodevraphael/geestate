@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
-import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, FolderOpen } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, FolderOpen, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { MarketplaceViewToggle } from '@/components/MarketplaceViewToggle';
@@ -26,9 +26,12 @@ export default function Listings() {
   const [listings, setListings] = useState<ListingWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [plotNumberFilter, setPlotNumberFilter] = useState('');
+  const [blockNumberFilter, setBlockNumberFilter] = useState('');
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
   const [verificationFilter, setVerificationFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
   const [ownerInfo, setOwnerInfo] = useState<{ name: string; type: 'seller' | 'institution' } | null>(null);
   const [view, setView] = useState<'individual' | 'projects'>('individual');
   const [projects, setProjects] = useState<any[]>([]);
@@ -47,14 +50,14 @@ export default function Listings() {
 
   useEffect(() => {
     setCurrentPage(1); // Reset to page 1 when filters change
-  }, [searchQuery, listingTypeFilter, propertyTypeFilter, verificationFilter, ownerParam]);
+  }, [searchQuery, plotNumberFilter, blockNumberFilter, listingTypeFilter, propertyTypeFilter, verificationFilter, sortBy, ownerParam]);
 
   useEffect(() => {
     fetchListings();
     if (view === 'projects') {
       fetchProjects();
     }
-  }, [ownerParam, view, currentPage, searchQuery, listingTypeFilter, propertyTypeFilter, verificationFilter]);
+  }, [ownerParam, view, currentPage, searchQuery, plotNumberFilter, blockNumberFilter, listingTypeFilter, propertyTypeFilter, verificationFilter, sortBy]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -80,6 +83,12 @@ export default function Listings() {
       }
       if (searchQuery) {
         countQuery = countQuery.or(`title.ilike.%${searchQuery}%,location_label.ilike.%${searchQuery}%,region.ilike.%${searchQuery}%`);
+      }
+      if (plotNumberFilter) {
+        countQuery = countQuery.ilike('plot_number', `%${plotNumberFilter}%`);
+      }
+      if (blockNumberFilter) {
+        countQuery = countQuery.ilike('block_number', `%${blockNumberFilter}%`);
       }
 
       // Get total count
@@ -147,11 +156,35 @@ export default function Listings() {
       if (searchQuery) {
         query = query.or(`title.ilike.%${searchQuery}%,location_label.ilike.%${searchQuery}%,region.ilike.%${searchQuery}%`);
       }
+      if (plotNumberFilter) {
+        query = query.ilike('plot_number', `%${plotNumberFilter}%`);
+      }
+      if (blockNumberFilter) {
+        query = query.ilike('block_number', `%${blockNumberFilter}%`);
+      }
 
-      // Add pagination
+      // Add pagination and sorting
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
-      query = query.range(from, to).order('created_at', { ascending: false });
+      
+      // Apply sorting
+      switch (sortBy) {
+        case 'price_asc':
+          query = query.order('price', { ascending: true, nullsFirst: false });
+          break;
+        case 'price_desc':
+          query = query.order('price', { ascending: false, nullsFirst: false });
+          break;
+        case 'oldest':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'newest':
+        default:
+          query = query.order('created_at', { ascending: false });
+          break;
+      }
+      
+      query = query.range(from, to);
 
       const { data, error } = await query;
 
@@ -199,9 +232,12 @@ export default function Listings() {
 
   const clearAllFilters = () => {
     setSearchQuery('');
+    setPlotNumberFilter('');
+    setBlockNumberFilter('');
     setListingTypeFilter('all');
     setPropertyTypeFilter('all');
     setVerificationFilter('all');
+    setSortBy('newest');
     clearOwnerFilter();
   };
 
@@ -347,8 +383,9 @@ export default function Listings() {
 
             {/* Filters */}
             <Card className="shadow-lg border-border/50 rounded-2xl overflow-hidden backdrop-blur-sm bg-background/95">
-              <CardContent className="pt-6 px-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <CardContent className="pt-6 px-6 pb-6">
+                {/* Main Filters Row */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -395,6 +432,65 @@ export default function Listings() {
                       <SelectItem value="unverified">{t('verificationStatus.unverified')}</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Additional Filters Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Input
+                    placeholder="Plot Number"
+                    value={plotNumberFilter}
+                    onChange={(e) => setPlotNumberFilter(e.target.value)}
+                    className="bg-background"
+                  />
+                  
+                  <Input
+                    placeholder="Block Number"
+                    value={blockNumberFilter}
+                    onChange={(e) => setBlockNumberFilter(e.target.value)}
+                    className="bg-background"
+                  />
+                  
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="bg-background">
+                      <ArrowUpDown className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">
+                        <div className="flex items-center gap-2">
+                          <ArrowDown className="h-3 w-3" />
+                          Newest First
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="oldest">
+                        <div className="flex items-center gap-2">
+                          <ArrowUp className="h-3 w-3" />
+                          Oldest First
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="price_asc">
+                        <div className="flex items-center gap-2">
+                          <ArrowUp className="h-3 w-3" />
+                          Price: Low to High
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="price_desc">
+                        <div className="flex items-center gap-2">
+                          <ArrowDown className="h-3 w-3" />
+                          Price: High to Low
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={clearAllFilters}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear Filters
+                  </Button>
                 </div>
               </CardContent>
             </Card>

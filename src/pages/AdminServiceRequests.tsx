@@ -24,8 +24,8 @@ export default function AdminServiceRequests() {
         .from('service_requests')
         .select(`
           *,
-          listings!inner(title, location_label),
-          service_providers(company_name)
+          listings(title, location_label),
+          provider:service_provider_profiles(company_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -53,7 +53,7 @@ export default function AdminServiceRequests() {
             ...request,
             listing: request.listings,
             requester: profile,
-            provider: request.service_providers
+            provider: request.provider
           };
         })
       );
