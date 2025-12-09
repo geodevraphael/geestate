@@ -20,11 +20,13 @@ import {
   TrendingUp,
   CheckCircle,
   AlertCircle,
-  Eye
+  Eye,
+  FileSearch
 } from 'lucide-react';
 import { ServiceManagement } from '@/components/service-provider/ServiceManagement';
 import { CalendarManagement } from '@/components/service-provider/CalendarManagement';
 import { BookingRequests } from '@/components/service-provider/BookingRequests';
+import { ServiceRequests } from '@/components/service-provider/ServiceRequests';
 import { ProviderAnalytics } from '@/components/service-provider/ProviderAnalytics';
 import { ProviderProfileSettings } from '@/components/service-provider/ProviderProfileSettings';
 import { Link } from 'react-router-dom';
@@ -257,8 +259,12 @@ export default function ServiceProviderDashboard() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="bookings" className="space-y-4">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+        <Tabs defaultValue="requests" className="space-y-4">
+          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+            <TabsTrigger value="requests" className="gap-2">
+              <FileSearch className="h-4 w-4" />
+              <span className="hidden sm:inline">Requests</span>
+            </TabsTrigger>
             <TabsTrigger value="bookings" className="gap-2">
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Bookings</span>
@@ -280,6 +286,10 @@ export default function ServiceProviderDashboard() {
               <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="requests">
+            <ServiceRequests providerId={profile.id} />
+          </TabsContent>
 
           <TabsContent value="bookings">
             <BookingRequests providerId={profile.id} onUpdate={fetchDashboardStats} />
