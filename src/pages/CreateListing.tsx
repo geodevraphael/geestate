@@ -1297,7 +1297,7 @@ export default function CreateListing() {
                       </p>
                     </div>
 
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-2">
                       <Label htmlFor="hasTitleField" className="text-sm font-medium flex items-center gap-2">
                         Has Title Status (0 = No, 1 = Yes)
                         {fieldMapping.hasTitle && fieldMapping.hasTitle !== '__none__' && (
@@ -1322,8 +1322,72 @@ export default function CreateListing() {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Optional: Field with 1 (has title) or 0 (no title). If not mapped, all plots default to "No Title".
+                        Optional: Field with 1 (has title) or 0 (no title).
                       </p>
+                    </div>
+
+                    {/* Utilities Section */}
+                    <div className="md:col-span-2 space-y-4 p-4 rounded-lg border bg-muted/30">
+                      <Label className="text-sm font-medium">Utilities Mapping (1 = Available, 0 = Not Available)</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="hasElectricityField" className="text-sm flex items-center gap-2">
+                            Electricity
+                            {fieldMapping.hasElectricity && fieldMapping.hasElectricity !== '__none__' && (
+                              <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                            )}
+                          </Label>
+                          <Select
+                            value={fieldMapping.hasElectricity || '__none__'}
+                            onValueChange={(value) => setFieldMapping({...fieldMapping, hasElectricity: value === '__none__' ? '' : value})}
+                          >
+                            <SelectTrigger id="hasElectricityField">
+                              <SelectValue placeholder="Optional - Select field" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">None (unknown)</SelectItem>
+                              {availableProperties.map(prop => (
+                                <SelectItem key={prop} value={prop}>
+                                  {prop}
+                                  {fieldMapping.hasElectricity === prop && ' (selected)'}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Field with 1 (available) or 0 (not available)
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="hasWaterField" className="text-sm flex items-center gap-2">
+                            Water
+                            {fieldMapping.hasWater && fieldMapping.hasWater !== '__none__' && (
+                              <span className="text-xs text-primary font-normal">✓ Auto-detected</span>
+                            )}
+                          </Label>
+                          <Select
+                            value={fieldMapping.hasWater || '__none__'}
+                            onValueChange={(value) => setFieldMapping({...fieldMapping, hasWater: value === '__none__' ? '' : value})}
+                          >
+                            <SelectTrigger id="hasWaterField">
+                              <SelectValue placeholder="Optional - Select field" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">None (unknown)</SelectItem>
+                              {availableProperties.map(prop => (
+                                <SelectItem key={prop} value={prop}>
+                                  {prop}
+                                  {fieldMapping.hasWater === prop && ' (selected)'}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Field with 1 (available) or 0 (not available)
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
