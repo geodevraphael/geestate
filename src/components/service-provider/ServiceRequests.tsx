@@ -360,6 +360,14 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                       </div>
                     )}
 
+                    {/* Client payment submitted indicator */}
+                    {request.client_payment_reference && !request.payment_confirmed_at && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-500/10 p-2 rounded-md border border-blue-500/20">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>Client confirmed payment - verify & complete</span>
+                      </div>
+                    )}
+
                     {/* Payment confirmed indicator */}
                     {request.payment_confirmed_at && (
                       <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-500/10 p-2 rounded-md">
@@ -531,17 +539,37 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
                 {/* ACCEPTED: Confirm Payment & Complete */}
                 {['accepted', 'quoted', 'in_progress'].includes(selectedRequest.status) && (
                   <div className="space-y-4 pt-2">
-                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
-                        <div className="text-sm">
-                          <p className="font-medium text-amber-700">Service in Progress</p>
-                          <p className="text-amber-600 text-xs mt-0.5">
-                            Once the client pays you, confirm the payment below to complete the service. A 2% platform fee will be charged.
-                          </p>
+                    {/* Show client's payment reference if submitted */}
+                    {selectedRequest.client_payment_reference && (
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-medium text-emerald-700">Client Confirmed Payment</p>
+                            <p className="text-emerald-600 text-xs mt-0.5">
+                              Reference: <span className="font-mono">{selectedRequest.client_payment_reference}</span>
+                            </p>
+                            <p className="text-muted-foreground text-xs mt-1">
+                              Verify payment received, then confirm below to complete the service.
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
+
+                    {!selectedRequest.client_payment_reference && (
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <div className="flex items-start gap-2">
+                          <Clock className="h-4 w-4 text-amber-600 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-medium text-amber-700">Awaiting Client Payment</p>
+                            <p className="text-amber-600 text-xs mt-0.5">
+                              The client has been notified to pay you directly. Once you receive payment, confirm it below.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-3">
                       <div>
