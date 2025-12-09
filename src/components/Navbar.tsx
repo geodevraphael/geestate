@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus, LogOut, LayoutDashboard, FileUp, ChevronDown } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard, FileUp, ChevronDown, ClipboardList, ShoppingBag, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -85,34 +85,34 @@ export function Navbar() {
             <div className="mt-2 p-3 rounded-2xl bg-background/90 backdrop-blur-xl border border-border/50 shadow-xl shadow-black/10 dark:shadow-black/30 animate-fade-in">
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <Link
-                  to="/map"
+                  to="/deals"
                   className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary text-sm">🗺️</span>
+                    <ShoppingBag className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-xs font-medium">{t('nav.browseMap')}</span>
+                  <span className="text-xs font-medium">My Deals</span>
                 </Link>
                 <Link
-                  to="/listings"
+                  to="/my-service-requests"
                   className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary text-sm">🏠</span>
+                    <ClipboardList className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-xs font-medium">{t('nav.allListings')}</span>
+                  <span className="text-xs font-medium">Requests</span>
                 </Link>
                 <Link
-                  to="/sellers"
+                  to="/service-providers"
                   className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary text-sm">👥</span>
+                    <Wrench className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-xs font-medium">{t('nav.sellers')}</span>
+                  <span className="text-xs font-medium">Services</span>
                 </Link>
               </div>
 
