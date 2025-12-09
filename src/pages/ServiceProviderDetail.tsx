@@ -247,11 +247,16 @@ export default function ServiceProviderDetail() {
 
       // Notify the provider using their user_id
       if (provider?.user_id) {
+        const serviceName = requestForm.service_type || 'service';
+        const notificationMessage = i18n.language === 'sw' 
+          ? `Una ombi jipya la ${serviceName} kutoka kwa mteja`
+          : `You have a new ${serviceName} request from a client`;
+        
         await supabase.from('notifications').insert({
           user_id: provider.user_id,
           type: 'new_message' as const,
           title: i18n.language === 'sw' ? 'Ombi Jipya la Huduma' : 'New Service Request',
-          message: `You have a new ${requestForm.service_type} request`,
+          message: notificationMessage,
           link_url: '/dashboard',
         });
       }
