@@ -99,13 +99,17 @@ export default function CreateListing() {
     plannedUse: string;
     hasTitle: string;
     price: string;
+    hasElectricity: string;
+    hasWater: string;
   }>({
     blockNumber: '',
     plotNumber: '',
     streetName: '',
     plannedUse: '',
     hasTitle: '',
-    price: ''
+    price: '',
+    hasElectricity: '',
+    hasWater: ''
   });
   
   const [formData, setFormData] = useState({
@@ -124,6 +128,8 @@ export default function CreateListing() {
     street_name: '',
     planned_use: '',
     has_title: false,
+    has_electricity: null as boolean | null,
+    has_water: null as boolean | null,
     project_id: null as string | null,
   });
 
@@ -483,7 +489,9 @@ export default function CreateListing() {
       streetName: '',
       plannedUse: '',
       hasTitle: '',
-      price: ''
+      price: '',
+      hasElectricity: '',
+      hasWater: ''
     };
 
     // Common field name patterns
@@ -493,7 +501,9 @@ export default function CreateListing() {
       streetName: ['street', 'street_name', 'road', 'locality', 'address', 'location'],
       plannedUse: ['use', 'planned_use', 'land_use', 'usage', 'purpose', 'zoning'],
       hasTitle: ['title', 'has_title', 'titled', 'deed', 'ownership', 'title_status'],
-      price: ['price', 'cost', 'amount', 'value', 'rate', 'bei']
+      price: ['price', 'cost', 'amount', 'value', 'rate', 'bei'],
+      hasElectricity: ['electricity', 'electric', 'power', 'umeme', 'stima'],
+      hasWater: ['water', 'maji', 'h2o']
     };
 
     properties.forEach(prop => {
@@ -594,6 +604,16 @@ export default function CreateListing() {
           const hasTitleValue = fieldMapping.hasTitle ? props[fieldMapping.hasTitle] : 0;
           const hasTitle = hasTitleValue === 1 || hasTitleValue === '1' || hasTitleValue === true;
           const priceValue = fieldMapping.price ? parseFloat(props[fieldMapping.price]) || null : null;
+          
+          // Extract electricity and water values (1 = available, 0 = not available)
+          const hasElectricityValue = fieldMapping.hasElectricity ? props[fieldMapping.hasElectricity] : null;
+          const hasElectricity = hasElectricityValue !== null && hasElectricityValue !== undefined 
+            ? (hasElectricityValue === 1 || hasElectricityValue === '1' || hasElectricityValue === true)
+            : null;
+          const hasWaterValue = fieldMapping.hasWater ? props[fieldMapping.hasWater] : null;
+          const hasWater = hasWaterValue !== null && hasWaterValue !== undefined
+            ? (hasWaterValue === 1 || hasWaterValue === '1' || hasWaterValue === true)
+            : null;
 
           // Create GeoJSON for this plot
           const plotGeoJSON = {
@@ -622,6 +642,8 @@ export default function CreateListing() {
               street_name: streetName,
               planned_use: plannedUse,
               has_title: hasTitle,
+              has_electricity: hasElectricity,
+              has_water: hasWater,
               price: priceValue,
               currency: 'TZS',
               verification_status: 'unverified'
@@ -696,6 +718,8 @@ export default function CreateListing() {
           street_name: listingRes.data.street_name || '',
           planned_use: listingRes.data.planned_use || '',
           has_title: listingRes.data.has_title || false,
+          has_electricity: (listingRes.data as any).has_electricity ?? null,
+          has_water: (listingRes.data as any).has_water ?? null,
           project_id: listingRes.data.project_id || null,
         });
       }
@@ -910,6 +934,8 @@ export default function CreateListing() {
         street_name: formData.street_name,
         planned_use: formData.planned_use,
         has_title: formData.has_title,
+        has_electricity: formData.has_electricity,
+        has_water: formData.has_water,
       };
 
       let listingId = id;
@@ -1456,7 +1482,9 @@ export default function CreateListing() {
                             streetName: '',
                             plannedUse: '',
                             hasTitle: '',
-                            price: ''
+                            price: '',
+                            hasElectricity: '',
+                            hasWater: ''
                           });
                           clearAllPolygons();
                         }}
@@ -1750,6 +1778,54 @@ export default function CreateListing() {
                         </div>
                         <p className="text-xs text-muted-foreground ml-6">
                           Check this box if the plot has official title deed/certificate
+                        </p>
+                      </div>
+
+                      {/* Utilities Section */}
+                      <div className="md:col-span-2 space-y-4 p-4 rounded-lg border bg-muted/30">
+                        <Label className="text-sm font-medium">Utilities (1 = Available, 0 = Not Available)</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="has_electricity" className="text-sm">Electricity</Label>
+                            <Select
+                              value={formData.has_electricity === null ? 'unknown' : formData.has_electricity ? '1' : '0'}
+                              onValueChange={(value) => setFormData({ 
+                                ...formData, 
+                                has_electricity: value === 'unknown' ? null : value === '1' 
+                              })}
+                            >
+                              <SelectTrigger id="has_electricity">
+                                <SelectValue placeholder="Select availability" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unknown">Unknown</SelectItem>
+                                <SelectItem value="1">1 - Available</SelectItem>
+                                <SelectItem value="0">0 - Not Available</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="has_water" className="text-sm">Water</Label>
+                            <Select
+                              value={formData.has_water === null ? 'unknown' : formData.has_water ? '1' : '0'}
+                              onValueChange={(value) => setFormData({ 
+                                ...formData, 
+                                has_water: value === 'unknown' ? null : value === '1' 
+                              })}
+                            >
+                              <SelectTrigger id="has_water">
+                                <SelectValue placeholder="Select availability" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unknown">Unknown</SelectItem>
+                                <SelectItem value="1">1 - Available</SelectItem>
+                                <SelectItem value="0">0 - Not Available</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Indicate whether electricity and water are available on this plot
                         </p>
                       </div>
                     </>

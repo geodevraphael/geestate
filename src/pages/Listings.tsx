@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
-import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, FolderOpen, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, FolderOpen, ArrowUpDown, ArrowUp, ArrowDown, Zap, Droplet } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { MarketplaceViewToggle } from '@/components/MarketplaceViewToggle';
@@ -31,6 +31,8 @@ export default function Listings() {
   const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
   const [verificationFilter, setVerificationFilter] = useState<string>('all');
+  const [electricityFilter, setElectricityFilter] = useState<string>('all');
+  const [waterFilter, setWaterFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
   const [ownerInfo, setOwnerInfo] = useState<{ name: string; type: 'seller' | 'institution' } | null>(null);
   const [view, setView] = useState<'individual' | 'projects'>('individual');
@@ -50,14 +52,14 @@ export default function Listings() {
 
   useEffect(() => {
     setCurrentPage(1); // Reset to page 1 when filters change
-  }, [searchQuery, plotNumberFilter, blockNumberFilter, listingTypeFilter, propertyTypeFilter, verificationFilter, sortBy, ownerParam]);
+  }, [searchQuery, plotNumberFilter, blockNumberFilter, listingTypeFilter, propertyTypeFilter, verificationFilter, electricityFilter, waterFilter, sortBy, ownerParam]);
 
   useEffect(() => {
     fetchListings();
     if (view === 'projects') {
       fetchProjects();
     }
-  }, [ownerParam, view, currentPage, searchQuery, plotNumberFilter, blockNumberFilter, listingTypeFilter, propertyTypeFilter, verificationFilter, sortBy]);
+  }, [ownerParam, view, currentPage, searchQuery, plotNumberFilter, blockNumberFilter, listingTypeFilter, propertyTypeFilter, verificationFilter, electricityFilter, waterFilter, sortBy]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -89,6 +91,12 @@ export default function Listings() {
       }
       if (blockNumberFilter) {
         countQuery = countQuery.ilike('block_number', `%${blockNumberFilter}%`);
+      }
+      if (electricityFilter !== 'all') {
+        countQuery = countQuery.eq('has_electricity', electricityFilter === 'yes');
+      }
+      if (waterFilter !== 'all') {
+        countQuery = countQuery.eq('has_water', waterFilter === 'yes');
       }
 
       // Get total count
@@ -161,6 +169,12 @@ export default function Listings() {
       }
       if (blockNumberFilter) {
         query = query.ilike('block_number', `%${blockNumberFilter}%`);
+      }
+      if (electricityFilter !== 'all') {
+        query = query.eq('has_electricity', electricityFilter === 'yes');
+      }
+      if (waterFilter !== 'all') {
+        query = query.eq('has_water', waterFilter === 'yes');
       }
 
       // Add pagination and sorting
@@ -237,6 +251,8 @@ export default function Listings() {
     setListingTypeFilter('all');
     setPropertyTypeFilter('all');
     setVerificationFilter('all');
+    setElectricityFilter('all');
+    setWaterFilter('all');
     setSortBy('newest');
     clearOwnerFilter();
   };
@@ -435,7 +451,7 @@ export default function Listings() {
                 </div>
 
                 {/* Additional Filters Row */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                   <Input
                     placeholder="Plot Number"
                     value={plotNumberFilter}
@@ -449,6 +465,30 @@ export default function Listings() {
                     onChange={(e) => setBlockNumberFilter(e.target.value)}
                     className="bg-background"
                   />
+
+                  <Select value={electricityFilter} onValueChange={setElectricityFilter}>
+                    <SelectTrigger className="bg-background">
+                      <Zap className="h-4 w-4 mr-2 text-yellow-500" />
+                      <SelectValue placeholder="Electricity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All (Electricity)</SelectItem>
+                      <SelectItem value="yes">Has Electricity</SelectItem>
+                      <SelectItem value="no">No Electricity</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={waterFilter} onValueChange={setWaterFilter}>
+                    <SelectTrigger className="bg-background">
+                      <Droplet className="h-4 w-4 mr-2 text-blue-500" />
+                      <SelectValue placeholder="Water" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All (Water)</SelectItem>
+                      <SelectItem value="yes">Has Water</SelectItem>
+                      <SelectItem value="no">No Water</SelectItem>
+                    </SelectContent>
+                  </Select>
                   
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="bg-background">
@@ -489,7 +529,7 @@ export default function Listings() {
                     className="gap-2"
                   >
                     <X className="h-4 w-4" />
-                    Clear Filters
+                    Clear
                   </Button>
                 </div>
               </CardContent>
@@ -644,10 +684,37 @@ export default function Listings() {
                           <span className="line-clamp-1">{listing.location_label}</span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="outline" className="capitalize text-xs">
                             {t(`propertyTypes.${listing.property_type}`)}
                           </Badge>
+                          {/* Utilities Indicators */}
+                          {(listing as any).has_electricity !== null && (
+                            <div 
+                              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${
+                                (listing as any).has_electricity 
+                                  ? 'bg-yellow-500/20 text-yellow-600' 
+                                  : 'bg-muted text-muted-foreground'
+                              }`}
+                              title={(listing as any).has_electricity ? 'Electricity Available' : 'No Electricity'}
+                            >
+                              <Zap className="h-3 w-3" />
+                              {(listing as any).has_electricity ? '1' : '0'}
+                            </div>
+                          )}
+                          {(listing as any).has_water !== null && (
+                            <div 
+                              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${
+                                (listing as any).has_water 
+                                  ? 'bg-blue-500/20 text-blue-600' 
+                                  : 'bg-muted text-muted-foreground'
+                              }`}
+                              title={(listing as any).has_water ? 'Water Available' : 'No Water'}
+                            >
+                              <Droplet className="h-3 w-3" />
+                              {(listing as any).has_water ? '1' : '0'}
+                            </div>
+                          )}
                         </div>
 
                         <div className="pt-2 border-t border-border/50">
