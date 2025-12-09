@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bot, MapPin, Navigation, Loader2, X, Sparkles } from 'lucide-react';
+import { Bot, MapPin, Navigation, Loader2, X, Sparkles, ChevronRight, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +22,7 @@ export const LocationAwareWelcome: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [propertyCount, setPropertyCount] = useState<number>(0);
 
   const detectLocation = async () => {
     if (!navigator.geolocation) {
@@ -38,16 +38,15 @@ export const LocationAwareWelcome: React.FC = () => {
         const { latitude, longitude, accuracy } = position.coords;
         
         try {
-          // Query regions to find which one contains this point
-          const { data: regions } = await supabase
-            .from('regions')
-            .select('id, name, geometry');
-
           let foundRegion: { id: string; name: string } | null = null;
           let foundDistrict: { id: string; name: string } | null = null;
           let foundWard: { id: string; name: string } | null = null;
 
-          // Simple point-in-bbox check for regions (rough approximation)
+          // Query all regions with geometry
+          const { data: regions } = await supabase
+            .from('regions')
+            .select('id, name, geometry');
+
           if (regions) {
             for (const region of regions) {
               if (region.geometry) {
@@ -109,6 +108,25 @@ export const LocationAwareWelcome: React.FC = () => {
             }
           }
 
+          // Get property count for the area
+          if (foundRegion || foundDistrict || foundWard) {
+            let query = supabase
+              .from('listings')
+              .select('id', { count: 'exact', head: true })
+              .eq('status', 'published');
+            
+            if (foundWard) {
+              query = query.eq('ward_id', foundWard.id);
+            } else if (foundDistrict) {
+              query = query.eq('district_id', foundDistrict.id);
+            } else if (foundRegion) {
+              query = query.eq('region_id', foundRegion.id);
+            }
+            
+            const { count } = await query;
+            setPropertyCount(count || 0);
+          }
+
           setLocationInfo({
             region: foundRegion,
             district: foundDistrict,
@@ -134,13 +152,12 @@ export const LocationAwareWelcome: React.FC = () => {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000, // Cache for 5 minutes
+        timeout: 15000,
+        maximumAge: 300000,
       }
     );
   };
 
-  // Simple point-in-polygon check using ray casting
   const isPointInGeometry = (lat: number, lng: number, geometry: any): boolean => {
     try {
       let coordinates: number[][][] = [];
@@ -181,20 +198,20 @@ export const LocationAwareWelcome: React.FC = () => {
   };
 
   useEffect(() => {
-    // Auto-detect on mount
     const timer = setTimeout(() => {
       detectLocation();
-    }, 1000);
+    }, 1500);
     
     return () => clearTimeout(timer);
   }, []);
 
   if (dismissed || permissionDenied) return null;
 
-  const getAccuracyLabel = (accuracy: number) => {
-    if (accuracy <= 50) return { label: 'High', color: 'bg-green-500' };
-    if (accuracy <= 200) return { label: 'Medium', color: 'bg-yellow-500' };
-    return { label: 'Low', color: 'bg-orange-500' };
+  const getAccuracyInfo = (accuracy: number) => {
+    if (accuracy <= 100) return { label: 'Precise', color: 'bg-emerald-500', icon: '🎯' };
+    if (accuracy <= 500) return { label: 'Good', color: 'bg-green-500', icon: '✓' };
+    if (accuracy <= 2000) return { label: 'Approximate', color: 'bg-amber-500', icon: '~' };
+    return { label: 'Rough estimate', color: 'bg-orange-500', icon: '≈' };
   };
 
   const buildMapUrl = () => {
@@ -205,107 +222,147 @@ export const LocationAwareWelcome: React.FC = () => {
     return `/map?${params.toString()}`;
   };
 
+  const hasLocation = locationInfo?.region || locationInfo?.district || locationInfo?.ward;
+
   return (
-    <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 backdrop-blur-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-card via-card/95 to-primary/5 shadow-2xl shadow-primary/10 backdrop-blur-xl">
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full" />
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-accent/10 to-transparent rounded-tr-full" />
+      
+      {/* Close button */}
       <button
         onClick={() => setDismissed(true)}
-        className="absolute top-3 right-3 p-1 rounded-full hover:bg-muted/80 transition-colors z-10"
+        className="absolute top-3 right-3 p-1.5 rounded-full bg-muted/50 hover:bg-muted transition-colors z-10"
+        aria-label="Dismiss"
       >
         <X className="h-4 w-4 text-muted-foreground" />
       </button>
 
-      <div className="p-5 flex items-start gap-4">
-        {/* Robot Avatar */}
-        <div className="relative shrink-0">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
-            <Bot className="h-7 w-7 text-primary-foreground" />
+      <div className="relative p-4 md:p-5">
+        <div className="flex gap-3 md:gap-4">
+          {/* Robot Avatar */}
+          <div className="relative shrink-0">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30 animate-pulse">
+              <Bot className="h-6 w-6 md:h-7 md:w-7 text-primary-foreground" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-card flex items-center justify-center shadow-sm">
+              <Sparkles className="h-2.5 w-2.5 text-white" />
+            </div>
           </div>
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500 border-2 border-background flex items-center justify-center">
-            <Sparkles className="h-3 w-3 text-white" />
-          </div>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0 space-y-3">
-          {loading ? (
-            <div className="flex items-center gap-3 py-2">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">
-                Detecting your location...
-              </p>
-            </div>
-          ) : error ? (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">{error}</p>
-              <Button variant="outline" size="sm" onClick={detectLocation}>
-                <Navigation className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-            </div>
-          ) : locationInfo ? (
-            <>
-              <div className="space-y-1.5">
-                <p className="text-sm font-medium text-foreground leading-relaxed">
-                  {locationInfo.region || locationInfo.district || locationInfo.ward ? (
-                    <>
-                      <span className="text-primary">Hello!</span> Our system detected you're in{' '}
-                      {locationInfo.ward && (
-                        <span className="font-semibold text-primary">{locationInfo.ward.name}</span>
-                      )}
-                      {locationInfo.ward && locationInfo.district && ' ward, '}
-                      {locationInfo.district && (
-                        <span className="font-semibold">{locationInfo.district.name}</span>
-                      )}
-                      {locationInfo.district && locationInfo.region && ' district, '}
-                      {locationInfo.region && (
-                        <span className="font-semibold">{locationInfo.region.name}</span>
-                      )}
-                      {locationInfo.region && ' region'}.
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-primary">Hello!</span> We detected your location but couldn't match it to a known area. You might be outside our coverage zone.
-                    </>
-                  )}
-                </p>
-                
-                {/* Accuracy Badge */}
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    Accuracy: ±{Math.round(locationInfo.accuracy)}m
-                  </span>
-                  <Badge 
-                    variant="secondary" 
-                    className={`text-[10px] px-1.5 py-0 ${getAccuracyLabel(locationInfo.accuracy).color} text-white`}
-                  >
-                    {getAccuracyLabel(locationInfo.accuracy).label}
-                  </Badge>
+          {/* Content */}
+          <div className="flex-1 min-w-0 space-y-3">
+            {loading ? (
+              <div className="flex items-center gap-3 py-3">
+                <div className="relative">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div className="absolute inset-0 h-5 w-5 animate-ping text-primary opacity-30">
+                    <Target className="h-5 w-5" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Pinpointing your location...
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Finding properties near you
+                  </p>
                 </div>
               </div>
+            ) : error ? (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">{error}</p>
+                <Button variant="outline" size="sm" onClick={detectLocation} className="gap-2">
+                  <Navigation className="h-4 w-4" />
+                  Try Again
+                </Button>
+              </div>
+            ) : locationInfo ? (
+              <>
+                <div className="space-y-2">
+                  {hasLocation ? (
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-wider text-primary font-semibold">
+                        📍 Location Detected
+                      </p>
+                      <p className="text-sm md:text-base font-medium text-foreground leading-snug">
+                        {locationInfo.ward && (
+                          <>
+                            You're in <span className="text-primary font-bold">{locationInfo.ward.name}</span> ward
+                          </>
+                        )}
+                        {locationInfo.district && (
+                          <>
+                            {locationInfo.ward ? ', ' : "You're in "}
+                            <span className="font-semibold">{locationInfo.district.name}</span> district
+                          </>
+                        )}
+                        {locationInfo.region && (
+                          <>
+                            {(locationInfo.district || locationInfo.ward) ? ', ' : "You're in "}
+                            <span className="font-semibold">{locationInfo.region.name}</span>
+                          </>
+                        )}
+                        {propertyCount > 0 && (
+                          <span className="text-muted-foreground">
+                            {' '}— {propertyCount} {propertyCount === 1 ? 'property' : 'properties'} available nearby!
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-wider text-amber-500 font-semibold">
+                        🌍 Location Found
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        We found you at coordinates ({locationInfo.latitude.toFixed(4)}, {locationInfo.longitude.toFixed(4)}) but this area isn't in our database yet. Explore the map to find properties!
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Accuracy indicator */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
+                      <MapPin className="h-3 w-3" />
+                      <span>±{locationInfo.accuracy < 1000 ? `${Math.round(locationInfo.accuracy)}m` : `${(locationInfo.accuracy / 1000).toFixed(1)}km`}</span>
+                    </div>
+                    <Badge 
+                      variant="secondary" 
+                      className={`text-[10px] px-2 py-0.5 ${getAccuracyInfo(locationInfo.accuracy).color} text-white border-0`}
+                    >
+                      {getAccuracyInfo(locationInfo.accuracy).icon} {getAccuracyInfo(locationInfo.accuracy).label}
+                    </Badge>
+                  </div>
+                </div>
 
-              {(locationInfo.region || locationInfo.district || locationInfo.ward) && (
-                <Link to={buildMapUrl()}>
-                  <Button size="sm" className="gap-2 shadow-lg shadow-primary/20">
+                {/* CTA Button */}
+                <Link to={buildMapUrl()} className="block">
+                  <Button 
+                    size="sm" 
+                    className="w-full md:w-auto gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
                     <MapPin className="h-4 w-4" />
-                    View Properties Near You
+                    {hasLocation ? 'Explore Properties Near You' : 'Browse the Map'}
+                    <ChevronRight className="h-4 w-4 -mr-1" />
                   </Button>
                 </Link>
-              )}
-            </>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Allow location access to discover properties near you
-              </p>
-              <Button variant="outline" size="sm" onClick={detectLocation}>
-                <Navigation className="h-4 w-4 mr-2" />
-                Enable Location
-              </Button>
-            </div>
-          )}
+              </>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Enable location to discover properties in your area
+                </p>
+                <Button variant="outline" size="sm" onClick={detectLocation} className="gap-2">
+                  <Navigation className="h-4 w-4" />
+                  Enable Location
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };

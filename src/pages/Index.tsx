@@ -15,7 +15,7 @@ const Index = () => {
       <MobileBottomNav />
       
       {/* Location-Aware Welcome Message */}
-      <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40">
+      <div className="fixed bottom-24 md:bottom-8 left-3 right-3 md:left-auto md:right-8 md:max-w-sm lg:max-w-md z-40 animate-fade-in-up" style={{ animationDelay: '1s' }}>
         <LocationAwareWelcome />
       </div>
       {/* Hero Section with Advanced Design */}
