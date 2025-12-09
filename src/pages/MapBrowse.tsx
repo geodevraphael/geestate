@@ -71,6 +71,8 @@ export default function MapBrowse() {
   const popupRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<Overlay | null>(null);
   const baseTileLayerRef = useRef<TileLayer<XYZ> | null>(null);
+  const boundaryLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+  const listingsLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -90,12 +92,42 @@ export default function MapBrowse() {
       setDistrictFilter('all');
       setWardFilter('all');
       setStreetFilter('all');
+      // Fetch ALL wards for this region to show boundaries
+      fetchRegionWards(regionFilter);
     } else {
       setDistricts([]);
       setWards([]);
       setStreets([]);
+      // Clear boundary layer when no region selected
+      if (boundaryLayerRef.current && mapInstance.current) {
+        mapInstance.current.removeLayer(boundaryLayerRef.current);
+        boundaryLayerRef.current = null;
+      }
     }
   }, [regionFilter]);
+
+  // Fetch all wards for a region (across all its districts) to show on map
+  const fetchRegionWards = async (regionId: string) => {
+    // First get all districts in this region
+    const { data: districtData } = await supabase
+      .from('districts')
+      .select('id')
+      .eq('region_id', regionId);
+    
+    if (!districtData || districtData.length === 0) return;
+    
+    const districtIds = districtData.map(d => d.id);
+    
+    // Then get all wards for these districts
+    const { data: wardData } = await supabase
+      .from('wards')
+      .select('id, name, code, district_id, geometry')
+      .in('district_id', districtIds);
+    
+    if (wardData && wardData.length > 0) {
+      renderBoundaries(wardData, 'district');
+    }
+  };
 
   useEffect(() => {
     if (districtFilter !== 'all') {
@@ -105,6 +137,10 @@ export default function MapBrowse() {
     } else {
       setWards([]);
       setStreets([]);
+      // When district is cleared, re-render region wards if region is selected
+      if (regionFilter !== 'all') {
+        fetchRegionWards(regionFilter);
+      }
     }
   }, [districtFilter]);
 
@@ -112,8 +148,16 @@ export default function MapBrowse() {
     if (wardFilter !== 'all') {
       fetchStreets(wardFilter);
       setStreetFilter('all');
+      // Zoom to the selected ward
+      zoomToWard(wardFilter);
     } else {
       setStreets([]);
+      // When ward is cleared, re-render district wards if district is selected
+      if (districtFilter !== 'all') {
+        fetchWards(districtFilter);
+      } else if (regionFilter !== 'all') {
+        fetchRegionWards(regionFilter);
+      }
     }
   }, [wardFilter]);
 
@@ -123,13 +167,109 @@ export default function MapBrowse() {
   };
 
   const fetchWards = async (districtId: string) => {
-    const { data } = await supabase.from('wards').select('*').eq('district_id', districtId).order('name');
+    const { data } = await supabase.from('wards').select('id, name, code, district_id, geometry').eq('district_id', districtId).order('name');
     setWards(data || []);
+    // Render ward boundaries on map and zoom to their extent
+    if (data && data.length > 0) {
+      renderBoundaries(data, 'district');
+    }
   };
 
   const fetchStreets = async (wardId: string) => {
     const { data } = await supabase.from('streets_villages').select('*').eq('ward_id', wardId).order('name');
     setStreets(data || []);
+  };
+
+  // Render administrative boundaries on the map
+  const renderBoundaries = (boundaries: any[], level: 'region' | 'district' | 'ward') => {
+    if (!mapInstance.current) return;
+
+    // Remove existing boundary layer
+    if (boundaryLayerRef.current) {
+      mapInstance.current.removeLayer(boundaryLayerRef.current);
+      boundaryLayerRef.current = null;
+    }
+
+    const features: Feature[] = [];
+    const allCoordinates: number[][] = [];
+
+    boundaries.forEach((boundary) => {
+      if (!boundary.geometry) return;
+
+      try {
+        const geometry = typeof boundary.geometry === 'string' 
+          ? JSON.parse(boundary.geometry) 
+          : boundary.geometry;
+
+        if (!geometry.coordinates) return;
+
+        const coords = geometry.coordinates[0];
+        const transformedCoords = coords.map((coord: [number, number]) => {
+          const projected = fromLonLat([coord[0], coord[1]]);
+          allCoordinates.push(projected as number[]);
+          return projected;
+        });
+
+        const polygon = new Polygon([transformedCoords]);
+        const feature = new Feature({
+          geometry: polygon,
+          boundary: boundary,
+        });
+
+        // Style based on level
+        const strokeColor = level === 'ward' ? '#3b82f6' : '#8b5cf6';
+        const fillOpacity = level === 'ward' ? '20' : '10';
+        
+        feature.setStyle(
+          new Style({
+            fill: new Fill({
+              color: strokeColor + fillOpacity,
+            }),
+            stroke: new Stroke({
+              color: strokeColor,
+              width: level === 'ward' ? 3 : 2,
+              lineDash: level === 'district' ? [8, 4] : undefined,
+            }),
+            text: new Text({
+              text: boundary.name,
+              font: 'bold 11px sans-serif',
+              fill: new Fill({ color: '#ffffff' }),
+              stroke: new Stroke({ color: strokeColor, width: 3 }),
+              overflow: true,
+            }),
+          })
+        );
+
+        features.push(feature);
+      } catch (error) {
+        console.error('Error rendering boundary:', error);
+      }
+    });
+
+    if (features.length > 0) {
+      const vectorSource = new VectorSource({ features });
+      const vectorLayer = new VectorLayer({ source: vectorSource });
+      boundaryLayerRef.current = vectorLayer;
+      mapInstance.current.addLayer(vectorLayer);
+
+      // Zoom to fit all boundaries
+      if (allCoordinates.length > 0) {
+        const extent = vectorSource.getExtent();
+        mapInstance.current.getView().fit(extent, {
+          padding: [50, 50, 50, 50],
+          duration: 800,
+          maxZoom: 14,
+        });
+      }
+    }
+  };
+
+  // Zoom to a specific ward
+  const zoomToWard = (wardId: string) => {
+    const ward = wards.find(w => w.id === wardId);
+    if (!ward || !ward.geometry || !mapInstance.current) return;
+
+    renderBoundaries([ward], 'ward');
   };
 
   const fetchListingsWithPolygons = async () => {
@@ -361,12 +501,11 @@ export default function MapBrowse() {
   useEffect(() => {
     if (!mapInstance.current) return;
 
-    const layers = mapInstance.current.getLayers().getArray();
-    layers.forEach(layer => {
-      if (layer instanceof VectorLayer) {
-        mapInstance.current?.removeLayer(layer);
-      }
-    });
+    // Remove only the listings layer, preserve boundary layer
+    if (listingsLayerRef.current) {
+      mapInstance.current.removeLayer(listingsLayerRef.current);
+      listingsLayerRef.current = null;
+    }
 
     const features: Feature[] = [];
     
@@ -431,11 +570,12 @@ export default function MapBrowse() {
       source: vectorSource,
     });
 
+    listingsLayerRef.current = vectorLayer;
     mapInstance.current.addLayer(vectorLayer);
 
     mapInstance.current.on('click', (evt) => {
       const feature = mapInstance.current?.forEachFeatureAtPixel(evt.pixel, (f) => f);
-      if (feature) {
+      if (feature && feature.get('listing')) {
         const listing = feature.get('listing') as ListingWithPolygon;
         setSelectedListing(listing);
         overlayRef.current?.setPosition(evt.coordinate);
@@ -657,22 +797,37 @@ export default function MapBrowse() {
       <div className="pt-4 border-t border-border">
         <h3 className="text-sm font-semibold mb-2">Legend</h3>
         <div className="text-xs text-muted-foreground mb-3">
-          {filteredListings.length} polygon(s) on map
+          {filteredListings.length} property polygon(s) on map
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#22c55e' }} />
-            <span className="text-sm">Verified</span>
+            <span className="text-sm">Verified Property</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#eab308' }} />
-            <span className="text-sm">Pending</span>
+            <span className="text-sm">Pending Property</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#94a3b8' }} />
-            <span className="text-sm">Unverified</span>
+            <span className="text-sm">Unverified Property</span>
           </div>
         </div>
+        {(regionFilter !== 'all' || districtFilter !== 'all' || wardFilter !== 'all') && (
+          <div className="pt-2 border-t border-border/50">
+            <h4 className="text-xs font-medium mb-2 text-muted-foreground">Administrative Boundaries</h4>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2 border-dashed" style={{ borderColor: '#8b5cf6', backgroundColor: '#8b5cf610' }} />
+                <span className="text-sm">Ward Boundaries (Region/District)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2" style={{ borderColor: '#3b82f6', backgroundColor: '#3b82f620' }} />
+                <span className="text-sm">Selected Ward</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
