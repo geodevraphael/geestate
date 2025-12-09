@@ -20,6 +20,7 @@ import {
   Download,
   Webhook,
   Activity,
+  Calendar,
   Briefcase,
   ChevronLeft,
   ChevronRight,
@@ -87,6 +88,16 @@ const navItems: NavItem[] = [
     icon: FileText,
   },
   {
+    title: 'My Service Requests',
+    href: '/my-service-requests',
+    icon: FileCheck,
+  },
+  {
+    title: 'My Bookings',
+    href: '/my-bookings',
+    icon: Calendar,
+  },
+  {
     title: 'Payments',
     href: '/payment-proofs',
     icon: CreditCard,
@@ -103,6 +114,12 @@ const navItems: NavItem[] = [
     href: '/institutional-seller/dashboard',
     icon: Building,
     roles: ['seller', 'broker'],
+  },
+  {
+    title: 'Provider Dashboard',
+    href: '/service-provider/dashboard',
+    icon: Briefcase,
+    roles: ['service_provider', 'admin'],
   },
   {
     title: 'Admin Payments',
