@@ -40,59 +40,72 @@ export const LocationAwareWelcome: React.FC = () => {
           let foundDistrict: { id: string; name: string } | null = null;
           let foundWard: { id: string; name: string } | null = null;
 
-          // Query ALL wards with geometry - geometry is only stored at ward level
-          // Join with districts and regions to get names
-          const { data: wards, error: wardsError } = await supabase
-            .from('wards')
-            .select(`
-              id, 
-              name, 
-              geometry,
-              district_id,
-              districts!inner (
-                id,
-                name,
-                region_id,
-                regions!inner (
-                  id,
-                  name
-                )
-              )
-            `)
-            .not('geometry', 'is', null);
+          // Fetch ALL wards with pagination (Supabase default limit is 1000)
+          let allWards: any[] = [];
+          let offset = 0;
+          const pageSize = 1000;
+          let hasMore = true;
 
-          if (wardsError) {
-            console.error('Error fetching wards:', wardsError);
-            throw new Error('Could not fetch location data');
+          while (hasMore) {
+            const { data: wards, error: wardsError } = await supabase
+              .from('wards')
+              .select(`
+                id, 
+                name, 
+                geometry,
+                district_id,
+                districts!inner (
+                  id,
+                  name,
+                  region_id,
+                  regions!inner (
+                    id,
+                    name
+                  )
+                )
+              `)
+              .not('geometry', 'is', null)
+              .range(offset, offset + pageSize - 1);
+
+            if (wardsError) {
+              console.error('Error fetching wards:', wardsError);
+              throw new Error('Could not fetch location data');
+            }
+
+            if (wards && wards.length > 0) {
+              allWards = [...allWards, ...wards];
+              offset += pageSize;
+              hasMore = wards.length === pageSize;
+            } else {
+              hasMore = false;
+            }
           }
 
-          console.log(`Checking ${wards?.length || 0} wards for point (${latitude}, ${longitude})`);
+          console.log(`Checking ${allWards.length} wards for point (${latitude}, ${longitude})`);
 
           // Find which ward contains the user's location
-          if (wards) {
-            for (const ward of wards) {
-              if (ward.geometry) {
-                const geom = typeof ward.geometry === 'string' 
-                  ? JSON.parse(ward.geometry) 
-                  : ward.geometry;
+          for (const ward of allWards) {
+            if (ward.geometry) {
+              const geom = typeof ward.geometry === 'string' 
+                ? JSON.parse(ward.geometry) 
+                : ward.geometry;
+              
+              if (isPointInGeometry(latitude, longitude, geom)) {
+                foundWard = { id: ward.id, name: ward.name };
                 
-                if (isPointInGeometry(latitude, longitude, geom)) {
-                  foundWard = { id: ward.id, name: ward.name };
+                // Get district and region from the joined data
+                const district = ward.districts as any;
+                if (district) {
+                  foundDistrict = { id: district.id, name: district.name };
                   
-                  // Get district and region from the joined data
-                  const district = ward.districts as any;
-                  if (district) {
-                    foundDistrict = { id: district.id, name: district.name };
-                    
-                    const region = district.regions as any;
-                    if (region) {
-                      foundRegion = { id: region.id, name: region.name };
-                    }
+                  const region = district.regions as any;
+                  if (region) {
+                    foundRegion = { id: region.id, name: region.name };
                   }
-                  
-                  console.log(`Found ward: ${ward.name}, District: ${foundDistrict?.name}, Region: ${foundRegion?.name}`);
-                  break;
                 }
+                
+                console.log(`Found: ${ward.name} ward, ${foundDistrict?.name} District, ${foundRegion?.name} Region`);
+                break;
               }
             }
           }
@@ -256,7 +269,7 @@ export const LocationAwareWelcome: React.FC = () => {
                     Pinpointing your location...
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Matching with ward boundaries
+                    Matching with Tanzania ward boundaries
                   </p>
                 </div>
               </div>
