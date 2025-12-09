@@ -1,23 +1,29 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { 
   FileSearch, Clock, CheckCircle2, AlertCircle, XCircle,
   MapPin, Calendar, DollarSign, FileText, MessageSquare,
-  ArrowRight, Sparkles, Download, Eye, Building2, User
+  ArrowRight, Sparkles, Download, Eye, Building2, User,
+  CreditCard, Send, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
@@ -42,6 +48,7 @@ interface ServiceRequest {
   service_price: number | null;
   payment_confirmed_at: string | null;
   payment_amount: number | null;
+  client_payment_reference: string | null;
   listings?: {
     title: string;
     location_label: string;
@@ -108,8 +115,12 @@ const STEPS = [
 export default function MyServiceRequests() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
 
   const { data: requests = [], isLoading, refetch } = useQuery({
     queryKey: ['my-service-requests', user?.id],
@@ -166,8 +177,35 @@ export default function MyServiceRequests() {
     total: requests.length,
     active: requests.filter(r => ['pending', 'assigned', 'accepted', 'quoted', 'in_progress'].includes(r.status)).length,
     completed: requests.filter(r => r.status === 'completed').length,
-    pendingPayment: requests.filter(r => ['accepted', 'quoted', 'in_progress'].includes(r.status)).length,
+    pendingPayment: requests.filter(r => ['accepted', 'quoted'].includes(r.status) && !r.client_payment_reference).length,
   };
+
+  // Mutation for confirming payment
+  const confirmPaymentMutation = useMutation({
+    mutationFn: async ({ requestId, reference, notes }: { requestId: string; reference: string; notes: string }) => {
+      const { error } = await supabase
+        .from('service_requests')
+        .update({
+          client_payment_reference: reference,
+          status: 'in_progress',
+          provider_notes: notes ? `Client payment note: ${notes}` : undefined,
+        })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Payment confirmation sent to provider');
+      queryClient.invalidateQueries({ queryKey: ['my-service-requests'] });
+      setShowPaymentDialog(false);
+      setPaymentReference('');
+      setPaymentNotes('');
+      setSelectedRequest(null);
+    },
+    onError: () => {
+      toast.error('Failed to confirm payment');
+    },
+  });
 
   return (
     <MainLayout>
@@ -481,16 +519,42 @@ export default function MyServiceRequests() {
                       TZS {(selectedRequest.service_price || selectedRequest.quoted_price || 0).toLocaleString()}
                     </p>
                     
-                    {['accepted', 'quoted', 'in_progress'].includes(selectedRequest.status) && (
+                    {/* Payment action for accepted requests */}
+                    {['accepted', 'quoted'].includes(selectedRequest.status) && !selectedRequest.client_payment_reference && (
+                      <div className="mt-4 space-y-3">
+                        <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/20">
+                          <p className="text-sm font-medium text-amber-700">Action Required: Pay Provider</p>
+                          <p className="text-xs text-amber-600 mt-1">
+                            Pay the provider directly using the contact details above, then confirm your payment below.
+                          </p>
+                        </div>
+                        <Button 
+                          className="w-full gap-2 bg-primary hover:bg-primary/90"
+                          onClick={() => setShowPaymentDialog(true)}
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          I've Paid - Confirm Payment
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Payment pending provider confirmation */}
+                    {selectedRequest.client_payment_reference && !selectedRequest.payment_confirmed_at && (
                       <div className="mt-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/20">
-                        <p className="text-sm font-medium text-blue-700">Next Step: Pay the Provider</p>
+                        <p className="text-sm font-medium text-blue-700 flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Awaiting Provider Confirmation
+                        </p>
                         <p className="text-xs text-blue-600 mt-1">
-                          Contact the provider using the details above and pay them directly. 
-                          Once they confirm payment, your service will be marked as completed.
+                          Reference: {selectedRequest.client_payment_reference}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          The provider will confirm receipt and proceed with your service.
                         </p>
                       </div>
                     )}
 
+                    {/* Payment confirmed by provider */}
                     {selectedRequest.payment_confirmed_at && (
                       <div className="mt-3 p-3 rounded-md bg-emerald-500/20 border border-emerald-500/30">
                         <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
@@ -498,7 +562,7 @@ export default function MyServiceRequests() {
                           Payment Confirmed
                         </p>
                         <p className="text-xs text-emerald-600 mt-1">
-                          TZS {selectedRequest.payment_amount?.toLocaleString()} received
+                          TZS {selectedRequest.payment_amount?.toLocaleString()} received on {format(new Date(selectedRequest.payment_confirmed_at), 'PPP')}
                         </p>
                       </div>
                     )}
@@ -556,19 +620,110 @@ export default function MyServiceRequests() {
                   >
                     Close
                   </Button>
-                  <Button 
-                    className="flex-1 gap-2"
-                    onClick={() => {
-                      setSelectedRequest(null);
-                      navigate(`/service-requests/${selectedRequest.id}`);
-                    }}
-                  >
-                    <Eye className="h-4 w-4" />
-                    Full Details
-                  </Button>
+                  {['accepted', 'quoted'].includes(selectedRequest.status) && !selectedRequest.client_payment_reference ? (
+                    <Button 
+                      className="flex-1 gap-2"
+                      onClick={() => setShowPaymentDialog(true)}
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Confirm Payment
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      onClick={() => {
+                        setSelectedRequest(null);
+                        navigate(`/service-requests/${selectedRequest.id}`);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                      Full Details
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Confirmation Dialog */}
+        <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                Confirm Your Payment
+              </DialogTitle>
+              <DialogDescription>
+                Enter your payment details so the provider can verify and start working on your request.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {selectedRequest && (
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <p className="text-sm font-medium">{selectedRequest.service_type.replace(/_/g, ' ')}</p>
+                  <p className="text-lg font-bold text-primary">
+                    TZS {(selectedRequest.service_price || selectedRequest.quoted_price || 0).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="payment-reference">Payment Reference / Transaction ID *</Label>
+                <Input
+                  id="payment-reference"
+                  placeholder="e.g., M-Pesa code, bank reference"
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the transaction reference from your payment method
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="payment-notes">Additional Notes (Optional)</Label>
+                <Textarea
+                  id="payment-notes"
+                  placeholder="Any additional information for the provider..."
+                  value={paymentNotes}
+                  onChange={(e) => setPaymentNotes(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowPaymentDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1 gap-2"
+                  disabled={!paymentReference.trim() || confirmPaymentMutation.isPending}
+                  onClick={() => {
+                    if (selectedRequest) {
+                      confirmPaymentMutation.mutate({
+                        requestId: selectedRequest.id,
+                        reference: paymentReference.trim(),
+                        notes: paymentNotes.trim(),
+                      });
+                    }
+                  }}
+                >
+                  {confirmPaymentMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Submit Confirmation
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
