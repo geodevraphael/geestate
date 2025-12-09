@@ -550,7 +550,7 @@ export default function MapBrowse() {
   }, [listingParam, listings, zoomToListing]);
 
   return (
-    <MainLayout className="h-screen overflow-hidden">
+    <MainLayout>
       <div className="flex h-[calc(100vh-64px)] relative">
         {/* Desktop Sidebar */}
         {!isMobile && (
