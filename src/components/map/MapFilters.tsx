@@ -91,8 +91,8 @@ export function MapFilters({
   activeFiltersCount,
 }: MapFiltersProps) {
   const [dealerSearchOpen, setDealerSearchOpen] = useState(false);
-  const [showLocationFilters, setShowLocationFilters] = useState(false);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showLocationFilters, setShowLocationFilters] = useState(true);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(true);
 
   const formatPrice = (value: number) => {
     if (value >= 1000000000) return `${(value / 1000000000).toFixed(1)}B`;

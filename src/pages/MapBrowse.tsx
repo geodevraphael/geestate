@@ -494,9 +494,9 @@ export default function MapBrowse() {
     baseTileLayerRef.current.setSource(new XYZ({ url: sources[basemap] }));
   }, [basemap]);
 
-  // Render listings layer
+  // Render listings layer - optimized for performance
   useEffect(() => {
-    if (!mapInstance.current) return;
+    if (!mapInstance.current || loading) return;
 
     if (listingsLayerRef.current) {
       mapInstance.current.removeLayer(listingsLayerRef.current);
@@ -515,12 +515,16 @@ export default function MapBrowse() {
       } catch {}
     });
 
-    const layer = new VectorLayer({ source: new VectorSource({ features }) });
+    const layer = new VectorLayer({ 
+      source: new VectorSource({ features }),
+      updateWhileAnimating: true,
+      updateWhileInteracting: true,
+    });
     listingsLayerRef.current = layer;
     mapInstance.current.addLayer(layer);
 
-    // Click handler
-    mapInstance.current.on('click', (evt) => {
+    // Click handler - only register once
+    const clickHandler = (evt: any) => {
       const feature = mapInstance.current?.forEachFeatureAtPixel(evt.pixel, f => f);
       if (feature?.get('listing')) {
         const l = feature.get('listing');
@@ -530,17 +534,29 @@ export default function MapBrowse() {
         setSelectedListing(null);
         overlayRef.current?.setPosition(undefined);
       }
-    });
+    };
 
-    // Pointer move
-    mapInstance.current.on('pointermove', (evt) => {
+    // Pointer move - throttled for performance
+    let lastHoveredId: string | null = null;
+    const pointerMoveHandler = (evt: any) => {
       const feature = mapInstance.current?.forEachFeatureAtPixel(evt.pixel, f => f);
       if (mapRef.current) mapRef.current.style.cursor = feature ? 'pointer' : '';
       
       const newHoveredId = feature?.get('listing')?.id || null;
-      if (newHoveredId !== hoveredListingId) setHoveredListingId(newHoveredId);
-    });
-  }, [sortedListings, selectedListing, hoveredListingId, getPolygonStyle]);
+      if (newHoveredId !== lastHoveredId) {
+        lastHoveredId = newHoveredId;
+        setHoveredListingId(newHoveredId);
+      }
+    };
+
+    mapInstance.current.on('click', clickHandler);
+    mapInstance.current.on('pointermove', pointerMoveHandler);
+
+    return () => {
+      mapInstance.current?.un('click', clickHandler);
+      mapInstance.current?.un('pointermove', pointerMoveHandler);
+    };
+  }, [sortedListings, selectedListing, hoveredListingId, getPolygonStyle, loading]);
 
   // Auto-zoom from URL
   useEffect(() => {
