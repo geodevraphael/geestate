@@ -774,7 +774,7 @@ export default function MapBrowse() {
                     Available Properties
                   </DrawerTitle>
                 </DrawerHeader>
-                <div className="flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                   <PropertyList
                     listings={sortedListings}
                     viewMode={viewMode}

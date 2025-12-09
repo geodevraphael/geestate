@@ -57,9 +57,9 @@ export function PropertyList({
   };
 
   return (
-    <div className="flex flex-col h-full max-h-full min-h-0 bg-background overflow-hidden">
+    <div className="flex flex-col h-full bg-background">
       {/* Header with stats and controls */}
-      <div className="p-3 border-b bg-muted/30 space-y-2">
+      <div className="p-3 border-b bg-muted/30 space-y-2 shrink-0">
         {/* Stats row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -142,13 +142,7 @@ export function PropertyList({
       </div>
 
       {/* Listings - scrollable container */}
-      <div 
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-        style={{ 
-          WebkitOverflowScrolling: 'touch'
-        }}
-      >
-        <div className="p-2 sm:p-3">
+      <div className="p-2 sm:p-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
               <div className="h-8 w-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
@@ -186,7 +180,6 @@ export function PropertyList({
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }
