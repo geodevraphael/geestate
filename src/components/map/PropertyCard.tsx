@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Maximize2, CheckCircle2, Eye, Clock, TrendingUp, Star, Zap, Droplet } from 'lucide-react';
+import { MapPin, Maximize2, CheckCircle2, Clock, TrendingUp, Star, Zap, Droplet } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -74,24 +74,24 @@ export function PropertyCard({
   return (
     <div
       className={cn(
-        "group relative rounded-xl border bg-card overflow-hidden cursor-pointer",
-        "transition-all duration-300 ease-out",
+        "group relative rounded-lg border bg-card overflow-hidden cursor-pointer",
+        "transition-all duration-200 ease-out",
         isHovered 
-          ? "ring-2 ring-accent shadow-xl scale-[1.02] border-accent/50" 
-          : "hover:shadow-lg hover:border-border/80 hover:-translate-y-0.5",
+          ? "ring-2 ring-accent shadow-lg scale-[1.01] border-accent/50" 
+          : "hover:shadow-md hover:border-border/80",
         isGrid ? "flex flex-col" : "flex gap-0"
       )}
       style={{ 
-        animationDelay: `${index * 50}ms`,
+        animationDelay: `${index * 30}ms`,
       }}
       onMouseEnter={() => onHover?.(listing.id)}
       onMouseLeave={() => onHover?.(null)}
       onClick={() => onSelect?.(listing)}
     >
-      {/* Thumbnail with gradient overlay */}
+      {/* Thumbnail - compact for mobile */}
       <div className={cn(
         "relative bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center overflow-hidden",
-        isGrid ? "h-36 w-full" : "h-28 w-28 shrink-0"
+        isGrid ? "h-24 sm:h-32 w-full" : "h-20 w-20 sm:h-24 sm:w-24 shrink-0"
       )}>
         {/* Animated background pattern */}
         <div className="absolute inset-0 opacity-30">
@@ -99,9 +99,9 @@ export function PropertyCard({
         </div>
         
         <MapPin className={cn(
-          "text-muted-foreground/40 transition-transform duration-300",
+          "text-muted-foreground/40 transition-transform duration-200",
           isHovered ? "scale-110" : "",
-          isGrid ? "h-10 w-10" : "h-8 w-8"
+          isGrid ? "h-8 w-8 sm:h-10 sm:w-10" : "h-6 w-6 sm:h-8 sm:w-8"
         )} />
         
         {/* Top badges row */}
@@ -151,98 +151,86 @@ export function PropertyCard({
         )} />
       </div>
 
-      {/* Content */}
-      <div className={cn("flex-1 flex flex-col", isGrid ? "p-3" : "p-3 py-2")}>
+      {/* Content - compact for mobile */}
+      <div className={cn("flex-1 flex flex-col min-w-0", isGrid ? "p-2 sm:p-3" : "p-2 py-1.5 sm:p-3 sm:py-2")}>
         {/* Title */}
         <h4 className={cn(
           "font-semibold line-clamp-1 transition-colors duration-200",
-          isGrid ? "text-sm mb-1" : "text-sm",
+          isGrid ? "text-xs sm:text-sm mb-0.5" : "text-xs sm:text-sm",
           isHovered ? "text-accent" : ""
         )}>
           {listing.title}
         </h4>
         
         {/* Location */}
-        <p className="text-xs text-muted-foreground flex items-center gap-1 line-clamp-1 mb-auto">
-          <MapPin className="h-3 w-3 shrink-0 text-accent/60" />
-          {listing.location_label}
+        <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-0.5 line-clamp-1 mb-auto">
+          <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0 text-accent/60" />
+          <span className="truncate">{listing.location_label}</span>
         </p>
 
-        {/* Stats row */}
-        <div className="flex items-center gap-2 flex-wrap mt-2">
+        {/* Stats row - more compact */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mt-1.5 sm:mt-2">
           {listing.polygon?.area_m2 && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Maximize2 className="h-3 w-3" />
+            <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-0.5">
+              <Maximize2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               {formatArea(listing.polygon.area_m2)}
             </span>
           )}
           {distance && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3 w-3" />
+            <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-0.5">
+              <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               {formatDistance(distance)}
             </span>
           )}
-          {/* Utilities Indicators */}
+          {/* Utilities - inline compact */}
           {listing.has_electricity !== null && listing.has_electricity !== undefined && (
             <div 
-              className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] ${
+              className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] sm:text-[10px] ${
                 listing.has_electricity 
                   ? 'bg-yellow-500/20 text-yellow-600' 
                   : 'bg-muted text-muted-foreground'
               }`}
               title={listing.has_electricity ? 'Electricity Available' : 'No Electricity'}
             >
-              <Zap className="h-2.5 w-2.5" />
+              <Zap className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
               {listing.has_electricity ? '1' : '0'}
             </div>
           )}
           {listing.has_water !== null && listing.has_water !== undefined && (
             <div 
-              className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] ${
+              className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] sm:text-[10px] ${
                 listing.has_water 
                   ? 'bg-blue-500/20 text-blue-600' 
                   : 'bg-muted text-muted-foreground'
               }`}
               title={listing.has_water ? 'Water Available' : 'No Water'}
             >
-              <Droplet className="h-2.5 w-2.5" />
+              <Droplet className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
               {listing.has_water ? '1' : '0'}
             </div>
           )}
         </div>
 
-        {/* Price and actions */}
+        {/* Price and actions - compact */}
         <div className={cn(
-          "flex items-center justify-between mt-2 pt-2 border-t border-border/50",
-          isGrid && "flex-col items-stretch gap-2"
+          "flex items-center justify-between mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-border/50",
+          isGrid && "flex-col items-stretch gap-1.5"
         )}>
-          <div className="flex items-center gap-1">
-            {listing.price && <TrendingUp className="h-3.5 w-3.5 text-accent" />}
-            <span className="font-bold text-foreground">
+          <div className="flex items-center gap-0.5">
+            {listing.price && <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-accent" />}
+            <span className="font-bold text-xs sm:text-sm text-foreground truncate">
               {listing.price 
                 ? formatPrice(listing.price, listing.currency || 'TZS')
                 : 'Contact for price'}
             </span>
           </div>
           
-          <div className={cn("flex gap-1.5", isGrid && "justify-end")}>
-            <Button
-              size="sm"
-              variant="ghost"
-              className={cn(
-                "h-7 w-7 p-0 rounded-full transition-all duration-200",
-                isHovered ? "bg-accent/10 text-accent" : ""
-              )}
-              onClick={(e) => { e.stopPropagation(); onSelect?.(listing); }}
-              title="View on map"
-            >
-              <Eye className="h-3.5 w-3.5" />
-            </Button>
+          <div className={cn("flex gap-1", isGrid && "justify-end")}>
             <Link to={`/listings/${listing.id}`} onClick={(e) => e.stopPropagation()}>
               <Button 
                 size="sm" 
                 className={cn(
-                  "h-7 text-xs px-3 rounded-full transition-all duration-200",
+                  "h-6 sm:h-7 text-[10px] sm:text-xs px-2 sm:px-3 rounded-full transition-all duration-200",
                   isHovered ? "bg-accent hover:bg-accent/90" : ""
                 )}
               >
