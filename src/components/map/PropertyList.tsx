@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PropertyCard } from './PropertyCard';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PropertyListProps {
   listings: any[];
@@ -142,8 +141,14 @@ export function PropertyList({
         </div>
       </div>
 
-      {/* Listings */}
-      <ScrollArea className="flex-1">
+      {/* Listings - using native scroll for better mobile support */}
+      <div 
+        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y'
+        }}
+      >
         <div className="p-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
@@ -182,7 +187,7 @@ export function PropertyList({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

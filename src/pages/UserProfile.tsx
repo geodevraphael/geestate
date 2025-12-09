@@ -10,9 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { 
   User, Mail, Phone, MapPin, Calendar, Shield, 
-  Star, Building2, Edit, CheckCircle2 
+  Star, Building2, Edit, CheckCircle2, Bell 
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { NotificationSettings } from '@/components/NotificationSettings';
 
 interface UserProfile {
   id: string;
@@ -219,6 +220,12 @@ export default function UserProfile() {
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Push Notification Settings - Only for own profile */}
+          {isOwnProfile && (
+            <div className="md:col-span-2">
+              <NotificationSettings />
+            </div>
+          )}
           {/* Reputation Score */}
           {reputation && (
             <Card>

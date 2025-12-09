@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,27 +11,48 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Notification } from '@/types/database';
+import type { Notification as AppNotification } from '@/types/database';
 import { format } from 'date-fns';
+
+// Simple push notification helper
+const showBrowserNotification = async (title: string, body: string, url?: string) => {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification(title, {
+          body,
+          icon: '/icon-192x192.png',
+          badge: '/icon-192x192.png',
+          data: { url: url || '/' },
+          tag: `notification-${Date.now()}`
+        });
+      } else {
+        // Fallback to regular notification
+        new window.Notification(title, {
+          body,
+          icon: '/icon-192x192.png'
+        });
+      }
+    } catch (error) {
+      console.error('Error showing notification:', error);
+    }
+  }
+};
 
 export function NotificationBell() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      subscribeToNotifications();
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) return;
+    
     const { data } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', user?.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -39,9 +60,17 @@ export function NotificationBell() {
       setNotifications(data);
       setUnreadCount(data.filter(n => !n.is_read).length);
     }
-  };
+  }, [user?.id]);
 
-  const subscribeToNotifications = () => {
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user, fetchNotifications]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
     const channel = supabase
       .channel('notifications-changes')
       .on(
@@ -50,11 +79,19 @@ export function NotificationBell() {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user?.id}`,
+          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          setNotifications(prev => [payload.new as Notification, ...prev.slice(0, 9)]);
+          const newNotification = payload.new as AppNotification;
+          setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
           setUnreadCount(prev => prev + 1);
+          
+          // Show browser push notification
+          showBrowserNotification(
+            newNotification.title,
+            newNotification.message,
+            newNotification.link_url || undefined
+          );
         }
       )
       .subscribe();
@@ -62,7 +99,7 @@ export function NotificationBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [user?.id]);
 
   const markAsRead = async (notificationId: string) => {
     await supabase
@@ -76,7 +113,7 @@ export function NotificationBell() {
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: AppNotification) => {
     markAsRead(notification.id);
     if (notification.link_url) {
       navigate(notification.link_url);
