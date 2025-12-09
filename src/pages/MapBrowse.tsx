@@ -767,25 +767,27 @@ export default function MapBrowse() {
                   {sortedListings.length} Properties
                 </Button>
               </DrawerTrigger>
-              <DrawerContent className="max-h-[85vh]">
-                <DrawerHeader className="border-b bg-gradient-to-r from-accent/5 to-transparent">
+              <DrawerContent className="max-h-[85vh] flex flex-col">
+                <DrawerHeader className="border-b bg-gradient-to-r from-accent/5 to-transparent shrink-0">
                   <DrawerTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-accent" />
                     Available Properties
                   </DrawerTitle>
                 </DrawerHeader>
-                <PropertyList
-                  listings={sortedListings}
-                  viewMode={viewMode}
-                  setViewMode={setViewMode}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                  hoveredListingId={hoveredListingId}
-                  onHoverListing={setHoveredListingId}
-                  onSelectListing={(l) => { zoomToListing(l); setShowPropertyList(false); }}
-                  userLocation={userLocation}
-                  loading={loading}
-                />
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <PropertyList
+                    listings={sortedListings}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
+                    hoveredListingId={hoveredListingId}
+                    onHoverListing={setHoveredListingId}
+                    onSelectListing={(l) => { zoomToListing(l); setShowPropertyList(false); }}
+                    userLocation={userLocation}
+                    loading={loading}
+                  />
+                </div>
               </DrawerContent>
             </Drawer>
 
