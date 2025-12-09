@@ -126,6 +126,8 @@ export default function MapBrowse() {
       .in('district_id', districtIds);
     
     if (wardData && wardData.length > 0) {
+      // Store wards in state for spatial filtering
+      setWards(wardData);
       renderBoundaries(wardData, 'district');
     }
   };
@@ -427,8 +429,12 @@ export default function MapBrowse() {
     if (districtFilter !== 'all') {
       return wards;
     }
+    // Also include wards when only region is selected
+    if (regionFilter !== 'all') {
+      return wards;
+    }
     return [];
-  }, [wardFilter, districtFilter, wards]);
+  }, [wardFilter, districtFilter, regionFilter, wards]);
 
   const filteredListings = useMemo(() => {
     const filtered = listings.filter((listing) => {
@@ -450,7 +456,10 @@ export default function MapBrowse() {
           const matchesBySpatial = isListingInWards(listing, activeWardGeometries);
           matchesLocation = matchesByAssignedId || matchesBySpatial;
         } else if (regionFilter !== 'all') {
-          matchesLocation = listing.region_id === regionFilter;
+          // For region filtering, also use spatial check since listings may not have region_id assigned
+          const matchesByAssignedId = listing.region_id === regionFilter;
+          const matchesBySpatial = isListingInWards(listing, activeWardGeometries);
+          matchesLocation = matchesByAssignedId || matchesBySpatial;
         }
       } else {
         // ID-based filtering only
