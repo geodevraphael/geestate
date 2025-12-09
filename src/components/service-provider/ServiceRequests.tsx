@@ -73,22 +73,14 @@ export function ServiceRequests({ providerId }: ServiceRequestsProps) {
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['provider-service-requests', providerId],
     queryFn: async () => {
-      // Get user ID from provider profile
-      const { data: profile } = await supabase
-        .from('service_provider_profiles')
-        .select('user_id')
-        .eq('id', providerId)
-        .single();
-
-      if (!profile?.user_id) return [];
-
+      // Query service requests where service_provider_id matches the provider profile id
       const { data, error } = await supabase
         .from('service_requests')
         .select(`
           *,
           listings (title, location_label)
         `)
-        .eq('service_provider_id', profile.user_id)
+        .eq('service_provider_id', providerId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
