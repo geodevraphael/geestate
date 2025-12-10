@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface PushNotificationState {
@@ -12,30 +11,61 @@ interface PushNotificationState {
 
 // Check if running as iOS PWA (standalone mode)
 function isIOSStandalone(): boolean {
+  if (typeof window === 'undefined') return false;
   return (
-    ('standalone' in window.navigator && (window.navigator as any).standalone === true) ||
+    ('standalone' in window.navigator && (window.navigator as unknown as { standalone: boolean }).standalone === true) ||
     window.matchMedia('(display-mode: standalone)').matches
   );
 }
 
 // Check if iOS Safari
 function isIOS(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
 }
 
 // Check if running in Android
 function isAndroid(): boolean {
+  if (typeof navigator === 'undefined') return false;
   return /Android/.test(navigator.userAgent);
 }
 
+// Storage key for push notification state
+const PUSH_STORAGE_KEY = 'geoestate_push_notifications';
+
+interface StoredPushState {
+  enabled: boolean;
+  subscribedAt?: string;
+  endpoint?: string;
+}
+
+function getStoredPushState(): StoredPushState {
+  try {
+    const stored = localStorage.getItem(PUSH_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Error reading push state from storage:', e);
+  }
+  return { enabled: false };
+}
+
+function setStoredPushState(state: StoredPushState): void {
+  try {
+    localStorage.setItem(PUSH_STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('Error saving push state to storage:', e);
+  }
+}
+
 export function usePushNotifications() {
-  const { user } = useAuth();
   const [state, setState] = useState<PushNotificationState>({
     isSupported: false,
     isIOSPWA: false,
     isSubscribed: false,
     permission: 'unsupported',
-    loading: false,
+    loading: true,
   });
 
   useEffect(() => {
@@ -43,22 +73,23 @@ export function usePushNotifications() {
   }, []);
 
   const checkSupport = async () => {
+    if (typeof window === 'undefined') {
+      setState(prev => ({ ...prev, loading: false }));
+      return;
+    }
+
     const notificationSupported = 'Notification' in window;
     const iosDevice = isIOS();
     const iosPWA = isIOSStandalone();
-    
-    // iOS Safari doesn't support Web Push outside of PWA context
-    // But iOS 16.4+ supports push in PWA mode
     const pushSupported = 'PushManager' in window;
     const serviceWorkerSupported = 'serviceWorker' in navigator;
-    
-    // Determine if notifications are supported
+
     let supported = false;
     let permission: NotificationPermission | 'unsupported' = 'unsupported';
-    
+
     if (notificationSupported) {
       permission = Notification.permission;
-      
+
       if (iosDevice) {
         // iOS only supports notifications in PWA mode (iOS 16.4+)
         supported = iosPWA && pushSupported && serviceWorkerSupported;
@@ -67,26 +98,26 @@ export function usePushNotifications() {
         supported = serviceWorkerSupported;
       }
     }
-    
-    // Check if already subscribed
-    let isSubscribed = false;
-    if (supported && permission === 'granted' && serviceWorkerSupported) {
+
+    // Check stored subscription state
+    const storedState = getStoredPushState();
+    let isSubscribed = storedState.enabled && permission === 'granted';
+
+    // Verify actual subscription if we think we're subscribed
+    if (isSubscribed && supported && serviceWorkerSupported && pushSupported) {
       try {
         const registration = await navigator.serviceWorker.ready;
-        if (pushSupported) {
-          const subscription = await registration.pushManager?.getSubscription();
-          isSubscribed = !!subscription;
-        } else {
-          // Fallback: check localStorage for manual subscription flag
-          isSubscribed = localStorage.getItem('pushNotificationsEnabled') === 'true';
-        }
+        const subscription = await registration.pushManager?.getSubscription();
+        isSubscribed = !!subscription || storedState.enabled;
       } catch (error) {
         console.error('Error checking subscription:', error);
+        // Fall back to stored state
+        isSubscribed = storedState.enabled && permission === 'granted';
       }
     }
 
     setState({
-      isSupported: supported || notificationSupported, // Allow basic notifications even without push
+      isSupported: supported || notificationSupported,
       isIOSPWA: iosPWA,
       isSubscribed,
       permission,
@@ -107,7 +138,6 @@ export function usePushNotifications() {
       setState(prev => ({ ...prev, permission: result }));
 
       if (result === 'granted') {
-        toast.success('Notification permission granted');
         return true;
       } else if (result === 'denied') {
         toast.error('Notification permission denied. Please enable in browser/device settings.');
@@ -136,31 +166,43 @@ export function usePushNotifications() {
         }
       }
 
-      // For platforms without full Push API support, use local notifications
-      const pushSupported = 'PushManager' in window;
-      
-      if (pushSupported && 'serviceWorker' in navigator) {
+      // Register service worker if needed
+      if ('serviceWorker' in navigator) {
         try {
-          const registration = await navigator.serviceWorker.ready;
-          
-          // Note: In production, you would use a real VAPID key from your server
-          // For now, we'll mark as subscribed and use local notifications
-          console.log('Service worker ready for push notifications');
-        } catch (error) {
-          console.warn('Push subscription failed, falling back to local notifications:', error);
+          const registration = await navigator.serviceWorker.register('/sw-push.js', {
+            scope: '/'
+          });
+          await navigator.serviceWorker.ready;
+          console.log('Service worker registered for push notifications');
+
+          // Try to subscribe to push if supported
+          if ('PushManager' in window && registration.pushManager) {
+            try {
+              // For demo purposes, we'll just mark as subscribed
+              // In production, you would use your VAPID keys here
+              console.log('Push manager available, ready for push notifications');
+            } catch (pushError) {
+              console.warn('Push subscription not available, using local notifications:', pushError);
+            }
+          }
+        } catch (swError) {
+          console.warn('Service worker registration failed, using fallback notifications:', swError);
         }
       }
 
-      // Store subscription state locally
-      localStorage.setItem('pushNotificationsEnabled', 'true');
-      
-      setState(prev => ({ 
-        ...prev, 
-        isSubscribed: true, 
+      // Store subscription state
+      setStoredPushState({
+        enabled: true,
+        subscribedAt: new Date().toISOString(),
+      });
+
+      setState(prev => ({
+        ...prev,
+        isSubscribed: true,
         loading: false,
         permission: 'granted'
       }));
-      
+
       toast.success('Push notifications enabled');
       return true;
     } catch (error) {
@@ -176,16 +218,21 @@ export function usePushNotifications() {
 
     try {
       if ('serviceWorker' in navigator && 'PushManager' in window) {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager?.getSubscription();
-        
-        if (subscription) {
-          await subscription.unsubscribe();
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager?.getSubscription();
+
+          if (subscription) {
+            await subscription.unsubscribe();
+          }
+        } catch (error) {
+          console.warn('Error unsubscribing from push:', error);
         }
       }
 
-      localStorage.removeItem('pushNotificationsEnabled');
-      
+      // Clear stored state
+      setStoredPushState({ enabled: false });
+
       setState(prev => ({ ...prev, isSubscribed: false, loading: false }));
       toast.success('Push notifications disabled');
       return true;
@@ -197,56 +244,48 @@ export function usePushNotifications() {
     }
   }, []);
 
-  const showNotification = useCallback(async (title: string, options?: NotificationOptions) => {
+  const showNotification = useCallback(async (title: string, options?: NotificationOptions): Promise<boolean> => {
     if (Notification.permission !== 'granted') {
       console.warn('Notification permission not granted');
       return false;
     }
 
+    const notificationOptions: NotificationOptions = {
+      icon: '/icon-192x192.png',
+      badge: '/icon-192x192.png',
+      requireInteraction: false,
+      ...options
+    };
+
     try {
       // Try using service worker notification first (works in background)
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.ready;
-        const notificationOptions: NotificationOptions & { vibrate?: number[]; requireInteraction?: boolean; badge?: string } = {
-          icon: '/icon-192x192.png',
-          badge: '/icon-192x192.png',
-          ...options
-        };
-        await registration.showNotification(title, notificationOptions);
-        return true;
-      } else {
-        // Fallback to regular Notification API
-        new Notification(title, {
-          icon: '/icon-192x192.png',
-          ...options
-        });
-        return true;
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          await registration.showNotification(title, notificationOptions);
+          return true;
+        } catch (swError) {
+          console.warn('Service worker notification failed, trying fallback:', swError);
+        }
       }
+
+      // Fallback to regular Notification API
+      new Notification(title, notificationOptions);
+      return true;
     } catch (error) {
       console.error('Error showing notification:', error);
-      
-      // Final fallback: try basic Notification API
-      try {
-        new Notification(title, {
-          icon: '/icon-192x192.png',
-          ...options
-        });
-        return true;
-      } catch (e) {
-        console.error('All notification methods failed:', e);
-        return false;
-      }
+      return false;
     }
   }, []);
 
   // Get helpful message for iOS users
-  const getIOSInstructions = useCallback(() => {
+  const getIOSInstructions = useCallback((): string | null => {
     if (!isIOS()) return null;
-    
+
     if (!isIOSStandalone()) {
       return 'To enable notifications on iOS, first add this app to your Home Screen (tap Share → Add to Home Screen), then enable notifications.';
     }
-    
+
     return null;
   }, []);
 

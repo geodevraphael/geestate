@@ -1,15 +1,19 @@
 // Push notification service worker for GeoEstate Tanzania
 // Compatible with iOS 16.4+, Android, and Desktop browsers
 
+const APP_NAME = 'GeoEstate Tanzania';
+const DEFAULT_ICON = '/icon-192x192.png';
+const BADGE_ICON = '/icon-192x192.png';
+
 // Handle push events
 self.addEventListener('push', (event) => {
-  console.log('[SW Push] Push event received:', event);
+  console.log('[SW Push] Push event received');
 
   let data = {
-    title: 'GeoEstate Tanzania',
+    title: APP_NAME,
     body: 'You have a new notification',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    icon: DEFAULT_ICON,
+    badge: BADGE_ICON,
     url: '/'
   };
 
@@ -32,17 +36,10 @@ self.addEventListener('push', (event) => {
       dateOfArrival: Date.now()
     },
     actions: [
-      {
-        action: 'open',
-        title: 'View',
-        icon: '/icon-192x192.png'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss'
-      }
+      { action: 'open', title: 'View' },
+      { action: 'dismiss', title: 'Dismiss' }
     ],
-    requireInteraction: true,
+    requireInteraction: false,
     tag: data.tag || 'geoestate-notification',
     renotify: true
   };
@@ -54,7 +51,7 @@ self.addEventListener('push', (event) => {
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW Push] Notification click:', event);
+  console.log('[SW Push] Notification click:', event.action);
 
   event.notification.close();
 
@@ -65,9 +62,9 @@ self.addEventListener('notificationclick', (event) => {
   const url = event.notification.data?.url || '/';
 
   event.waitUntil(
-    clients.matchAll({ 
-      type: 'window', 
-      includeUncontrolled: true 
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
     }).then((clientList) => {
       // Check if there's already a window/tab open
       for (const client of clientList) {
@@ -85,30 +82,30 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle notification close
 self.addEventListener('notificationclose', (event) => {
-  console.log('[SW Push] Notification closed:', event.notification.tag);
+  console.log('[SW Push] Notification closed');
 });
-
-// Handle background sync for offline notifications
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-notifications') {
-    event.waitUntil(syncNotifications());
-  }
-});
-
-async function syncNotifications() {
-  console.log('[SW Push] Syncing notifications...');
-  // Implement sync logic if needed
-}
 
 // Handle messages from the main app
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { title, options } = event.data;
     self.registration.showNotification(title, {
-      icon: '/icon-192x192.png',
-      badge: '/icon-192x192.png',
+      icon: DEFAULT_ICON,
+      badge: BADGE_ICON,
       vibrate: [200, 100, 200],
       ...options
     });
   }
+});
+
+// Install event
+self.addEventListener('install', (event) => {
+  console.log('[SW Push] Service worker installed');
+  self.skipWaiting();
+});
+
+// Activate event
+self.addEventListener('activate', (event) => {
+  console.log('[SW Push] Service worker activated');
+  event.waitUntil(clients.claim());
 });

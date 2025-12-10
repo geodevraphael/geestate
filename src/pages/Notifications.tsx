@@ -18,7 +18,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { NotificationPreferences } from '@/components/NotificationPreferences';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import type { Notification as AppNotification } from '@/types/database';
 
 const ITEMS_PER_PAGE = 15;
@@ -213,14 +213,9 @@ export default function Notifications() {
         </div>
 
         {showPreferences && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Notification Preferences</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <NotificationPreferences />
-            </CardContent>
-          </Card>
+          <div className="mb-6">
+            <NotificationSettings />
+          </div>
         )}
 
         <Card>
