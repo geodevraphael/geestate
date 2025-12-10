@@ -22,7 +22,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.setup-staff-accounts]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-generate-description]
 verify_jwt = true
