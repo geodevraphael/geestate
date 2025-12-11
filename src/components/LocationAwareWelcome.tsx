@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bot, MapPin, Navigation, Loader2, X, Sparkles, ChevronRight, Target } from 'lucide-react';
+import { Bot, MapPin, Navigation, Loader2, X, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,6 +109,12 @@ export const LocationAwareWelcome: React.FC = () => {
     if (locationInfo?.region?.id) params.set('region', locationInfo.region.id);
     if (locationInfo?.district?.id) params.set('district', locationInfo.district.id);
     if (locationInfo?.ward?.id) params.set('ward', locationInfo.ward.id);
+    // Add user coordinates for precise zoom
+    if (locationInfo?.latitude && locationInfo?.longitude) {
+      params.set('lat', locationInfo.latitude.toFixed(6));
+      params.set('lng', locationInfo.longitude.toFixed(6));
+      params.set('zoom', '15');
+    }
     return `/map?${params.toString()}`;
   };
 
@@ -226,11 +232,11 @@ export const LocationAwareWelcome: React.FC = () => {
                 <Link to={buildMapUrl()} className="block">
                   <Button 
                     size="sm" 
-                    className="w-full md:w-auto gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full md:w-auto gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98] group"
                   >
-                    <MapPin className="h-4 w-4" />
-                    {hasLocation ? 'Explore Properties Near You' : 'Browse the Map'}
-                    <ChevronRight className="h-4 w-4 -mr-1" />
+                    <Navigation className="h-4 w-4 group-hover:animate-pulse" />
+                    {hasLocation ? 'Fly to My Location' : 'Browse the Map'}
+                    <Sparkles className="h-4 w-4 -mr-1 opacity-70" />
                   </Button>
                 </Link>
               </>
