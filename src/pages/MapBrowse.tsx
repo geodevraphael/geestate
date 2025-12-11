@@ -53,6 +53,9 @@ export default function MapBrowse() {
   const regionParam = searchParams.get('region');
   const districtParam = searchParams.get('district');
   const wardParam = searchParams.get('ward');
+  const latParam = searchParams.get('lat');
+  const lngParam = searchParams.get('lng');
+  const zoomParam = searchParams.get('zoom');
   
   // Data states
   const [listings, setListings] = useState<ListingWithPolygon[]>([]);
@@ -318,7 +321,6 @@ export default function MapBrowse() {
       feature.setStyle(new Style({
         fill: new Fill({ color: strokeColor + fillOpacity }),
         stroke: new Stroke({ color: strokeColor, width: level === 'ward' ? 3 : 2, lineDash: level === 'district' ? [8, 4] : undefined }),
-        text: new Text({ text: boundary.name, font: 'bold 11px sans-serif', fill: new Fill({ color: '#fff' }), stroke: new Stroke({ color: strokeColor, width: 3 }), overflow: true }),
       }));
       return feature;
     };
@@ -537,6 +539,31 @@ export default function MapBrowse() {
 
     return () => map.setTarget(undefined);
   }, []);
+
+  // Fly to user location if lat/lng params are provided
+  useEffect(() => {
+    if (!mapInstance.current || !latParam || !lngParam) return;
+    
+    const lat = parseFloat(latParam);
+    const lng = parseFloat(lngParam);
+    const zoom = zoomParam ? parseInt(zoomParam) : 15;
+    
+    if (isNaN(lat) || isNaN(lng)) return;
+    
+    // Smooth fly-to animation with easing
+    const targetCenter = fromLonLat([lng, lat]);
+    
+    // First zoom out slightly, then fly to location
+    const currentZoom = mapInstance.current.getView().getZoom() || 6;
+    
+    mapInstance.current.getView().animate(
+      { zoom: Math.min(currentZoom, 8), duration: 400 },
+      { center: targetCenter, zoom, duration: 1200, easing: (t) => 1 - Math.pow(1 - t, 3) }
+    );
+    
+    // Set user location for distance calculations
+    setUserLocation({ lat, lng: lng });
+  }, [latParam, lngParam, zoomParam]);
 
   // Basemap switcher - using label-free versions
   useEffect(() => {
