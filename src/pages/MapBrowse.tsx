@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, SlidersHorizontal, List, Navigation2, Layers, X, Maximize2, CheckCircle2, ExternalLink, Sparkles } from 'lucide-react';
+import { MapPin, SlidersHorizontal, List, Navigation2, Layers, X, Maximize2, CheckCircle2, ExternalLink, Sparkles, Locate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
@@ -378,6 +378,33 @@ export default function MapBrowse() {
       );
     }
   };
+
+  // Fly to user's current location with smooth animation
+  const flyToUserLocation = useCallback(() => {
+    if (!navigator.geolocation) return;
+    
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        
+        if (mapInstance.current) {
+          const targetCenter = fromLonLat([longitude, latitude]);
+          const currentZoom = mapInstance.current.getView().getZoom() || 6;
+          
+          // Smooth fly-to animation
+          mapInstance.current.getView().animate(
+            { zoom: Math.min(currentZoom, 8), duration: 300 },
+            { center: targetCenter, zoom: 16, duration: 1000, easing: (t) => 1 - Math.pow(1 - t, 3) }
+          );
+        }
+      },
+      (error) => {
+        console.error('Location error:', error);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, []);
 
   // Point in polygon check
   const isPointInPolygon = (point: [number, number], polygon: [number, number][]) => {
@@ -825,17 +852,15 @@ export default function MapBrowse() {
               </DrawerContent>
             </Drawer>
 
-            {/* Location Button */}
-            {!locationPermissionAsked && (
-              <Button 
-                size="icon" 
-                onClick={requestUserLocation} 
-                className="fixed top-20 right-4 z-20 rounded-full shadow-xl h-12 w-12 bg-background border-2 hover:bg-muted"
-                variant="outline"
-              >
-                <Navigation2 className="h-5 w-5" />
-              </Button>
-            )}
+            {/* Locate Me Button - Always visible */}
+            <Button 
+              size="icon" 
+              onClick={flyToUserLocation} 
+              className="fixed top-20 right-4 z-20 rounded-full shadow-xl h-12 w-12 bg-primary text-primary-foreground hover:bg-primary/90 border-2 border-primary-foreground/20"
+              title="Locate me"
+            >
+              <Locate className="h-5 w-5" />
+            </Button>
 
             {/* Basemap Switcher */}
             <Popover open={showBasemapSelector} onOpenChange={setShowBasemapSelector}>
@@ -881,9 +906,20 @@ export default function MapBrowse() {
         <div className={cn("h-full w-full relative", !isMobile && "pl-0")}>
           <div ref={mapRef} className="w-full h-full" />
 
-          {/* Desktop Basemap Control */}
+          {/* Desktop Map Controls */}
           {!isMobile && (
-            <div className="absolute top-4 right-4 z-10">
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+              {/* Locate Me Button */}
+              <Button 
+                size="icon" 
+                onClick={flyToUserLocation}
+                className="rounded-xl shadow-xl h-10 w-10 bg-primary text-primary-foreground hover:bg-primary/90"
+                title="Locate me"
+              >
+                <Locate className="h-4 w-4" />
+              </Button>
+              
+              {/* Basemap Switcher */}
               <Popover open={showBasemapSelector} onOpenChange={setShowBasemapSelector}>
                 <PopoverTrigger asChild>
                   <Button 
