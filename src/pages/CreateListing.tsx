@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil, CheckCircle2, Search, List } from 'lucide-react';
+import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil, CheckCircle2, Search, List, Locate } from 'lucide-react';
 import { validatePolygon } from '@/lib/polygonValidation';
 import { PolygonValidationPanel } from '@/components/PolygonValidationPanel';
 import { ProjectSelector } from '@/components/ProjectSelector';
@@ -1706,10 +1706,10 @@ export default function CreateListing() {
                   </div>
 
                   {/* Address Search */}
-                  <div className="relative">
-                    <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <div className="flex-1 flex gap-2">
                       <Input
-                        placeholder="Search for a location (e.g., Dar es Salaam, Tanzania)"
+                        placeholder="Search for a location..."
                         value={addressSearch}
                         onChange={(e) => setAddressSearch(e.target.value)}
                         onKeyDown={(e) => {
@@ -1718,6 +1718,7 @@ export default function CreateListing() {
                             searchAddress();
                           }
                         }}
+                        className="flex-1"
                       />
                       <Button
                         type="button"
@@ -1725,12 +1726,47 @@ export default function CreateListing() {
                         onClick={searchAddress}
                         disabled={isSearching || !addressSearch.trim()}
                       >
-                        {isSearching ? 'Searching...' : 'Search'}
+                        {isSearching ? 'Searching...' : <Search className="h-4 w-4" />}
                       </Button>
                     </div>
-                    
-                    {searchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (navigator.geolocation && mapInstance.current) {
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              const coords = fromLonLat([pos.coords.longitude, pos.coords.latitude]);
+                              mapInstance.current?.getView().animate({
+                                center: coords,
+                                zoom: 17,
+                                duration: 1000,
+                              });
+                              toast({
+                                title: 'Location found',
+                                description: 'Map centered on your current location',
+                              });
+                            },
+                            (error) => {
+                              toast({
+                                title: 'Location error',
+                                description: 'Could not get your location',
+                                variant: 'destructive',
+                              });
+                            },
+                            { enableHighAccuracy: true, timeout: 10000 }
+                          );
+                        }
+                      }}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      title="Locate me"
+                    >
+                      <Locate className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {searchResults.length > 0 && (
+                    <div className="relative">
+                      <div className="absolute z-10 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
                         {searchResults.map((result, idx) => (
                           <button
                             key={idx}
@@ -1742,8 +1778,8 @@ export default function CreateListing() {
                           </button>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div ref={mapRef} className="w-full h-[500px] rounded-lg border" />
                   {isDrawingMode && !isLandProperty && (
