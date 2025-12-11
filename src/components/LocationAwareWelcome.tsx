@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Bot, MapPin, Navigation, Loader2, X, Sparkles, Target } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Bot, MapPin, Navigation, Loader2, X, Sparkles, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LocationInfo {
   region: { id: string; name: string } | null;
@@ -24,7 +24,7 @@ export const LocationAwareWelcome: React.FC = () => {
 
   const detectLocation = async () => {
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
+      setError("Geolocation is not supported by your browser");
       return;
     }
 
@@ -35,19 +35,19 @@ export const LocationAwareWelcome: React.FC = () => {
       async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         const startTime = performance.now();
-        
+
         try {
           // Use edge function for fast server-side lookup
-          const { data, error: funcError } = await supabase.functions.invoke('detect-user-location', {
-            body: { latitude, longitude }
+          const { data, error: funcError } = await supabase.functions.invoke("detect-user-location", {
+            body: { latitude, longitude },
           });
 
           const totalTime = performance.now() - startTime;
           console.log(`Location detection completed in ${totalTime.toFixed(0)}ms`);
 
           if (funcError) {
-            console.error('Location detection error:', funcError);
-            setError('Could not determine your area');
+            console.error("Location detection error:", funcError);
+            setError("Could not determine your area");
             setLoading(false);
             return;
           }
@@ -64,8 +64,8 @@ export const LocationAwareWelcome: React.FC = () => {
             });
           }
         } catch (err) {
-          console.error('Error detecting location:', err);
-          setError('Could not determine your area');
+          console.error("Error detecting location:", err);
+          setError("Could not determine your area");
         } finally {
           setLoading(false);
         }
@@ -75,14 +75,14 @@ export const LocationAwareWelcome: React.FC = () => {
         if (err.code === err.PERMISSION_DENIED) {
           setPermissionDenied(true);
         } else {
-          setError('Could not get your location');
+          setError("Could not get your location");
         }
       },
       {
         enableHighAccuracy: false, // Faster with lower accuracy
         timeout: 10000,
         maximumAge: 600000, // Cache for 10 minutes
-      }
+      },
     );
   };
 
@@ -91,29 +91,29 @@ export const LocationAwareWelcome: React.FC = () => {
     const timer = setTimeout(() => {
       detectLocation();
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
   if (dismissed || permissionDenied) return null;
 
   const getAccuracyInfo = (accuracy: number) => {
-    if (accuracy <= 100) return { label: 'Precise', color: 'bg-emerald-500', icon: '🎯' };
-    if (accuracy <= 500) return { label: 'Good', color: 'bg-green-500', icon: '✓' };
-    if (accuracy <= 2000) return { label: 'Approximate', color: 'bg-amber-500', icon: '~' };
-    return { label: 'Rough estimate', color: 'bg-orange-500', icon: '≈' };
+    if (accuracy <= 100) return { label: "Precise", color: "bg-emerald-500", icon: "🎯" };
+    if (accuracy <= 500) return { label: "Good", color: "bg-green-500", icon: "✓" };
+    if (accuracy <= 2000) return { label: "Approximate", color: "bg-amber-500", icon: "~" };
+    return { label: "Rough estimate", color: "bg-orange-500", icon: "≈" };
   };
 
   const buildMapUrl = () => {
     const params = new URLSearchParams();
-    if (locationInfo?.region?.id) params.set('region', locationInfo.region.id);
-    if (locationInfo?.district?.id) params.set('district', locationInfo.district.id);
-    if (locationInfo?.ward?.id) params.set('ward', locationInfo.ward.id);
+    if (locationInfo?.region?.id) params.set("region", locationInfo.region.id);
+    if (locationInfo?.district?.id) params.set("district", locationInfo.district.id);
+    if (locationInfo?.ward?.id) params.set("ward", locationInfo.ward.id);
     // Add user coordinates for precise zoom
     if (locationInfo?.latitude && locationInfo?.longitude) {
-      params.set('lat', locationInfo.latitude.toFixed(6));
-      params.set('lng', locationInfo.longitude.toFixed(6));
-      params.set('zoom', '15');
+      params.set("lat", locationInfo.latitude.toFixed(6));
+      params.set("lng", locationInfo.longitude.toFixed(6));
+      params.set("zoom", "15");
     }
     return `/map?${params.toString()}`;
   };
@@ -125,7 +125,7 @@ export const LocationAwareWelcome: React.FC = () => {
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full" />
       <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-accent/10 to-transparent rounded-tr-full" />
-      
+
       {/* Close button */}
       <button
         onClick={() => setDismissed(true)}
@@ -158,12 +158,8 @@ export const LocationAwareWelcome: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Detecting your location...
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    This will only take a moment
-                  </p>
+                  <p className="text-sm font-medium text-foreground">Detecting your location...</p>
+                  <p className="text-xs text-muted-foreground">This will only take a moment</p>
                 </div>
               </div>
             ) : error ? (
@@ -183,21 +179,20 @@ export const LocationAwareWelcome: React.FC = () => {
                         📍 Location Detected
                       </p>
                       <p className="text-sm md:text-base font-medium text-foreground leading-snug">
-                        You're in{' '}
-                        {locationInfo.ward && (
-                          <span className="text-primary font-bold">{locationInfo.ward.name}</span>
-                        )}
-                        {locationInfo.ward && locationInfo.district && ' ward, '}
-                        {locationInfo.district && (
-                          <span className="font-semibold">{locationInfo.district.name}</span>
-                        )}
-                        {locationInfo.district && ' District'}
+                        You're in{" "}
+                        {locationInfo.ward && <span className="text-primary font-bold">{locationInfo.ward.name}</span>}
+                        {locationInfo.ward && locationInfo.district && " ward, "}
+                        {locationInfo.district && <span className="font-semibold">{locationInfo.district.name}</span>}
+                        {locationInfo.district && " District"}
                         {locationInfo.region && (
-                          <>, <span className="font-semibold">{locationInfo.region.name}</span> Region</>
+                          <>
+                            , <span className="font-semibold">{locationInfo.region.name}</span> Region
+                          </>
                         )}
                         {locationInfo.propertyCount > 0 && (
                           <span className="text-muted-foreground block mt-0.5">
-                            🏠 {locationInfo.propertyCount} {locationInfo.propertyCount === 1 ? 'property' : 'properties'} available nearby!
+                            🏠 {locationInfo.propertyCount}{" "}
+                            {locationInfo.propertyCount === 1 ? "property" : "properties"} available nearby!
                           </span>
                         )}
                       </p>
@@ -208,19 +203,25 @@ export const LocationAwareWelcome: React.FC = () => {
                         🌍 Outside Coverage Area
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Your location ({locationInfo.latitude.toFixed(4)}°, {locationInfo.longitude.toFixed(4)}°) isn't within our mapped wards yet. Browse the map to explore available properties!
+                        Your location ({locationInfo.latitude.toFixed(4)}°, {locationInfo.longitude.toFixed(4)}°) isn't
+                        within our mapped wards yet. Browse the map to explore available properties!
                       </p>
                     </div>
                   )}
-                  
+
                   {/* Accuracy indicator */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
                       <MapPin className="h-3 w-3" />
-                      <span>±{locationInfo.accuracy < 1000 ? `${Math.round(locationInfo.accuracy)}m` : `${(locationInfo.accuracy / 1000).toFixed(1)}km`}</span>
+                      <span>
+                        ±
+                        {locationInfo.accuracy < 1000
+                          ? `${Math.round(locationInfo.accuracy)}m`
+                          : `${(locationInfo.accuracy / 1000).toFixed(1)}km`}
+                      </span>
                     </div>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className={`text-[10px] px-2 py-0.5 ${getAccuracyInfo(locationInfo.accuracy).color} text-white border-0`}
                     >
                       {getAccuracyInfo(locationInfo.accuracy).icon} {getAccuracyInfo(locationInfo.accuracy).label}
@@ -230,21 +231,19 @@ export const LocationAwareWelcome: React.FC = () => {
 
                 {/* CTA Button */}
                 <Link to={buildMapUrl()} className="block">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="w-full md:w-auto gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98] group"
                   >
                     <Navigation className="h-4 w-4 group-hover:animate-pulse" />
-                    {hasLocation ? 'Fly to My Location' : 'Browse the Map'}
+                    {hasLocation ? "Explore Contents Near by" : "Browse the Map"}
                     <Sparkles className="h-4 w-4 -mr-1 opacity-70" />
                   </Button>
                 </Link>
               </>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Enable location to discover properties in your area
-                </p>
+                <p className="text-sm text-muted-foreground">Enable location to discover properties in your area</p>
                 <Button variant="outline" size="sm" onClick={detectLocation} className="gap-2">
                   <Navigation className="h-4 w-4" />
                   Enable Location
