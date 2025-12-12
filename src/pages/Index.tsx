@@ -36,86 +36,87 @@ const Index = () => {
         <div className="hidden md:block absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
 
         {/* Mobile Content Layout */}
-        <div className="md:hidden relative z-10 w-full h-full flex flex-col px-5 pt-20 pb-32">
+        <div className="md:hidden relative z-10 w-full h-full flex flex-col px-5 pt-16 pb-32">
           {/* Mobile Top Section - Location Welcome */}
           <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
             <LocationAwareWelcome />
           </div>
-          
-          {/* Mobile Trust Badge - Pill style */}
-          <div className="mt-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/5 rounded-full border border-primary/10">
-              <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+
+          {/* Mobile App Shell Card */}
+          <div className="mt-6 flex-1 flex flex-col justify-end">
+            <div className="bg-card/90 backdrop-blur-xl rounded-3xl border border-border/60 shadow-xl px-5 py-6 space-y-5">
+              {/* Mobile Trust Badge - Inside card */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                </div>
+                <span className="text-[11px] font-medium text-foreground/80 tracking-wide uppercase">
+                  {t('home.verifiedBadge')}
+                </span>
               </div>
-              <span className="text-xs font-medium text-foreground/80">{t('home.verifiedBadge')}</span>
+
+              {/* Mobile Hero Text */}
+              <div className="space-y-3">
+                <h1 className="text-2xl font-display font-semibold tracking-tight leading-snug">
+                  {t('home.heroTitle1')}{' '}
+                  <span className="text-gradient">{t('home.heroTitle2')}</span>
+                  {' '}{t('home.heroTitle3')}
+                </h1>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t('home.heroSubtitle')}
+                </p>
+              </div>
+
+              {/* Mobile CTA Buttons - App-like stacked layout */}
+              <div className="space-y-3 pt-2">
+                {/* Primary CTA - Prominent */}
+                <Link to="/map" className="block">
+                  <Button
+                    size="lg"
+                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
+                  >
+                    <MapPin className="mr-2 h-5 w-5" />
+                    {t('home.exploreMapShort')}
+                    <ArrowRight className="ml-auto h-5 w-5" />
+                  </Button>
+                </Link>
+
+                {/* Secondary CTAs - 2x2 Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Link to="/listings" className="block">
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 text-sm font-medium rounded-xl border-border/60 bg-card/60 backdrop-blur-sm active:scale-[0.98] transition-transform"
+                    >
+                      <Search className="mr-1.5 h-4 w-4" />
+                      {t('home.browseListingsShort')}
+                    </Button>
+                  </Link>
+                  <Link to="/sellers" className="block">
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 text-sm font-medium rounded-xl border-border/60 bg-card/60 backdrop-blur-sm active:scale-[0.98] transition-transform"
+                    >
+                      <Users className="mr-1.5 h-4 w-4" />
+                      {t('home.viewSellersShort')}
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Tertiary CTA */}
+                <Link to="/service-providers" className="block">
+                  <Button
+                    variant="ghost"
+                    className="w-full h-11 text-sm text-muted-foreground hover:text-foreground rounded-xl active:scale-[0.98] transition-transform"
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Browse Service Providers
+                    <ArrowRight className="ml-auto h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-          
-          {/* Mobile Hero Text - Large, bold, modern */}
-          <div className="mt-8 space-y-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <h1 className="text-[2.5rem] leading-[1.1] font-display font-bold tracking-tight">
-              {t('home.heroTitle1')}{' '}
-              <span className="text-gradient">{t('home.heroTitle2')}</span>
-              {' '}{t('home.heroTitle3')}
-            </h1>
-            <p className="text-base text-muted-foreground leading-relaxed pr-4">
-              {t('home.heroSubtitle')}
-            </p>
-          </div>
-          
-          {/* Mobile Quick Stats - Modern app metrics */}
-          <div className="mt-8 grid grid-cols-3 gap-3 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-4 border border-border/50 text-center">
-              <div className="text-2xl font-bold text-foreground">2K+</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">Properties</div>
-            </div>
-            <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-4 border border-border/50 text-center">
-              <div className="text-2xl font-bold text-foreground">500+</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">Sellers</div>
-            </div>
-            <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-4 border border-border/50 text-center">
-              <div className="text-2xl font-bold text-accent">100%</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">Verified</div>
-            </div>
-          </div>
-          
-          {/* Mobile CTA Buttons - App-like stacked layout */}
-          <div className="mt-auto space-y-3 animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            {/* Primary CTA - Prominent */}
-            <Link to="/map" className="block">
-              <Button size="lg" className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
-                <MapPin className="mr-2 h-5 w-5" />
-                {t('home.exploreMapShort')}
-                <ArrowRight className="ml-auto h-5 w-5" />
-              </Button>
-            </Link>
-            
-            {/* Secondary CTAs - 2x2 Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <Link to="/listings" className="block">
-                <Button variant="outline" className="w-full h-12 text-sm font-medium rounded-xl border-border/60 bg-card/50 backdrop-blur-sm active:scale-[0.98] transition-transform">
-                  <Search className="mr-1.5 h-4 w-4" />
-                  {t('home.browseListingsShort')}
-                </Button>
-              </Link>
-              <Link to="/sellers" className="block">
-                <Button variant="outline" className="w-full h-12 text-sm font-medium rounded-xl border-border/60 bg-card/50 backdrop-blur-sm active:scale-[0.98] transition-transform">
-                  <Users className="mr-1.5 h-4 w-4" />
-                  {t('home.viewSellersShort')}
-                </Button>
-              </Link>
-            </div>
-            
-            {/* Tertiary CTA */}
-            <Link to="/service-providers" className="block">
-              <Button variant="ghost" className="w-full h-11 text-sm text-muted-foreground hover:text-foreground rounded-xl active:scale-[0.98] transition-transform">
-                <Briefcase className="mr-2 h-4 w-4" />
-                Browse Service Providers
-                <ArrowRight className="ml-auto h-4 w-4" />
-              </Button>
-            </Link>
           </div>
         </div>
 
