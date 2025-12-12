@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase, Users, Building2 } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase, Users, Home, TrendingUp } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { LocationAwareWelcome } from '@/components/LocationAwareWelcome';
 import { useTranslation } from 'react-i18next';
+import mobileHeroImage from '@/assets/mobile-hero-property.jpg';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -14,116 +15,114 @@ const Index = () => {
       <Navbar />
       <MobileBottomNav />
       
-      {/* Hero Section - Desktop keeps original, Mobile gets modern app-like design */}
-      <section className="relative min-h-[100dvh] md:min-h-screen flex items-center justify-center overflow-hidden">
-        
-        {/* Mobile Hero Background - Full bleed gradient with animated shapes */}
-        <div className="absolute inset-0 md:hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
-          <div className="absolute top-0 left-0 right-0 h-[45vh] bg-gradient-to-br from-primary/8 via-accent/5 to-transparent" />
-          <div className="absolute top-20 -right-16 w-64 h-64 bg-accent/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-40 -left-20 w-48 h-48 bg-primary/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      {/* ===== MOBILE APP VIEW ===== */}
+      <div className="md:hidden min-h-screen bg-secondary/30 pb-24">
+        {/* Mobile App Header */}
+        <div className="px-4 pt-4 pb-3">
+          <LocationAwareWelcome />
         </div>
         
-        {/* Desktop Animated Background Mesh - Unchanged */}
-        <div className="hidden md:block absolute inset-0 bg-gradient-to-br from-background via-secondary/20 to-background">
+        {/* Hero Image Card with Search Overlay */}
+        <div className="px-4 mb-5">
+          <div className="relative rounded-3xl overflow-hidden shadow-lg">
+            <img 
+              src={mobileHeroImage} 
+              alt="Property" 
+              className="w-full h-56 object-cover"
+            />
+            {/* Search Bar Overlay */}
+            <div className="absolute bottom-4 left-4 right-4">
+              <Link to="/listings">
+                <div className="bg-card/95 backdrop-blur-md rounded-2xl px-4 py-3.5 flex items-center gap-3 shadow-lg border border-border/30 active:scale-[0.98] transition-transform">
+                  <Search className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-muted-foreground text-sm flex-1">{t('home.browseListingsShort')}</span>
+                  <div className="h-9 w-9 rounded-xl bg-accent flex items-center justify-center">
+                    <MapPin className="h-4 w-4 text-accent-foreground" />
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+        
+        {/* Quick Actions Section */}
+        <div className="px-4 mb-5">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            {t('home.verifiedBadge')}
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Explore Map Card */}
+            <Link to="/map" className="block">
+              <div className="bg-card rounded-2xl p-4 border border-border/50 active:scale-[0.97] transition-transform shadow-sm">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <p className="font-semibold text-sm text-foreground">{t('home.exploreMapShort')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('home.heroTitle2')}</p>
+              </div>
+            </Link>
+            
+            {/* Browse Listings Card */}
+            <Link to="/listings" className="block">
+              <div className="bg-card rounded-2xl p-4 border border-border/50 active:scale-[0.97] transition-transform shadow-sm">
+                <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center mb-3">
+                  <Home className="h-5 w-5 text-accent" />
+                </div>
+                <p className="font-semibold text-sm text-foreground">{t('home.browseListingsShort')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('home.heroTitle3')}</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+        
+        {/* More Actions */}
+        <div className="px-4 space-y-3">
+          {/* View Sellers */}
+          <Link to="/sellers" className="block">
+            <div className="bg-card rounded-2xl p-4 flex items-center gap-4 border border-border/50 active:scale-[0.98] transition-transform shadow-sm">
+              <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center">
+                <Users className="h-6 w-6 text-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-foreground">{t('home.viewSellersShort')}</p>
+                <p className="text-xs text-muted-foreground">{t('home.heroSubtitle')}</p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </Link>
+          
+          {/* Service Providers */}
+          <Link to="/service-providers" className="block">
+            <div className="bg-card rounded-2xl p-4 flex items-center gap-4 border border-border/50 active:scale-[0.98] transition-transform shadow-sm">
+              <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center">
+                <Briefcase className="h-6 w-6 text-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-foreground">Service Providers</p>
+                <p className="text-xs text-muted-foreground">Find professionals</p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </Link>
+        </div>
+      </div>
+      
+      {/* ===== DESKTOP VIEW - UNCHANGED ===== */}
+      <section className="hidden md:flex relative min-h-screen items-center justify-center overflow-hidden">
+        {/* Desktop Animated Background Mesh */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary/20 to-background">
           <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
           <div className="absolute top-1/3 -right-20 w-[500px] h-[500px] bg-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
           <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         </div>
 
-        {/* Desktop Grid Pattern Overlay - Unchanged */}
-        <div className="hidden md:block absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
+        {/* Desktop Grid Pattern Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
 
-        {/* Mobile Content Layout */}
-        <div className="md:hidden relative z-10 w-full h-full flex flex-col px-5 pt-16 pb-32">
-          {/* Mobile Top Section - Location Welcome */}
-          <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <LocationAwareWelcome />
-          </div>
-
-          {/* Mobile App Shell Card */}
-          <div className="mt-6 flex-1 flex flex-col justify-end">
-            <div className="bg-card/90 backdrop-blur-xl rounded-3xl border border-border/60 shadow-xl px-5 py-6 space-y-5">
-              {/* Mobile Trust Badge - Inside card */}
-              <div className="flex items-center gap-2">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-                </div>
-                <span className="text-[11px] font-medium text-foreground/80 tracking-wide uppercase">
-                  {t('home.verifiedBadge')}
-                </span>
-              </div>
-
-              {/* Mobile Hero Text */}
-              <div className="space-y-3">
-                <h1 className="text-2xl font-display font-semibold tracking-tight leading-snug">
-                  {t('home.heroTitle1')}{' '}
-                  <span className="text-gradient">{t('home.heroTitle2')}</span>
-                  {' '}{t('home.heroTitle3')}
-                </h1>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {t('home.heroSubtitle')}
-                </p>
-              </div>
-
-              {/* Mobile CTA Buttons - App-like stacked layout */}
-              <div className="space-y-3 pt-2">
-                {/* Primary CTA - Prominent */}
-                <Link to="/map" className="block">
-                  <Button
-                    size="lg"
-                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
-                  >
-                    <MapPin className="mr-2 h-5 w-5" />
-                    {t('home.exploreMapShort')}
-                    <ArrowRight className="ml-auto h-5 w-5" />
-                  </Button>
-                </Link>
-
-                {/* Secondary CTAs - 2x2 Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Link to="/listings" className="block">
-                    <Button
-                      variant="outline"
-                      className="w-full h-12 text-sm font-medium rounded-xl border-border/60 bg-card/60 backdrop-blur-sm active:scale-[0.98] transition-transform"
-                    >
-                      <Search className="mr-1.5 h-4 w-4" />
-                      {t('home.browseListingsShort')}
-                    </Button>
-                  </Link>
-                  <Link to="/sellers" className="block">
-                    <Button
-                      variant="outline"
-                      className="w-full h-12 text-sm font-medium rounded-xl border-border/60 bg-card/60 backdrop-blur-sm active:scale-[0.98] transition-transform"
-                    >
-                      <Users className="mr-1.5 h-4 w-4" />
-                      {t('home.viewSellersShort')}
-                    </Button>
-                  </Link>
-                </div>
-
-                {/* Tertiary CTA */}
-                <Link to="/service-providers" className="block">
-                  <Button
-                    variant="ghost"
-                    className="w-full h-11 text-sm text-muted-foreground hover:text-foreground rounded-xl active:scale-[0.98] transition-transform"
-                  >
-                    <Briefcase className="mr-2 h-4 w-4" />
-                    Browse Service Providers
-                    <ArrowRight className="ml-auto h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Content - Unchanged */}
-        <div className="hidden md:block container relative z-10 mx-auto px-6 py-20">
+        {/* Desktop Content */}
+        <div className="container relative z-10 mx-auto px-6 py-20">
           <div className="max-w-5xl mx-auto">
-            {/* Location-Aware Welcome - Above Trust Badge */}
+            {/* Location-Aware Welcome */}
             <div className="mb-8 max-w-md animate-fade-in" style={{ animationDelay: '0.5s' }}>
               <LocationAwareWelcome />
             </div>
