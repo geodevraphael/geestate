@@ -6,12 +6,11 @@ import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { LocationAwareWelcome } from '@/components/LocationAwareWelcome';
 import { useTranslation } from 'react-i18next';
 import mobileHeroImage from '@/assets/mobile-hero-property.jpg';
-
 const Index = () => {
-  const { t } = useTranslation();
-  
-  return (
-    <div className="min-h-screen bg-background overflow-hidden">
+  const {
+    t
+  } = useTranslation();
+  return <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       <MobileBottomNav />
       
@@ -23,27 +22,7 @@ const Index = () => {
         </div>
         
         {/* Hero Image Card with Search Overlay */}
-        <div className="px-4 mb-5">
-          <div className="relative rounded-3xl overflow-hidden shadow-lg">
-            <img 
-              src={mobileHeroImage} 
-              alt="Property" 
-              className="w-full h-56 object-cover"
-            />
-            {/* Search Bar Overlay */}
-            <div className="absolute bottom-4 left-4 right-4">
-              <Link to="/listings">
-                <div className="bg-card/95 backdrop-blur-md rounded-2xl px-4 py-3.5 flex items-center gap-3 shadow-lg border border-border/30 active:scale-[0.98] transition-transform">
-                  <Search className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-muted-foreground text-sm flex-1">{t('home.browseListingsShort')}</span>
-                  <div className="h-9 w-9 rounded-xl bg-accent flex items-center justify-center">
-                    <MapPin className="h-4 w-4 text-accent-foreground" />
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
+        
         
         {/* Quick Actions Section */}
         <div className="px-4 mb-5">
@@ -112,8 +91,12 @@ const Index = () => {
         {/* Desktop Animated Background Mesh */}
         <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary/20 to-background">
           <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute top-1/3 -right-20 w-[500px] h-[500px] bg-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-          <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-1/3 -right-20 w-[500px] h-[500px] bg-accent/15 rounded-full blur-3xl animate-float" style={{
+          animationDelay: '1s'
+        }} />
+          <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" style={{
+          animationDelay: '2s'
+        }} />
         </div>
 
         {/* Desktop Grid Pattern Overlay */}
@@ -123,7 +106,9 @@ const Index = () => {
         <div className="container relative z-10 mx-auto px-6 py-20">
           <div className="max-w-5xl mx-auto">
             {/* Location-Aware Welcome */}
-            <div className="mb-8 max-w-md animate-fade-in" style={{ animationDelay: '0.5s' }}>
+            <div className="mb-8 max-w-md animate-fade-in" style={{
+            animationDelay: '0.5s'
+          }}>
               <LocationAwareWelcome />
             </div>
 
@@ -149,12 +134,16 @@ const Index = () => {
               {' '}{t('home.heroTitle3')}
             </h1>
             
-            <p className="text-xl lg:text-2xl text-muted-foreground mb-12 max-w-3xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <p className="text-xl lg:text-2xl text-muted-foreground mb-12 max-w-3xl leading-relaxed animate-fade-in-up" style={{
+            animationDelay: '0.2s'
+          }}>
               {t('home.heroSubtitle')}
             </p>
             
             {/* CTA Buttons */}
-            <div className="flex flex-row gap-4 mb-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+            <div className="flex flex-row gap-4 mb-16 animate-fade-in-up" style={{
+            animationDelay: '0.4s'
+          }}>
               <Link to="/map" className="group">
                 <Button size="lg" className="h-14 px-8 text-lg bg-primary hover:bg-primary/90 shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105">
                   <MapPin className="mr-2 h-6 w-6 group-hover:rotate-12 transition-transform" />
@@ -184,8 +173,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
