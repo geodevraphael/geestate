@@ -501,43 +501,24 @@ export default function MapBrowse() {
     }
   }, [filteredListings, sortBy, userLocation]);
 
-  // Track current zoom level
-  const [currentZoom, setCurrentZoom] = useState(6);
-
-  // Get polygon style - with zoom-based label visibility
-  const getPolygonStyle = useCallback((listing: ListingWithPolygon, isSelected: boolean, isHovered: boolean, zoom: number) => {
+  // Get polygon style
+  const getPolygonStyle = useCallback((listing: ListingWithPolygon, isSelected: boolean, isHovered: boolean) => {
     let colors = POLYGON_COLORS.unverified;
     if (isSelected) colors = POLYGON_COLORS.selected;
     else if (isHovered) colors = POLYGON_COLORS.hovered;
     else if (listing.verification_status === 'verified') colors = POLYGON_COLORS.verified;
     else if (listing.verification_status === 'pending') colors = POLYGON_COLORS.pending;
 
-    const areaM2 = listing.polygon?.area_m2 || 0;
-    
-    // Dynamic label visibility based on zoom and plot size
-    // Small plots (<500m²) need zoom 17+, medium (<2000m²) need zoom 15+, large plots zoom 13+
-    const showLabel = isSelected || isHovered || (
-      (areaM2 < 500 && zoom >= 17) ||
-      (areaM2 >= 500 && areaM2 < 2000 && zoom >= 15) ||
-      (areaM2 >= 2000 && areaM2 < 10000 && zoom >= 13) ||
-      (areaM2 >= 10000 && zoom >= 11)
-    );
-
-    // Stroke width based on zoom - thinner at low zoom for small plots
-    const baseStrokeWidth = isSelected ? 4 : isHovered ? 3 : 2;
-    const strokeWidth = zoom < 14 && areaM2 < 1000 ? Math.max(1, baseStrokeWidth - 1) : baseStrokeWidth;
-
     return new Style({
       fill: new Fill({ color: colors.fill + (isSelected ? 'aa' : isHovered ? '88' : '55') }),
-      stroke: new Stroke({ color: colors.stroke, width: strokeWidth }),
-      text: showLabel ? new Text({
+      stroke: new Stroke({ color: colors.stroke, width: isSelected ? 4 : isHovered ? 3 : 2 }),
+      text: new Text({
         text: listing.title || 'Plot',
         font: `bold ${isSelected ? '14px' : '12px'} sans-serif`,
         fill: new Fill({ color: '#fff' }),
         stroke: new Stroke({ color: colors.stroke, width: 3 }),
-        overflow: false,
-        placement: 'point',
-      }) : undefined,
+        overflow: true,
+      }),
     });
   }, []);
 
@@ -583,12 +564,6 @@ export default function MapBrowse() {
       overlayRef.current = overlay;
     }
 
-    // Track zoom changes for dynamic label visibility
-    map.getView().on('change:resolution', () => {
-      const zoom = map.getView().getZoom() || 6;
-      setCurrentZoom(zoom);
-    });
-
     return () => map.setTarget(undefined);
   }, []);
 
@@ -629,7 +604,7 @@ export default function MapBrowse() {
     baseTileLayerRef.current.setSource(new XYZ({ url: sources[basemap] }));
   }, [basemap]);
 
-  // Render listings layer - optimized for performance with zoom-based styling
+  // Render listings layer - optimized for performance
   useEffect(() => {
     if (!mapInstance.current || loading) return;
 
@@ -645,7 +620,7 @@ export default function MapBrowse() {
         const geo = typeof listing.polygon.geojson === 'string' ? JSON.parse(listing.polygon.geojson) : listing.polygon.geojson;
         const coords = geo.coordinates[0].map((c: [number, number]) => fromLonLat([c[0], c[1]]));
         const feature = new Feature({ geometry: new Polygon([coords]), listing });
-        feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id, currentZoom));
+        feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id));
         features.push(feature);
       } catch {}
     });
@@ -691,7 +666,7 @@ export default function MapBrowse() {
       mapInstance.current?.un('click', clickHandler);
       mapInstance.current?.un('pointermove', pointerMoveHandler);
     };
-  }, [sortedListings, selectedListing, hoveredListingId, getPolygonStyle, loading, currentZoom]);
+  }, [sortedListings, selectedListing, hoveredListingId, getPolygonStyle, loading]);
 
   // Auto-zoom from URL
   useEffect(() => {

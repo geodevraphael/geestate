@@ -1,215 +1,88 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase, Users, Home, ChevronDown, Navigation, Building2, FileText, Shield } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase, Users, Home, TrendingUp } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { LocationAwareWelcome } from '@/components/LocationAwareWelcome';
 import { useTranslation } from 'react-i18next';
-import { useState, useRef, useEffect, useCallback } from 'react';
 import mobileHeroImage from '@/assets/mobile-hero-property.jpg';
 const Index = () => {
   const {
     t
   } = useTranslation();
-  const navigate = useNavigate();
-  const [pullProgress, setPullProgress] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const startYRef = useRef(0);
-  const isPullingRef = useRef(false);
-
-  // Pull-down gesture handler for map navigation
-  const handleTouchStart = useCallback((e: TouchEvent) => {
-    const target = e.target as HTMLElement;
-    const scrollContainer = target.closest('[data-scroll-container]');
-    if (scrollContainer && scrollContainer.scrollTop === 0) {
-      startYRef.current = e.touches[0].clientY;
-      isPullingRef.current = true;
-    }
-  }, []);
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isPullingRef.current) return;
-    const deltaY = e.touches[0].clientY - startYRef.current;
-    if (deltaY > 0) {
-      const progress = Math.min(deltaY / 150, 1);
-      setPullProgress(progress);
-      if (progress >= 1) {
-        isPullingRef.current = false;
-        setIsTransitioning(true);
-        setTimeout(() => navigate('/map'), 300);
-      }
-    }
-  }, [navigate]);
-  const handleTouchEnd = useCallback(() => {
-    isPullingRef.current = false;
-    if (pullProgress < 1) {
-      setPullProgress(0);
-    }
-  }, [pullProgress]);
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    container.addEventListener('touchstart', handleTouchStart, {
-      passive: true
-    });
-    container.addEventListener('touchmove', handleTouchMove, {
-      passive: true
-    });
-    container.addEventListener('touchend', handleTouchEnd, {
-      passive: true
-    });
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
-  const quickActions = [{
-    icon: MapPin,
-    label: t('home.exploreMapShort'),
-    sublabel: 'Interactive map',
-    to: '/map',
-    color: 'bg-primary/10 text-primary'
-  }, {
-    icon: Search,
-    label: t('home.browseListingsShort'),
-    sublabel: 'All properties',
-    to: '/listings',
-    color: 'bg-accent/10 text-accent'
-  }, {
-    icon: Users,
-    label: t('home.viewSellersShort'),
-    sublabel: 'Verified sellers',
-    to: '/sellers',
-    color: 'bg-success/10 text-success'
-  }, {
-    icon: Briefcase,
-    label: 'Services',
-    sublabel: 'Find providers',
-    to: '/service-providers',
-    color: 'bg-secondary text-secondary-foreground'
-  }];
   return <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       <MobileBottomNav />
       
       {/* ===== MOBILE APP VIEW ===== */}
-      <div ref={containerRef} className={`md:hidden h-[100dvh] bg-background flex flex-col transition-all duration-300 ${isTransitioning ? 'opacity-0 -translate-y-8' : ''}`}>
-        {/* Pull-down indicator */}
-        <div className="absolute top-14 left-0 right-0 flex flex-col items-center justify-center py-2 z-50 transition-all pointer-events-none" style={{
-        opacity: pullProgress,
-        transform: `translateY(${-10 + pullProgress * 10}px)`
-      }}>
-          <div className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg">
-            <MapPin className="h-4 w-4" />
-            <span className="text-xs font-semibold">Release to open map</span>
-          </div>
+      <div className="md:hidden min-h-screen bg-secondary/30 pb-24">
+        {/* Mobile App Header */}
+        <div className="px-4 pt-4 pb-3">
+          <LocationAwareWelcome />
         </div>
-
-        {/* Scrollable Content */}
-        <div data-scroll-container className="flex-1 overflow-y-auto pt-14 pb-24" style={{
-        transform: `translateY(${pullProgress * 20}px)`
-      }}>
-          {/* Hero Section with Image */}
-          <div className="relative h-56 overflow-hidden">
-            <img src={mobileHeroImage} alt="Premium Property" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-            
-            {/* Floating Location Card */}
-            <div className="absolute bottom-4 left-4 right-4">
-              <div className="bg-card/95 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-border/50">
-                <LocationAwareWelcome />
+        
+        {/* Hero Image Card with Search Overlay */}
+        
+        
+        {/* Quick Actions Section */}
+        <div className="px-4 mb-5">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            {t('home.verifiedBadge')}
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Explore Map Card */}
+            <Link to="/map" className="block">
+              <div className="bg-card rounded-2xl p-4 border border-border/50 active:scale-[0.97] transition-transform shadow-sm">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <p className="font-semibold text-sm text-foreground">{t('home.exploreMapShort')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('home.heroTitle2')}</p>
               </div>
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="px-4 -mt-2 relative z-10">
-            <Link to="/listings">
-              <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 shadow-sm active:scale-[0.98] transition-transform">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Search className="h-5 w-5 text-primary" />
+            </Link>
+            
+            {/* Browse Listings Card */}
+            <Link to="/listings" className="block">
+              <div className="bg-card rounded-2xl p-4 border border-border/50 active:scale-[0.97] transition-transform shadow-sm">
+                <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center mb-3">
+                  <Home className="h-5 w-5 text-accent" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Search properties</p>
-                  <p className="text-xs text-muted-foreground">Location, price, size...</p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                <p className="font-semibold text-sm text-foreground">{t('home.browseListingsShort')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('home.heroTitle3')}</p>
               </div>
             </Link>
           </div>
-
-          {/* Quick Actions Grid */}
-          <div className="px-4 mt-6">
-            <h2 className="text-sm font-semibold text-foreground mb-3 px-1">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {quickActions.map(action => <Link key={action.to} to={action.to}>
-                  <div className="bg-card border border-border/60 rounded-2xl p-4 active:scale-[0.97] transition-transform">
-                    <div className={`h-11 w-11 rounded-xl ${action.color} flex items-center justify-center mb-3`}>
-                      <action.icon className="h-5 w-5" />
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">{action.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{action.sublabel}</p>
-                  </div>
-                </Link>)}
-            </div>
-          </div>
-
-          {/* Trust Section */}
-          <div className="px-4 mt-6">
-            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-4 border border-primary/10">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <Shield className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-foreground">{t('home.verifiedBadge')}</span>
-                    <CheckCircle2 className="h-4 w-4 text-success" />
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t('home.heroSubtitle')}
-                  </p>
-                </div>
+        </div>
+        
+        {/* More Actions */}
+        <div className="px-4 space-y-3">
+          {/* View Sellers */}
+          <Link to="/sellers" className="block">
+            <div className="bg-card rounded-2xl p-4 flex items-center gap-4 border border-border/50 active:scale-[0.98] transition-transform shadow-sm">
+              <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center">
+                <Users className="h-6 w-6 text-foreground" />
               </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-foreground">{t('home.viewSellersShort')}</p>
+                <p className="text-xs text-muted-foreground">{t('home.heroSubtitle')}</p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground" />
             </div>
-          </div>
-
-          {/* Featured Categories */}
-          <div className="px-4 mt-6">
-            <h2 className="text-sm font-semibold text-foreground mb-3 px-1">Browse by Type</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-              {[{
-              icon: Building2,
-              label: 'Commercial',
-              count: '120+'
-            }, {
-              icon: Home,
-              label: 'Residential',
-              count: '450+'
-            }, {
-              icon: MapPin,
-              label: 'Land',
-              count: '890+'
-            }, {
-              icon: FileText,
-              label: 'Projects',
-              count: '45+'
-            }].map((category, idx) => <Link key={idx} to="/listings" className="flex-shrink-0">
-                  <div className="bg-card border border-border/60 rounded-2xl px-5 py-4 text-center min-w-[100px] active:scale-[0.97] transition-transform">
-                    <category.icon className="h-6 w-6 text-primary mx-auto mb-2" />
-                    <p className="text-xs font-semibold text-foreground">{category.label}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{category.count}</p>
-                  </div>
-                </Link>)}
+          </Link>
+          
+          {/* Service Providers */}
+          <Link to="/service-providers" className="block">
+            <div className="bg-card rounded-2xl p-4 flex items-center gap-4 border border-border/50 active:scale-[0.98] transition-transform shadow-sm">
+              <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center">
+                <Briefcase className="h-6 w-6 text-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-foreground">Service Providers</p>
+                <p className="text-xs text-muted-foreground">Find professionals</p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground" />
             </div>
-          </div>
-
-          {/* Map CTA */}
-          
-
-          {/* Pull hint at bottom */}
-          
+          </Link>
         </div>
       </div>
       
