@@ -79,6 +79,21 @@ export default function CreateListingFromRequest() {
   const [polygonFileName, setPolygonFileName] = useState('');
   const [polygonArea, setPolygonArea] = useState<number | null>(null);
   const [showSurveyPlan, setShowSurveyPlan] = useState(false);
+  const [detectingBoundaries, setDetectingBoundaries] = useState(false);
+  const [adminBoundaries, setAdminBoundaries] = useState<{
+    region_id: string | null;
+    district_id: string | null;
+    ward_id: string | null;
+    street_village_id: string | null;
+    region_name?: string;
+    district_name?: string;
+    ward_name?: string;
+  }>({
+    region_id: null,
+    district_id: null,
+    ward_id: null,
+    street_village_id: null,
+  });
 
   const [formData, setFormData] = useState({
     title: '',
@@ -225,6 +240,73 @@ export default function CreateListingFromRequest() {
     });
   };
 
+  const detectAdminBoundaries = async (geometry: any) => {
+    setDetectingBoundaries(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('detect-admin-boundaries', {
+        body: { polygon: { type: 'Feature', geometry } },
+      });
+
+      if (error) {
+        console.error('Error detecting boundaries:', error);
+        toast({
+          title: 'Location detection warning',
+          description: 'Could not auto-detect administrative boundaries.',
+        });
+        return;
+      }
+
+      if (data?.success && data.boundaries) {
+        const boundaries = data.boundaries;
+        
+        // Fetch names for detected IDs
+        let regionName = '';
+        let districtName = '';
+        let wardName = '';
+
+        if (boundaries.region_id) {
+          const { data: region } = await supabase.from('regions').select('name').eq('id', boundaries.region_id).single();
+          regionName = region?.name || '';
+        }
+        if (boundaries.district_id) {
+          const { data: district } = await supabase.from('districts').select('name').eq('id', boundaries.district_id).single();
+          districtName = district?.name || '';
+        }
+        if (boundaries.ward_id) {
+          const { data: ward } = await supabase.from('wards').select('name').eq('id', boundaries.ward_id).single();
+          wardName = ward?.name || '';
+        }
+
+        setAdminBoundaries({
+          ...boundaries,
+          region_name: regionName,
+          district_name: districtName,
+          ward_name: wardName,
+        });
+
+        // Auto-fill form fields
+        setFormData(prev => ({
+          ...prev,
+          region: regionName || prev.region,
+          district: districtName || prev.district,
+          ward: wardName || prev.ward,
+        }));
+
+        const detected = [regionName, districtName, wardName].filter(Boolean);
+        if (detected.length > 0) {
+          toast({
+            title: 'Location detected',
+            description: `Auto-detected: ${detected.join(' > ')}`,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Boundary detection error:', err);
+    } finally {
+      setDetectingBoundaries(false);
+    }
+  };
+
   const handlePolygonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -280,6 +362,9 @@ export default function CreateListingFromRequest() {
         title: 'Polygon loaded',
         description: `Area: ${(areaM2 / 10000).toFixed(2)} hectares (${areaM2.toFixed(0)} m²)`,
       });
+
+      // Detect admin boundaries using geofencing
+      detectAdminBoundaries(geometry);
     } catch (error) {
       console.error('Polygon parse error:', error);
       toast({
@@ -294,6 +379,18 @@ export default function CreateListingFromRequest() {
     setPolygonData(null);
     setPolygonFileName('');
     setPolygonArea(null);
+    setAdminBoundaries({
+      region_id: null,
+      district_id: null,
+      ward_id: null,
+      street_village_id: null,
+    });
+    setFormData(prev => ({
+      ...prev,
+      region: '',
+      district: '',
+      ward: '',
+    }));
     if (vectorSource.current) {
       vectorSource.current.clear();
     }
@@ -318,7 +415,7 @@ export default function CreateListingFromRequest() {
 
     setProcessing(true);
     try {
-      // 1. Create the listing
+      // 1. Create the listing with admin boundary IDs
       const { data: listing, error: listingError } = await supabase
         .from('listings')
         .insert({
@@ -333,6 +430,10 @@ export default function CreateListingFromRequest() {
           region: formData.region || null,
           district: formData.district || null,
           ward: formData.ward || null,
+          region_id: adminBoundaries.region_id,
+          district_id: adminBoundaries.district_id,
+          ward_id: adminBoundaries.ward_id,
+          street_village_id: adminBoundaries.street_village_id,
           block_number: formData.block_number || null,
           plot_number: formData.plot_number || null,
           street_name: formData.street_name || null,
@@ -669,32 +770,58 @@ export default function CreateListingFromRequest() {
                     />
                   </div>
 
-                  {/* Region/District/Ward */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="region">Region</Label>
-                      <Input
-                        id="region"
-                        value={formData.region}
-                        onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      />
+                  {/* Region/District/Ward - Auto-detected from polygon */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Administrative Location</Label>
+                      {detectingBoundaries && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Detecting...
+                        </span>
+                      )}
+                      {adminBoundaries.region_id && !detectingBoundaries && (
+                        <span className="text-xs text-green-600 flex items-center gap-1">
+                          <Check className="h-3 w-3" />
+                          Auto-detected
+                        </span>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="district">District</Label>
-                      <Input
-                        id="district"
-                        value={formData.district}
-                        onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                      />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="region" className="text-xs text-muted-foreground">Region</Label>
+                        <Input
+                          id="region"
+                          value={formData.region}
+                          onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                          placeholder="Auto-detect from polygon"
+                          className={adminBoundaries.region_id ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' : ''}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="district" className="text-xs text-muted-foreground">District</Label>
+                        <Input
+                          id="district"
+                          value={formData.district}
+                          onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                          placeholder="Auto-detect from polygon"
+                          className={adminBoundaries.district_id ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' : ''}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="ward" className="text-xs text-muted-foreground">Ward</Label>
+                        <Input
+                          id="ward"
+                          value={formData.ward}
+                          onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
+                          placeholder="Auto-detect from polygon"
+                          className={adminBoundaries.ward_id ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' : ''}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ward">Ward</Label>
-                      <Input
-                        id="ward"
-                        value={formData.ward}
-                        onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
-                      />
-                    </div>
+                    {!polygonData && (
+                      <p className="text-xs text-muted-foreground">Upload a polygon to auto-detect location</p>
+                    )}
                   </div>
 
                   {/* Block/Plot/Street */}
