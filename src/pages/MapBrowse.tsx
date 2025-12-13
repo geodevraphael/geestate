@@ -501,24 +501,26 @@ export default function MapBrowse() {
     }
   }, [filteredListings, sortBy, userLocation]);
 
-  // Get polygon style
-  const getPolygonStyle = useCallback((listing: ListingWithPolygon, isSelected: boolean, isHovered: boolean) => {
+  // Get polygon style - labels only show at zoom >= 15
+  const getPolygonStyle = useCallback((listing: ListingWithPolygon, isSelected: boolean, isHovered: boolean, currentZoom: number = 6) => {
     let colors = POLYGON_COLORS.unverified;
     if (isSelected) colors = POLYGON_COLORS.selected;
     else if (isHovered) colors = POLYGON_COLORS.hovered;
     else if (listing.verification_status === 'verified') colors = POLYGON_COLORS.verified;
     else if (listing.verification_status === 'pending') colors = POLYGON_COLORS.pending;
 
+    const showLabels = currentZoom >= 15;
+
     return new Style({
       fill: new Fill({ color: colors.fill + (isSelected ? 'aa' : isHovered ? '88' : '55') }),
       stroke: new Stroke({ color: colors.stroke, width: isSelected ? 4 : isHovered ? 3 : 2 }),
-      text: new Text({
+      text: showLabels ? new Text({
         text: listing.title || 'Plot',
         font: `bold ${isSelected ? '14px' : '12px'} sans-serif`,
         fill: new Fill({ color: '#fff' }),
         stroke: new Stroke({ color: colors.stroke, width: 3 }),
         overflow: true,
-      }),
+      }) : undefined,
     });
   }, []);
 
@@ -613,6 +615,8 @@ export default function MapBrowse() {
       listingsLayerRef.current = null;
     }
 
+    const currentZoom = mapInstance.current.getView().getZoom() || 6;
+
     const features: Feature[] = [];
     sortedListings.forEach(listing => {
       if (!listing.polygon?.geojson) return;
@@ -620,7 +624,7 @@ export default function MapBrowse() {
         const geo = typeof listing.polygon.geojson === 'string' ? JSON.parse(listing.polygon.geojson) : listing.polygon.geojson;
         const coords = geo.coordinates[0].map((c: [number, number]) => fromLonLat([c[0], c[1]]));
         const feature = new Feature({ geometry: new Polygon([coords]), listing });
-        feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id));
+        feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id, currentZoom));
         features.push(feature);
       } catch {}
     });
@@ -632,6 +636,20 @@ export default function MapBrowse() {
     });
     listingsLayerRef.current = layer;
     mapInstance.current.addLayer(layer);
+
+    // Update styles on zoom change to show/hide labels
+    const updateStylesOnZoom = () => {
+      if (!listingsLayerRef.current) return;
+      const newZoom = mapInstance.current?.getView().getZoom() || 6;
+      listingsLayerRef.current.getSource()?.getFeatures().forEach(feature => {
+        const listing = feature.get('listing');
+        if (listing) {
+          feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id, newZoom));
+        }
+      });
+    };
+
+    mapInstance.current.getView().on('change:resolution', updateStylesOnZoom);
 
     // Click handler - only register once
     const clickHandler = (evt: any) => {
@@ -663,6 +681,7 @@ export default function MapBrowse() {
     mapInstance.current.on('pointermove', pointerMoveHandler);
 
     return () => {
+      mapInstance.current?.getView().un('change:resolution', updateStylesOnZoom);
       mapInstance.current?.un('click', clickHandler);
       mapInstance.current?.un('pointermove', pointerMoveHandler);
     };
