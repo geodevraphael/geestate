@@ -99,6 +99,7 @@ const App = () => (
             <Route path="/map" element={<MapBrowse />} />
             <Route path="/payment-proofs" element={<PaymentProofs />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/payment-proofs" element={<AdminPayments />} />
             <Route path="/admin/compliance" element={<ComplianceFlags />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/reputation" element={<Reputation />} />
