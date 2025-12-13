@@ -50,6 +50,12 @@ const navItems: NavItem[] = [
     icon: List,
   },
   {
+    title: 'Draft Listings',
+    href: '/drafts',
+    icon: FileText,
+    roles: ['seller', 'broker', 'admin'],
+  },
+  {
     title: 'Projects',
     href: '/projects',
     icon: Building,
