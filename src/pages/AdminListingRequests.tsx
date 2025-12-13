@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layouts/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +17,8 @@ import {
   Phone, 
   MapPin,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Plus
 } from 'lucide-react';
 import {
   Dialog,
@@ -25,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { CreateListingFromRequestDialog } from '@/components/admin/CreateListingFromRequestDialog';
 
 interface ListingRequest {
   id: string;
@@ -51,6 +53,8 @@ export default function AdminListingRequests() {
   const [adminNotes, setAdminNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [createListingOpen, setCreateListingOpen] = useState(false);
+  const [requestToCreateListing, setRequestToCreateListing] = useState<ListingRequest | null>(null);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -243,6 +247,17 @@ export default function AdminListingRequests() {
                           <Button
                             size="sm"
                             onClick={() => {
+                              setRequestToCreateListing(request);
+                              setCreateListingOpen(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Create Listing
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
                               setSelectedRequest(request);
                               setAdminNotes('');
                             }}
@@ -340,6 +355,14 @@ export default function AdminListingRequests() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Create Listing Dialog */}
+        <CreateListingFromRequestDialog
+          request={requestToCreateListing}
+          open={createListingOpen}
+          onOpenChange={setCreateListingOpen}
+          onSuccess={fetchRequests}
+        />
       </div>
     </MainLayout>
   );
