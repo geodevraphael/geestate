@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
-import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, FolderOpen, ArrowUpDown, ArrowUp, ArrowDown, Zap, Droplet } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X, Map, Eye, TrendingUp, Filter, Share2, FolderOpen, ArrowUpDown, ArrowUp, ArrowDown, Zap, Droplet, Navigation } from 'lucide-react';
 import { ListingWithDetails } from '@/types/database';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { MarketplaceViewToggle } from '@/components/MarketplaceViewToggle';
@@ -39,6 +39,7 @@ export default function Listings() {
   const [projects, setProjects] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareListingData, setShareListingData] = useState<{ 
     id: string; 
@@ -177,38 +178,126 @@ export default function Listings() {
         query = query.eq('has_water', waterFilter === 'yes');
       }
 
-      // Add pagination and sorting
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-      
-      // Apply sorting
-      switch (sortBy) {
-        case 'price_asc':
-          query = query.order('price', { ascending: true, nullsFirst: false });
-          break;
-        case 'price_desc':
-          query = query.order('price', { ascending: false, nullsFirst: false });
-          break;
-        case 'oldest':
-          query = query.order('created_at', { ascending: true });
-          break;
-        case 'newest':
-        default:
-          query = query.order('created_at', { ascending: false });
-          break;
+      // Apply sorting (nearest sorting is handled client-side after fetching)
+      if (sortBy !== 'nearest') {
+        switch (sortBy) {
+          case 'price_asc':
+            query = query.order('price', { ascending: true, nullsFirst: false });
+            break;
+          case 'price_desc':
+            query = query.order('price', { ascending: false, nullsFirst: false });
+            break;
+          case 'oldest':
+            query = query.order('created_at', { ascending: true });
+            break;
+          case 'newest':
+          default:
+            query = query.order('created_at', { ascending: false });
+            break;
+        }
+      } else {
+        // For nearest sort, still order by created_at initially, will sort client-side
+        query = query.order('created_at', { ascending: false });
       }
       
+      // Add pagination
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
       query = query.range(from, to);
 
       const { data, error } = await query;
 
       if (error) throw error;
-      setListings(data || []);
+      
+      // If sorting by nearest and we have user location, sort client-side
+      let sortedData = data || [];
+      if (sortBy === 'nearest' && userLocation && sortedData.length > 0) {
+        sortedData = [...sortedData].sort((a, b) => {
+          const aPolygon = a.polygon?.[0]?.geojson;
+          const bPolygon = b.polygon?.[0]?.geojson;
+          
+          const aLat = aPolygon ? getCentroidLat(aPolygon) : null;
+          const aLng = aPolygon ? getCentroidLng(aPolygon) : null;
+          const bLat = bPolygon ? getCentroidLat(bPolygon) : null;
+          const bLng = bPolygon ? getCentroidLng(bPolygon) : null;
+          
+          if (!aLat || !aLng) return 1;
+          if (!bLat || !bLng) return -1;
+          
+          const distA = getDistance(userLocation.lat, userLocation.lng, aLat, aLng);
+          const distB = getDistance(userLocation.lat, userLocation.lng, bLat, bLng);
+          
+          return distA - distB;
+        });
+      }
+      
+      setListings(sortedData);
     } catch (error) {
       console.error('Error fetching listings:', error);
       toast.error('Failed to load listings');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Helper functions for distance calculation
+  const getCentroidLat = (geojson: any): number | null => {
+    try {
+      if (geojson?.type === 'Polygon' && geojson.coordinates?.[0]) {
+        const coords = geojson.coordinates[0];
+        const sum = coords.reduce((acc: number, c: number[]) => acc + c[1], 0);
+        return sum / coords.length;
+      }
+      return null;
+    } catch { return null; }
+  };
+  
+  const getCentroidLng = (geojson: any): number | null => {
+    try {
+      if (geojson?.type === 'Polygon' && geojson.coordinates?.[0]) {
+        const coords = geojson.coordinates[0];
+        const sum = coords.reduce((acc: number, c: number[]) => acc + c[0], 0);
+        return sum / coords.length;
+      }
+      return null;
+    } catch { return null; }
+  };
+  
+  const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    // Haversine formula for distance
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+  
+  // Request user location when sorting by nearest
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    if (value === 'nearest' && !userLocation) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+            toast.success('Location detected - sorting by nearest');
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            toast.error('Could not get your location. Please enable location access.');
+            setSortBy('newest');
+          }
+        );
+      } else {
+        toast.error('Geolocation is not supported by your browser');
+        setSortBy('newest');
+      }
     }
   };
 
@@ -490,12 +579,18 @@ export default function Listings() {
                     </SelectContent>
                   </Select>
                   
-                  <Select value={sortBy} onValueChange={setSortBy}>
+                  <Select value={sortBy} onValueChange={handleSortChange}>
                     <SelectTrigger className="bg-background">
                       <ArrowUpDown className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="nearest">
+                        <div className="flex items-center gap-2">
+                          <Navigation className="h-3 w-3" />
+                          Nearest First
+                        </div>
+                      </SelectItem>
                       <SelectItem value="newest">
                         <div className="flex items-center gap-2">
                           <ArrowDown className="h-3 w-3" />
