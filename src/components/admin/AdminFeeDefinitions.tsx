@@ -595,7 +595,7 @@ export function AdminFeeDefinitions() {
 
       {/* Confirmation Dialog for updating existing records */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[200]">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Rate Change</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
