@@ -950,13 +950,16 @@ export default function CreateListing() {
 
         const { error: polygonError } = await supabase
           .from('listing_polygons')
-          .update({
-            geojson: primaryPolygon,
-            area_m2: area,
-            centroid_lat: centroid.geometry.coordinates[1],
-            centroid_lng: centroid.geometry.coordinates[0],
-          })
-          .eq('listing_id', id);
+          .upsert(
+            {
+              listing_id: id,
+              geojson: primaryPolygon,
+              area_m2: area,
+              centroid_lat: centroid.geometry.coordinates[1],
+              centroid_lng: centroid.geometry.coordinates[0],
+            },
+            { onConflict: 'listing_id' }
+          );
 
         if (polygonError) throw polygonError;
 
