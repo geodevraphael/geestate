@@ -445,8 +445,8 @@ export default function CreateListingFromRequest() {
           has_title: formData.has_title,
           has_electricity: formData.has_electricity,
           has_water: formData.has_water,
-          status: 'draft',
-          verification_status: 'pending',
+          status: 'published',
+          verification_status: 'verified',
         })
         .select()
         .single();
