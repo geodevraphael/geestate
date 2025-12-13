@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layouts/MainLayout';
@@ -11,15 +12,14 @@ import { Upload, FileText, DollarSign, AlertCircle, CheckCircle } from 'lucide-r
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { IncomeRecordWithDetails } from '@/types/geoinsight-income';
-import { UploadPaymentProofDialog } from '@/components/UploadPaymentProofDialog';
 import { PaymentInstructionsDialog } from '@/components/PaymentInstructionsDialog';
 
 export default function GeoinsightPayments() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [incomeRecords, setIncomeRecords] = useState<IncomeRecordWithDetails[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<IncomeRecordWithDetails | null>(null);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showInstructionsDialog, setShowInstructionsDialog] = useState(false);
 
   const [summary, setSummary] = useState({
@@ -212,10 +212,7 @@ export default function GeoinsightPayments() {
                               </Button>
                               <Button
                                 size="sm"
-                                onClick={() => {
-                                  setSelectedRecord(record);
-                                  setShowUploadDialog(true);
-                                }}
+                                onClick={() => navigate(`/upload-payment-proof/${record.id}`)}
                               >
                                 <Upload className="w-4 h-4 mr-1" />
                                 Upload Proof
@@ -325,19 +322,11 @@ export default function GeoinsightPayments() {
       </div>
 
       {selectedRecord && (
-        <>
-          <UploadPaymentProofDialog
-            open={showUploadDialog}
-            onOpenChange={setShowUploadDialog}
-            incomeRecord={selectedRecord}
-            onSuccess={fetchIncomeRecords}
-          />
-          <PaymentInstructionsDialog
-            open={showInstructionsDialog}
-            onOpenChange={setShowInstructionsDialog}
-            incomeRecord={selectedRecord}
-          />
-        </>
+        <PaymentInstructionsDialog
+          open={showInstructionsDialog}
+          onOpenChange={setShowInstructionsDialog}
+          incomeRecord={selectedRecord}
+        />
       )}
     </MainLayout>
   );

@@ -48,6 +48,7 @@ import AdminPaymentSettings from './pages/AdminPaymentSettings';
 import AdminSubscriptionPayments from './pages/AdminSubscriptionPayments';
 import AdminGeoDataUpload from './pages/AdminGeoDataUpload';
 import GeoinsightPayments from './pages/GeoinsightPayments';
+import UploadPaymentProof from './pages/UploadPaymentProof';
 import AdminIncomeManagement from './pages/AdminIncomeManagement';
 import AdminApprovals from './pages/AdminApprovals';
 import ApplyForRole from './pages/ApplyForRole';
@@ -128,6 +129,7 @@ const App = () => (
             <Route path="/admin/subscription-payments" element={<AdminSubscriptionPayments />} />
             <Route path="/admin/geodata-upload" element={<AdminGeoDataUpload />} />
             <Route path="/geoinsight-payments" element={<GeoinsightPayments />} />
+            <Route path="/upload-payment-proof/:recordId" element={<ProtectedRoute><UploadPaymentProof /></ProtectedRoute>} />
             <Route path="/admin/income" element={<AdminIncomeManagement />} />
             <Route path="/admin/listing-requests" element={<ProtectedRoute requireRole={['admin', 'verification_officer']}><AdminListingRequests /></ProtectedRoute>} />
             <Route path="/admin/listing-requests/:requestId/create" element={<ProtectedRoute requireRole={['admin', 'verification_officer']}><CreateListingFromRequest /></ProtectedRoute>} />
