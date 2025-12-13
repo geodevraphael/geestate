@@ -45,15 +45,41 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
     // Calculate extent first (needed for area label center)
     const extent = vectorSource.getExtent();
 
+    // Calculate area to determine if it's a small plot (for adaptive styling)
+    let plotArea = 0;
+    try {
+      let polygon;
+      if (geojson.type === 'Feature') {
+        polygon = geojson;
+      } else if (geojson.type === 'Polygon') {
+        polygon = turf.polygon(geojson.coordinates);
+      } else if (geojson.type === 'FeatureCollection' && geojson.features?.length > 0) {
+        polygon = geojson.features[0];
+      }
+      if (polygon) {
+        plotArea = turf.area(polygon);
+      }
+    } catch (e) {
+      console.error('Error calculating plot area:', e);
+    }
+    
+    // Adaptive styling based on plot size
+    const isSmallPlot = plotArea < 2000; // Less than 2000 m²
+    const isMediumPlot = plotArea < 10000; // Less than 1 hectare
+    
+    const boundaryWidth = isSmallPlot ? 5 : isMediumPlot ? 4 : 3;
+    const edgeFontSize = isSmallPlot ? 13 : isMediumPlot ? 12 : 11;
+    const areaFontSize = isSmallPlot ? 16 : isMediumPlot ? 15 : 14;
+
     const vectorLayer = new VectorLayer({
       source: vectorSource,
       style: new Style({
         stroke: new Stroke({
           color: 'rgba(239, 68, 68, 1)', // Red boundary
-          width: 3,
+          width: boundaryWidth,
         }),
         fill: new Fill({
-          color: 'rgba(239, 68, 68, 0.1)', // Light red fill
+          color: 'rgba(239, 68, 68, 0.15)', // Slightly more visible fill
         }),
       }),
     });
@@ -74,14 +100,14 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         return new Style({
           text: new Text({
             text: label,
-            font: 'bold 11px sans-serif',
+            font: `bold ${edgeFontSize}px sans-serif`,
             fill: new Fill({ color: '#ffff00' }),
-            stroke: new Stroke({ color: '#000000', width: 3 }),
+            stroke: new Stroke({ color: '#000000', width: 4 }),
             rotation: rotationRad,
             textAlign: 'center',
             textBaseline: 'middle',
-            backgroundFill: new Fill({ color: 'rgba(0, 0, 0, 0.6)' }),
-            padding: [2, 4, 2, 4],
+            backgroundFill: new Fill({ color: 'rgba(0, 0, 0, 0.75)' }),
+            padding: [3, 6, 3, 6],
           }),
         });
       },
@@ -180,15 +206,15 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
         areaFeature.setStyle(new Style({
           text: new Text({
             text: areaLabel,
-            font: 'bold 14px sans-serif',
+            font: `bold ${areaFontSize}px sans-serif`,
             fill: new Fill({ color: '#ffffff' }),
-            stroke: new Stroke({ color: '#000000', width: 4 }),
-            padding: [4, 8, 4, 8],
+            stroke: new Stroke({ color: '#000000', width: 5 }),
+            padding: [5, 10, 5, 10],
             textAlign: 'center',
             textBaseline: 'middle',
             rotation: areaRotationRad,
-            backgroundFill: new Fill({ color: 'rgba(239, 68, 68, 0.85)' }),
-            backgroundStroke: new Stroke({ color: '#ffffff', width: 1 }),
+            backgroundFill: new Fill({ color: 'rgba(239, 68, 68, 0.9)' }),
+            backgroundStroke: new Stroke({ color: '#ffffff', width: 2 }),
           }),
         }));
         dimensionSource.addFeature(areaFeature);
@@ -210,10 +236,12 @@ export function PropertyMapThumbnail({ geojson, className = '', showDimensions =
       interactions: [],
     });
 
-    // Fit to the polygon extent
+    // Fit to the polygon extent with adaptive padding for small plots
+    const padding = isSmallPlot ? [50, 50, 50, 50] : isMediumPlot ? [40, 40, 40, 40] : [30, 30, 30, 30];
+    
     map.getView().fit(extent, {
-      padding: [30, 30, 30, 30],
-      maxZoom: 18,
+      padding: padding,
+      maxZoom: isSmallPlot ? 20 : 19,
     });
 
     mapInstanceRef.current = map;
