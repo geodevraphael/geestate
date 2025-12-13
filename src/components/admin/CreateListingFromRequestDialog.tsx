@@ -21,9 +21,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check, MapPin, Phone, FileText, Building2 } from 'lucide-react';
+import { Loader2, Check, MapPin, Phone, FileText, Building2, FileJson, X, AlertCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import * as turf from '@turf/turf';
 
 interface ListingRequest {
   id: string;
@@ -58,6 +60,9 @@ export function CreateListingFromRequestDialog({
   const { toast } = useToast();
   const [processing, setProcessing] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
+  const [polygonData, setPolygonData] = useState<any>(null);
+  const [polygonFileName, setPolygonFileName] = useState('');
+  const [polygonArea, setPolygonArea] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -89,8 +94,84 @@ export function CreateListingFromRequestDialog({
         title: `Property in ${request.location_description?.split(',')[0] || 'Tanzania'}`,
       }));
       setAdminNotes('');
+      setPolygonData(null);
+      setPolygonFileName('');
+      setPolygonArea(null);
     }
   }, [request]);
+
+  const handlePolygonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.match(/\.(json|geojson)$/i)) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload a GeoJSON file (.json or .geojson)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const jsonData = JSON.parse(text);
+
+      let geometry: any = null;
+
+      // Extract polygon geometry from different GeoJSON structures
+      if (jsonData.type === 'FeatureCollection' && jsonData.features?.length > 0) {
+        geometry = jsonData.features[0].geometry;
+      } else if (jsonData.type === 'Feature') {
+        geometry = jsonData.geometry;
+      } else if (jsonData.type === 'Polygon') {
+        geometry = jsonData;
+      }
+
+      if (!geometry || geometry.type !== 'Polygon') {
+        toast({
+          title: 'Invalid polygon',
+          description: 'File must contain a Polygon geometry',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Calculate area using turf
+      const areaM2 = turf.area(geometry);
+      
+      // Calculate centroid
+      const centroid = turf.centroid(geometry);
+      const [lng, lat] = centroid.geometry.coordinates;
+
+      setPolygonData({
+        geojson: geometry,
+        area_m2: areaM2,
+        centroid_lat: lat,
+        centroid_lng: lng,
+      });
+      setPolygonFileName(file.name);
+      setPolygonArea(areaM2);
+
+      toast({
+        title: 'Polygon loaded',
+        description: `Area: ${(areaM2 / 10000).toFixed(2)} hectares (${areaM2.toFixed(0)} m²)`,
+      });
+    } catch (error) {
+      console.error('Polygon parse error:', error);
+      toast({
+        title: 'Invalid file',
+        description: 'Failed to parse GeoJSON file',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const clearPolygon = () => {
+    setPolygonData(null);
+    setPolygonFileName('');
+    setPolygonArea(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +184,10 @@ export function CreateListingFromRequestDialog({
     }
     if (!formData.location_label.trim()) {
       toast({ title: 'Location required', variant: 'destructive' });
+      return;
+    }
+    if (!polygonData) {
+      toast({ title: 'Polygon required', description: 'Please upload a GeoJSON polygon file', variant: 'destructive' });
       return;
     }
 
@@ -137,6 +222,23 @@ export function CreateListingFromRequestDialog({
         .single();
 
       if (listingError) throw listingError;
+
+      // 2. Save the polygon
+      if (listing && polygonData) {
+        const { error: polygonError } = await supabase
+          .from('listing_polygons')
+          .insert({
+            listing_id: listing.id,
+            geojson: polygonData.geojson,
+            area_m2: polygonData.area_m2,
+            centroid_lat: polygonData.centroid_lat,
+            centroid_lng: polygonData.centroid_lng,
+          });
+
+        if (polygonError) {
+          console.error('Polygon save error:', polygonError);
+        }
+      }
 
       // 2. Add the survey plan as listing media
       if (listing) {
@@ -237,6 +339,65 @@ export function CreateListingFromRequestDialog({
                   className="w-full max-h-40 object-contain rounded-lg border"
                 />
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Polygon Upload - Required */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <FileJson className="h-4 w-4" />
+                Property Boundary (Polygon) *
+              </h4>
+              
+              {!polygonData ? (
+                <div className="border-2 border-dashed border-border rounded-lg p-4">
+                  <input
+                    id="polygon-upload"
+                    type="file"
+                    accept=".json,.geojson"
+                    onChange={handlePolygonUpload}
+                    className="hidden"
+                  />
+                  <label htmlFor="polygon-upload" className="cursor-pointer block text-center">
+                    <FileJson className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium">Upload GeoJSON Polygon</p>
+                    <p className="text-xs text-muted-foreground mt-1">.json or .geojson file</p>
+                  </label>
+                </div>
+              ) : (
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">{polygonFileName}</p>
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          Area: {polygonArea ? `${(polygonArea / 10000).toFixed(2)} ha (${polygonArea.toFixed(0)} m²)` : 'Calculating...'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearPolygon}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {!polygonData && (
+                <Alert variant="destructive" className="bg-destructive/10">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    A polygon boundary is required to create the listing
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             <Separator />
