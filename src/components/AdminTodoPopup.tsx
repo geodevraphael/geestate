@@ -183,7 +183,7 @@ export function AdminTodoPopup() {
           description: 'Payment proofs to review',
           priority: 'high' as const,
           count: results[7].count || 0,
-          link: '/admin/geoinsight-payments',
+          link: '/admin/income',
           icon: DollarSign,
           category: 'Revenue'
         },
