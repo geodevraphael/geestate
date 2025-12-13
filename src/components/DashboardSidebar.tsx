@@ -24,6 +24,7 @@ import {
   Briefcase,
   ChevronLeft,
   ChevronRight,
+  ShoppingCart,
 } from 'lucide-react';
 
 interface NavItem {
@@ -156,6 +157,12 @@ const navItems: NavItem[] = [
     href: '/admin/verification',
     icon: FileCheck,
     roles: ['admin', 'verification_officer', 'compliance_officer'],
+  },
+  {
+    title: 'Buying Processes',
+    href: '/admin/buying-processes',
+    icon: ShoppingCart,
+    roles: ['admin', 'verification_officer', 'compliance_officer', 'spatial_analyst', 'customer_success'],
   },
   {
     title: 'User Management',
