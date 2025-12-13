@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Building2, User, Briefcase, MapPin, Phone, Mail, 
-  Search, ExternalLink, FileText, Award, TrendingUp, CheckCircle2, Star, Filter
+  Search, ExternalLink, FileText, Award, TrendingUp, CheckCircle2, Star, Filter, MessageCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -54,6 +56,8 @@ interface Institution {
 }
 
 export default function BrowseSellers() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [brokers, setBrokers] = useState<Seller[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -61,6 +65,14 @@ export default function BrowseSellers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [sortBy, setSortBy] = useState<'name' | 'listings'>('name');
+
+  const handleMessage = (userId: string) => {
+    if (!user) {
+      navigate('/auth', { state: { returnTo: `/messages?user=${userId}` } });
+      return;
+    }
+    navigate(`/messages?user=${userId}`);
+  };
 
   useEffect(() => {
     fetchData();
@@ -302,19 +314,29 @@ export default function BrowseSellers() {
             </div>
           )}
         </div>
-        <div className="pt-3 flex gap-2">
-          <Link to={`/profile/${seller.id}`} className="flex-1">
-            <Button variant="outline" size="sm" className="w-full group-hover:border-primary/50 transition-colors">
-              <User className="h-4 w-4 mr-2" />
-              Profile
-            </Button>
-          </Link>
-          <Link to={`/listings?owner=${seller.id}`} className="flex-1">
-            <Button size="sm" className="w-full">
-              <FileText className="h-4 w-4 mr-2" />
-              Listings
-            </Button>
-          </Link>
+        <div className="pt-3 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Link to={`/profile/${seller.id}`} className="flex-1">
+              <Button variant="outline" size="sm" className="w-full group-hover:border-primary/50 transition-colors">
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </Button>
+            </Link>
+            <Link to={`/listings?owner=${seller.id}`} className="flex-1">
+              <Button variant="outline" size="sm" className="w-full">
+                <FileText className="h-4 w-4 mr-2" />
+                Listings
+              </Button>
+            </Link>
+          </div>
+          <Button 
+            size="sm" 
+            className="w-full gap-2"
+            onClick={() => handleMessage(seller.id)}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Message
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -421,19 +443,29 @@ export default function BrowseSellers() {
             ))}
           </div>
         )}
-        <div className="pt-3 flex gap-2">
-          <Link to={`/institution/${institution.slug}`} className="flex-1">
-            <Button variant="outline" size="sm" className="w-full group-hover:border-primary/50 transition-colors">
-              <Building2 className="h-4 w-4 mr-2" />
-              Page
-            </Button>
-          </Link>
-          <Link to={`/listings?owner=${institution.profile_id}`} className="flex-1">
-            <Button size="sm" className="w-full">
-              <FileText className="h-4 w-4 mr-2" />
-              Listings
-            </Button>
-          </Link>
+        <div className="pt-3 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Link to={`/institution/${institution.slug}`} className="flex-1">
+              <Button variant="outline" size="sm" className="w-full group-hover:border-primary/50 transition-colors">
+                <Building2 className="h-4 w-4 mr-2" />
+                Page
+              </Button>
+            </Link>
+            <Link to={`/listings?owner=${institution.profile_id}`} className="flex-1">
+              <Button variant="outline" size="sm" className="w-full">
+                <FileText className="h-4 w-4 mr-2" />
+                Listings
+              </Button>
+            </Link>
+          </div>
+          <Button 
+            size="sm" 
+            className="w-full gap-2"
+            onClick={() => handleMessage(institution.profile_id)}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Message
+          </Button>
         </div>
       </CardContent>
     </Card>
