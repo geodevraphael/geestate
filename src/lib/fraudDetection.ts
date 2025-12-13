@@ -20,6 +20,58 @@ interface PriceAnomalyCheck {
   region?: string;
 }
 
+interface OverlapCheckResult {
+  can_proceed: boolean;
+  has_overlaps: boolean;
+  max_overlap_percentage: number;
+  overlapping_properties: Array<{
+    listing_id: string;
+    listing_title: string;
+    overlap_percentage: number;
+    overlap_area_m2: number;
+  }>;
+  message: string;
+}
+
+/**
+ * Check if a polygon overlaps with existing properties
+ * Returns whether the listing can proceed (blocks if overlap > 10%)
+ */
+export async function checkPolygonOverlap(
+  geojson: any, 
+  excludeListingId?: string
+): Promise<OverlapCheckResult> {
+  try {
+    const { data: result, error } = await supabase.functions.invoke('check-polygon-overlap', {
+      body: { geojson, exclude_listing_id: excludeListingId },
+    });
+
+    if (error) {
+      console.error('Error checking polygon overlap:', error);
+      // On error, allow to proceed to not block users
+      return { 
+        can_proceed: true, 
+        has_overlaps: false, 
+        max_overlap_percentage: 0, 
+        overlapping_properties: [],
+        message: 'Could not check for overlaps' 
+      };
+    }
+
+    console.log('Polygon overlap check result:', result);
+    return result;
+  } catch (error) {
+    console.error('Exception in checkPolygonOverlap:', error);
+    return { 
+      can_proceed: true, 
+      has_overlaps: false, 
+      max_overlap_percentage: 0, 
+      overlapping_properties: [],
+      message: 'Could not check for overlaps' 
+    };
+  }
+}
+
 export async function checkPolygonFraud(data: PolygonFraudCheck) {
   try {
     const { data: result, error } = await supabase.functions.invoke('detect-polygon-fraud', {

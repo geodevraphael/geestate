@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Upload, X, FileJson, Save, AlertCircle, Trash2, Map as MapIcon, Pencil, CheckCircle2, Search, List, Locate } from 'lucide-react';
 import { validatePolygon } from '@/lib/polygonValidation';
+import { checkPolygonOverlap } from '@/lib/fraudDetection';
 import { PolygonValidationPanel } from '@/components/PolygonValidationPanel';
 import { ProjectSelector } from '@/components/ProjectSelector';
 import { logAuditAction } from '@/lib/auditLog';
@@ -591,6 +592,7 @@ export default function CreateListing() {
     try {
       let successCount = 0;
       let errorCount = 0;
+      let skippedDueToOverlap = 0;
 
       for (const feature of multipleFeatures) {
         try {
@@ -620,6 +622,14 @@ export default function CreateListing() {
             type: 'Polygon',
             coordinates: feature.geometry.coordinates
           };
+
+          // Check for overlaps before creating
+          const overlapResult = await checkPolygonOverlap(plotGeoJSON);
+          if (!overlapResult.can_proceed) {
+            console.log(`Skipping plot ${plotNumber} in block ${blockNumber} due to overlap: ${overlapResult.message}`);
+            skippedDueToOverlap++;
+            continue;
+          }
 
           // Calculate area and centroid
           const turfPolygon = turf.polygon(plotGeoJSON.coordinates);
@@ -675,9 +685,18 @@ export default function CreateListing() {
         }
       }
 
+      let resultMessage = `Successfully created ${successCount} listings`;
+      if (skippedDueToOverlap > 0) {
+        resultMessage += ` (${skippedDueToOverlap} skipped due to overlapping boundaries)`;
+      }
+      if (errorCount > 0) {
+        resultMessage += ` (${errorCount} failed)`;
+      }
+
       toast({
         title: 'Batch upload complete',
-        description: `Successfully created ${successCount} listings${errorCount > 0 ? ` (${errorCount} failed)` : ''}`,
+        description: resultMessage,
+        variant: skippedDueToOverlap > 0 ? 'default' : 'default',
       });
       navigate('/dashboard');
     } catch (error) {
@@ -863,6 +882,32 @@ export default function CreateListing() {
       const turfPolygon = turf.polygon(primaryPolygon.coordinates);
       const area = turf.area(turfPolygon);
       const centroid = turf.centroid(turfPolygon);
+
+      // Check for overlapping properties before saving
+      toast({
+        title: 'Checking Boundaries',
+        description: 'Verifying no property overlaps...',
+      });
+
+      const overlapResult = await checkPolygonOverlap(primaryPolygon, id);
+      
+      if (!overlapResult.can_proceed) {
+        toast({
+          title: 'Property Overlap Detected',
+          description: overlapResult.message,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (overlapResult.has_overlaps) {
+        toast({
+          title: 'Minor Overlap Warning',
+          description: `${overlapResult.message} You may continue, but please verify boundaries.`,
+          variant: 'default',
+        });
+      }
 
       toast({
         title: 'Detecting Location',
