@@ -6,6 +6,7 @@ import { AdminIncomeOverview } from '@/components/admin/AdminIncomeOverview';
 import { AdminIncomeRecords } from '@/components/admin/AdminIncomeRecords';
 import { AdminPaymentProofs } from '@/components/admin/AdminPaymentProofs';
 import { AdminInvoices } from '@/components/admin/AdminInvoices';
+import { AdminFeeDefinitions } from '@/components/admin/AdminFeeDefinitions';
 import { BackfillListingFeesButton } from '@/components/admin/BackfillListingFeesButton';
 import { GenerateMonthlyFeesButton } from '@/components/admin/GenerateMonthlyFeesButton';
 
@@ -14,11 +15,11 @@ function AdminIncomeManagementContent() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="w-full p-6 space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold">Income Management</h1>
-            <p className="text-muted-foreground">Manage GeoInsight revenue and commissions</p>
+            <p className="text-muted-foreground">Manage GeoInsight revenue, fees, and commissions</p>
           </div>
           <div className="flex gap-2">
             <GenerateMonthlyFeesButton />
@@ -27,8 +28,9 @@ function AdminIncomeManagementContent() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="fees">Fee Definitions</TabsTrigger>
             <TabsTrigger value="records">Income Records</TabsTrigger>
             <TabsTrigger value="proofs">Payment Proofs</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
@@ -36,6 +38,10 @@ function AdminIncomeManagementContent() {
 
           <TabsContent value="overview">
             <AdminIncomeOverview />
+          </TabsContent>
+
+          <TabsContent value="fees">
+            <AdminFeeDefinitions />
           </TabsContent>
 
           <TabsContent value="records">
