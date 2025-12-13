@@ -789,13 +789,13 @@ export default function CreateListing() {
         const fileName = `${listingId}/${Math.random()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
-          .from('listing-images')
+          .from('listing-media')
           .upload(fileName, file);
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
-          .from('listing-images')
+          .from('listing-media')
           .getPublicUrl(fileName);
 
         return {
