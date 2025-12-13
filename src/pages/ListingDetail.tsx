@@ -510,6 +510,39 @@ export default function ListingDetail() {
               </CardContent>
             </Card>
 
+            {/* Property Images Gallery */}
+            {media.filter(m => m.media_type === 'image').length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('detail.propertyImages', 'Property Images')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {media
+                      .filter(m => m.media_type === 'image')
+                      .map((item, index) => (
+                        <div
+                          key={item.id || index}
+                          className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(item.file_url, '_blank')}
+                        >
+                          <img
+                            src={item.file_url}
+                            alt={item.caption || `Property image ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {item.caption && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 truncate">
+                              {item.caption}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Map */}
             {polygon?.geojson && (
               <Card>
