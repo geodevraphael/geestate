@@ -248,7 +248,7 @@ function ManageUsersContent() {
     return (
       <>
         <Navbar />
-        <div className="container mx-auto py-8 flex items-center justify-center min-h-[60vh]">
+        <div className="w-full py-8 px-4 md:px-8 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </>
@@ -258,7 +258,7 @@ function ManageUsersContent() {
   return (
     <>
       <Navbar />
-      <div className="container mx-auto py-8 px-4">
+      <div className="w-full py-8 px-4 md:px-8">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
