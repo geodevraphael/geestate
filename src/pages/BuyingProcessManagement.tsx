@@ -42,6 +42,7 @@ interface BuyingProcess {
   commission_paid: boolean;
   commission_amount: number | null;
   staff_notes: string | null;
+  final_price?: number | null;
   listing?: {
     id: string;
     title: string;
@@ -641,7 +642,9 @@ export default function BuyingProcessManagement() {
                       {process.process_status === 'completed' && (
                         <div className="mt-3 pt-3 border-t flex items-center gap-4 text-sm">
                           <DollarSign className="h-4 w-4 text-green-500" />
-                          <span>Commission (5%): TZS {((process.listing?.price || 0) * 0.05).toLocaleString()}</span>
+                          <span className="text-muted-foreground">GIE Fee (2%): TZS {((process.listing?.price || 0) * 0.02).toLocaleString()}</span>
+                          <ArrowRight className="h-3 w-3" />
+                          <span className="font-medium">Staff Commission (5% of fee): TZS {((process.listing?.price || 0) * 0.001).toLocaleString()}</span>
                           <Badge variant={process.commission_paid ? 'secondary' : 'outline'}>
                             {process.commission_paid ? 'Paid' : 'Pending'}
                           </Badge>
