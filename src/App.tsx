@@ -69,6 +69,7 @@ import ServiceProviderDashboard from './pages/dashboards/ServiceProviderDashboar
 import MyBookings from './pages/MyBookings';
 import MyServiceRequests from './pages/MyServiceRequests';
 import Notifications from './pages/Notifications';
+import ListingFeeBreakdown from './pages/ListingFeeBreakdown';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -148,6 +149,7 @@ const App = () => (
             <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
             <Route path="/my-service-requests" element={<ProtectedRoute><MyServiceRequests /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/listing-fee-breakdown" element={<ProtectedRoute><ListingFeeBreakdown /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

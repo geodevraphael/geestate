@@ -13,7 +13,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { IncomeRecordWithDetails } from '@/types/geoinsight-income';
 import { PaymentInstructionsDialog } from '@/components/PaymentInstructionsDialog';
-import { ListingFeeBreakdownDialog } from '@/components/ListingFeeBreakdownDialog';
 
 export default function GeoinsightPayments() {
   const navigate = useNavigate();
@@ -22,8 +21,6 @@ export default function GeoinsightPayments() {
   const [incomeRecords, setIncomeRecords] = useState<IncomeRecordWithDetails[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<IncomeRecordWithDetails | null>(null);
   const [showInstructionsDialog, setShowInstructionsDialog] = useState(false);
-  const [showBreakdownDialog, setShowBreakdownDialog] = useState(false);
-  const [breakdownRecord, setBreakdownRecord] = useState<IncomeRecordWithDetails | null>(null);
 
   const [summary, setSummary] = useState({
     totalOutstanding: 0,
@@ -196,10 +193,7 @@ export default function GeoinsightPayments() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-6 px-2"
-                                  onClick={() => {
-                                    setBreakdownRecord(record);
-                                    setShowBreakdownDialog(true);
-                                  }}
+                                  onClick={() => navigate(`/listing-fee-breakdown?recordId=${record.id}`)}
                                 >
                                   <Info className="w-4 h-4" />
                                 </Button>
@@ -344,16 +338,6 @@ export default function GeoinsightPayments() {
           open={showInstructionsDialog}
           onOpenChange={setShowInstructionsDialog}
           incomeRecord={selectedRecord}
-        />
-      )}
-
-      {breakdownRecord && user && (
-        <ListingFeeBreakdownDialog
-          open={showBreakdownDialog}
-          onOpenChange={setShowBreakdownDialog}
-          userId={user.id}
-          totalFee={breakdownRecord.amount_due}
-          currency={breakdownRecord.currency}
         />
       )}
     </MainLayout>
