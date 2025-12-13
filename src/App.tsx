@@ -59,6 +59,7 @@ import RevenueManagement from './pages/RevenueManagement';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import AdminListingRequests from './pages/AdminListingRequests';
+import CreateListingFromRequest from './pages/CreateListingFromRequest';
 import ServiceProviders from './pages/ServiceProviders';
 import BecomeServiceProvider from './pages/BecomeServiceProvider';
 import ServiceProviderDetail from './pages/ServiceProviderDetail';
@@ -129,6 +130,7 @@ const App = () => (
             <Route path="/geoinsight-payments" element={<GeoinsightPayments />} />
             <Route path="/admin/income" element={<AdminIncomeManagement />} />
             <Route path="/admin/listing-requests" element={<ProtectedRoute requireRole={['admin', 'verification_officer']}><AdminListingRequests /></ProtectedRoute>} />
+            <Route path="/admin/listing-requests/:requestId/create" element={<ProtectedRoute requireRole={['admin', 'verification_officer']}><CreateListingFromRequest /></ProtectedRoute>} />
             <Route path="/sellers" element={<BrowseSellers />} />
             <Route path="/drafts" element={<DraftListings />} />
             <Route path="/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>} />
