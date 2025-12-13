@@ -45,6 +45,7 @@ import SystemStatus from './pages/SystemStatus';
 import AdminServiceRequests from './pages/AdminServiceRequests';
 import ServiceRequestDetail from './pages/ServiceRequestDetail';
 import AdminPaymentSettings from './pages/AdminPaymentSettings';
+import AdminContactSettings from './pages/AdminContactSettings';
 import AdminSubscriptionPayments from './pages/AdminSubscriptionPayments';
 import AdminGeoDataUpload from './pages/AdminGeoDataUpload';
 import GeoinsightPayments from './pages/GeoinsightPayments';
@@ -70,6 +71,7 @@ import MyBookings from './pages/MyBookings';
 import MyServiceRequests from './pages/MyServiceRequests';
 import Notifications from './pages/Notifications';
 import ListingFeeBreakdown from './pages/ListingFeeBreakdown';
+import SellerPaymentSettings from './pages/SellerPaymentSettings';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -127,6 +129,7 @@ const App = () => (
             <Route path="/admin/service-requests/:id" element={<ServiceRequestDetail />} />
             <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
             <Route path="/admin/payment-settings" element={<AdminPaymentSettings />} />
+            <Route path="/admin/contact-settings" element={<AdminContactSettings />} />
             <Route path="/admin/subscription-payments" element={<AdminSubscriptionPayments />} />
             <Route path="/admin/geodata-upload" element={<AdminGeoDataUpload />} />
             <Route path="/geoinsight-payments" element={<GeoinsightPayments />} />
@@ -150,6 +153,7 @@ const App = () => (
             <Route path="/my-service-requests" element={<ProtectedRoute><MyServiceRequests /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/listing-fee-breakdown" element={<ProtectedRoute><ListingFeeBreakdown /></ProtectedRoute>} />
+            <Route path="/seller-payment-settings" element={<ProtectedRoute><SellerPaymentSettings /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
