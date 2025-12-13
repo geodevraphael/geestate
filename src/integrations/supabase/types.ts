@@ -1854,6 +1854,9 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          ban_reason: string | null
+          banned_at: string | null
+          banned_by: string | null
           bio: string | null
           created_at: string
           district_id: string | null
@@ -1873,6 +1876,9 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           bio?: string | null
           created_at?: string
           district_id?: string | null
@@ -1892,6 +1898,9 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           bio?: string | null
           created_at?: string
           district_id?: string | null
@@ -1910,6 +1919,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_district_id_fkey"
             columns: ["district_id"]
