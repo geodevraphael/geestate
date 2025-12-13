@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCog, Search, Shield, Mail, Phone, Calendar, Ban, UserCheck } from 'lucide-react';
+import { Loader2, UserCog, Search, Shield, Mail, Phone, Calendar, Ban, UserCheck, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { AppRole } from '@/types/database';
 import {
   AlertDialog,
@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserWithRoles {
   id: string;
@@ -48,7 +49,6 @@ function ManageUsersContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRoles[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserWithRoles[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
@@ -57,6 +57,12 @@ function ManageUsersContent() {
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [banReason, setBanReason] = useState('');
   const [banning, setBanning] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const availableRoles: AppRole[] = [
     'admin',
@@ -70,35 +76,66 @@ function ManageUsersContent() {
     'staff',
   ];
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to first page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter]);
+
+  // Fetch users when page, pageSize, or filters change
   useEffect(() => {
     fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    filterUsers();
-  }, [searchQuery, roleFilter, users]);
+  }, [currentPage, pageSize, debouncedSearch, roleFilter]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
 
-      // Fetch all users from auth.users via profiles
-      const { data: profilesData, error: profilesError } = await supabase
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      // Build query with filters
+      let query = supabase
         .from('profiles')
-        .select('id, email, full_name, phone, created_at, banned_at, ban_reason')
-        .order('created_at', { ascending: false });
+        .select('id, email, full_name, phone, created_at, banned_at, ban_reason', { count: 'exact' });
+
+      // Apply search filter
+      if (debouncedSearch.trim()) {
+        query = query.or(`full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`);
+      }
+
+      // Apply pagination and ordering
+      query = query.order('created_at', { ascending: false }).range(from, to);
+
+      const { data: profilesData, error: profilesError, count } = await query;
 
       if (profilesError) throw profilesError;
 
-      // Fetch all role assignments
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
+      // Get user IDs for role lookup
+      const userIds = (profilesData || []).map(p => p.id);
+      
+      // Fetch role assignments for these users only
+      let rolesData: { user_id: string; role: string }[] = [];
+      if (userIds.length > 0) {
+        const { data, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', userIds);
 
-      if (rolesError) throw rolesError;
+        if (rolesError) throw rolesError;
+        rolesData = data || [];
+      }
 
       // Combine users with their roles
-      const usersWithRoles: UserWithRoles[] = (profilesData || []).map((profile) => ({
+      let usersWithRoles: UserWithRoles[] = (profilesData || []).map((profile) => ({
         id: profile.id,
         email: profile.email,
         full_name: profile.full_name,
@@ -111,8 +148,13 @@ function ManageUsersContent() {
           .map((r) => r.role as AppRole) || [],
       }));
 
+      // Apply role filter client-side (since roles are in separate table)
+      if (roleFilter !== 'all') {
+        usersWithRoles = usersWithRoles.filter(u => u.roles.includes(roleFilter));
+      }
+
       setUsers(usersWithRoles);
-      setFilteredUsers(usersWithRoles);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -198,27 +240,10 @@ function ManageUsersContent() {
     }
   };
 
-  const filterUsers = () => {
-    let filtered = [...users];
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (user) =>
-          user.email.toLowerCase().includes(query) ||
-          user.full_name.toLowerCase().includes(query) ||
-          user.roles.some((role) => role.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply role filter
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter((user) => user.roles.includes(roleFilter));
-    }
-
-    setFilteredUsers(filtered);
-  };
+  // Pagination helpers
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startRecord = (currentPage - 1) * pageSize + 1;
+  const endRecord = Math.min(currentPage * pageSize, totalCount);
 
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
@@ -311,9 +336,29 @@ function ManageUsersContent() {
               </div>
             </div>
 
-            {/* Results count */}
-            <div className="mb-4 text-sm text-muted-foreground">
-              Showing {filteredUsers.length} of {users.length} users
+            {/* Results count and page size selector */}
+            <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                {totalCount > 0 ? (
+                  <>Showing {startRecord} - {endRecord} of {totalCount.toLocaleString()} users</>
+                ) : (
+                  <>No users found</>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Per page:</span>
+                <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Users Table */}
@@ -330,14 +375,20 @@ function ManageUsersContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.length === 0 ? (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                      </TableCell>
+                    </TableRow>
+                  ) : users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No users found matching your criteria
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map((userItem) => (
+                    users.map((userItem) => (
                       <TableRow key={userItem.id} className={userItem.banned_at ? 'bg-destructive/10' : ''}>
                         <TableCell>
                           <div className="font-medium">{userItem.full_name}</div>
@@ -447,6 +498,65 @@ function ManageUsersContent() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages.toLocaleString()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1 || loading}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1 || loading}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={currentPage}
+                      onChange={(e) => {
+                        const page = parseInt(e.target.value);
+                        if (page >= 1 && page <= totalPages) {
+                          setCurrentPage(page);
+                        }
+                      }}
+                      className="w-16 text-center"
+                    />
+                    <span className="text-sm text-muted-foreground">/ {totalPages}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || loading}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages || loading}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
