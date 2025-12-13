@@ -42,8 +42,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Plus, Percent, DollarSign, AlertTriangle, Loader2 } from 'lucide-react';
+import { Pencil, Plus, Percent, DollarSign, AlertTriangle, Loader2, RefreshCw, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface FeeDefinition {
   id: string;
@@ -310,6 +316,20 @@ export function AdminFeeDefinitions() {
     }
   };
 
+  const syncPendingRecordsForFee = async (fee: FeeDefinition) => {
+    setSaving(true);
+    try {
+      const feeData = {
+        fee_type: fee.fee_type,
+        percentage_rate: fee.percentage_rate,
+        fixed_amount: fee.fixed_amount,
+      };
+      await updatePendingRecords(fee.id, feeData);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-TZ', {
       style: 'currency',
@@ -388,13 +408,26 @@ export function AdminFeeDefinitions() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenEdit(fee)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover">
+                        <DropdownMenuItem onClick={() => handleOpenEdit(fee)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => syncPendingRecordsForFee(fee)}
+                          disabled={saving}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Sync Pending Records
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
