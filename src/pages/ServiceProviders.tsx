@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Scale, Building2, Hammer, Package, MapPin, Ruler, 
   Pencil, Star, CheckCircle2, Search, Phone, 
-  ArrowRight, UserPlus, Briefcase
+  ArrowRight, UserPlus, Briefcase, MessageCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -162,6 +162,14 @@ export default function ServiceProviders() {
       return;
     }
     navigate(`/service-providers/${providerId}`);
+  };
+
+  const handleMessage = (userId: string) => {
+    if (!user) {
+      navigate('/auth', { state: { returnTo: `/messages?user=${userId}` } });
+      return;
+    }
+    navigate(`/messages?user=${userId}`);
   };
 
   const totalProviders = providers.length;
@@ -395,14 +403,23 @@ export default function ServiceProviders() {
                         )}
                       </div>
 
-                      {/* CTA Button */}
-                      <Button 
-                        onClick={() => handleRequestService(provider.id)}
-                        className="w-full rounded-xl h-11 font-semibold group-hover:shadow-md transition-all"
-                      >
-                        {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
-                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                      </Button>
+                      {/* CTA Buttons */}
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => handleRequestService(provider.id)}
+                          className="flex-1 rounded-xl h-11 font-semibold group-hover:shadow-md transition-all"
+                        >
+                          {i18n.language === 'sw' ? 'Omba Huduma' : 'Request'}
+                          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => handleMessage(provider.user_id)}
+                          className="rounded-xl h-11 px-4"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 );
