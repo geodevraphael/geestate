@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, MapPin, MessageSquare, ShoppingBag, Plus } from 'lucide-react';
+import { Home, Search, MapPin, MessageSquare, ShoppingBag, Plus, Receipt } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -48,12 +48,14 @@ export function MobileBottomNav() {
     };
   }, [user]);
 
+  const isSeller = user && (hasRole('seller') || hasRole('broker') || hasRole('admin'));
+
   const navItems = [
     { icon: Home, label: 'Home', path: '/', activePattern: /^\/$/  },
     { icon: Search, label: 'Browse', path: '/listings', activePattern: /^\/listings/ },
     { icon: MapPin, label: 'Map', path: '/map', activePattern: /^\/map/ },
     { icon: MessageSquare, label: 'Chat', path: '/messages', activePattern: /^\/messages/, requireAuth: true },
-    { icon: ShoppingBag, label: 'Deals', path: '/deals', activePattern: /^\/deals/, requireAuth: true },
+    ...(isSeller ? [{ icon: Receipt, label: 'Fees', path: '/geoinsight-payments', activePattern: /^\/geoinsight-payments/, requireAuth: true }] : []),
   ];
 
   const canCreateListing = user && (hasRole('seller') || hasRole('broker') || hasRole('admin'));
