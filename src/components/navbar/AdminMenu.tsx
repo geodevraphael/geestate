@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase, Map, DollarSign, FileUp } from 'lucide-react';
+import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase, Map, DollarSign, FileUp, ShoppingCart } from 'lucide-react';
 
 export function AdminMenu() {
   const { hasRole } = useAuth();
@@ -52,6 +52,13 @@ export function AdminMenu() {
           <Link to="/admin/listing-requests" className="cursor-pointer">
             <FileUp className="mr-2 h-4 w-4" />
             Listing Requests
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
+          <Link to="/admin/buying-processes" className="cursor-pointer">
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            Buying Processes
           </Link>
         </DropdownMenuItem>
 

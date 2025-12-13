@@ -72,6 +72,7 @@ import MyServiceRequests from './pages/MyServiceRequests';
 import Notifications from './pages/Notifications';
 import ListingFeeBreakdown from './pages/ListingFeeBreakdown';
 import SellerPaymentSettings from './pages/SellerPaymentSettings';
+import BuyingProcessManagement from './pages/BuyingProcessManagement';
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -154,6 +155,7 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/listing-fee-breakdown" element={<ProtectedRoute><ListingFeeBreakdown /></ProtectedRoute>} />
             <Route path="/seller-payment-settings" element={<ProtectedRoute><SellerPaymentSettings /></ProtectedRoute>} />
+            <Route path="/admin/buying-processes" element={<ProtectedRoute requireRole={['admin', 'verification_officer', 'compliance_officer', 'spatial_analyst', 'customer_success']}><BuyingProcessManagement /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
