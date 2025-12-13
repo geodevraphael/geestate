@@ -44,64 +44,69 @@ export default function Messages() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchConversations();
-      
-      // Subscribe to all messages for real-time updates
-      const channel = supabase
-        .channel('all-user-messages')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-          },
-          (payload) => {
-            const newMessage = payload.new as any;
-            if (newMessage.sender_id === user.id || newMessage.receiver_id === user.id) {
-              fetchConversations();
+    if (!user) return;
+
+    fetchConversations();
+    
+    // Subscribe to all messages for real-time updates
+    const channel = supabase
+      .channel('all-user-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          const newMessage = payload.new as Message;
+          if (newMessage.sender_id === user.id || newMessage.receiver_id === user.id) {
+            fetchConversations();
+            
+            if (selectedConversation) {
+              const matchesConversation = 
+                (newMessage.listing_id === selectedConversation.listing_id) &&
+                (newMessage.sender_id === selectedConversation.other_user_id || 
+                 newMessage.receiver_id === selectedConversation.other_user_id);
               
-              if (selectedConversation) {
-                const matchesConversation = 
-                  (newMessage.listing_id === selectedConversation.listing_id) &&
-                  (newMessage.sender_id === selectedConversation.other_user_id || 
-                   newMessage.receiver_id === selectedConversation.other_user_id);
-                
-                if (matchesConversation) {
-                  setMessages(prev => [...prev, newMessage as Message]);
-                }
+              if (matchesConversation) {
+                setMessages((prev) => {
+                  if (prev.some((msg) => msg.id === newMessage.id)) {
+                    return prev;
+                  }
+                  return [...prev, newMessage];
+                });
               }
             }
           }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'messages',
-          },
-          (payload) => {
-            const updatedMessage = payload.new as any;
-            if (updatedMessage.receiver_id === user.id || updatedMessage.sender_id === user.id) {
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === updatedMessage.id 
-                    ? { ...msg, is_read: updatedMessage.is_read }
-                    : msg
-                )
-              );
-            }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          const updatedMessage = payload.new as Message;
+          if (updatedMessage.receiver_id === user.id || updatedMessage.sender_id === user.id) {
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === updatedMessage.id 
+                  ? { ...msg, is_read: updatedMessage.is_read }
+                  : msg
+              )
+            );
           }
-        )
-        .subscribe();
+        }
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, selectedConversation]);
 
   // Handle direct navigation with URL params
   useEffect(() => {
@@ -331,17 +336,31 @@ export default function Messages() {
         messageData.listing_id = selectedConversation.listing_id;
       }
 
-      const { error } = await supabase.from('messages').insert(messageData);
+      const { data, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      const savedMessage = data as Message;
+
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === savedMessage.id)) {
+          return prev;
+        }
+        return [...prev, savedMessage];
+      });
 
       if (!customMessage) {
         setNewMessage('');
       }
     } catch (error: any) {
+      console.error('Error sending message:', error);
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.message || 'Failed to send message',
         variant: 'destructive',
       });
     }
