@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import { 
   Search, Filter, UserPlus, MessageCircle, Eye, Users, 
   CheckCircle, Clock, AlertTriangle, DollarSign, MapPin,
-  Calendar, ArrowRight, RefreshCw, TrendingUp, Target
+  Calendar, ArrowRight, RefreshCw, TrendingUp, Target, Phone
 } from 'lucide-react';
 
 interface BuyingProcess {
@@ -549,14 +549,26 @@ export default function BuyingProcessManagement() {
                         </div>
 
                         {/* Buyer & Seller */}
-                        <div className="flex gap-4 text-sm">
+                        <div className="flex gap-6 text-sm">
                           <div>
                             <p className="text-muted-foreground text-xs">Buyer</p>
                             <p className="font-medium">{process.buyer?.full_name}</p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              <a href={`tel:${process.buyer?.phone}`} className="hover:text-primary">
+                                {process.buyer?.phone || 'No phone'}
+                              </a>
+                            </div>
                           </div>
                           <div>
                             <p className="text-muted-foreground text-xs">Seller</p>
                             <p className="font-medium">{process.seller?.full_name}</p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              <a href={`tel:${process.seller?.phone}`} className="hover:text-primary">
+                                {process.seller?.phone || 'No phone'}
+                              </a>
+                            </div>
                           </div>
                         </div>
 
