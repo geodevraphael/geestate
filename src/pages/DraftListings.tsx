@@ -58,21 +58,20 @@ export default function DraftListings() {
       if (ownError) throw ownError;
       setMyDrafts(ownDrafts || []);
 
-      // For admins, fetch all draft listings that came from requests (have survey plan media)
+      // For admins, fetch all draft listings (they can manage all)
       if (isAdmin) {
-        const { data: requestedDrafts, error: requestedError } = await supabase
+        const { data: allDrafts, error: allError } = await supabase
           .from('listings')
           .select(`
             *,
-            owner:profiles!listings_owner_id_fkey(full_name, email),
-            listing_media!inner(caption)
+            owner:profiles!listings_owner_id_fkey(full_name, email)
           `)
           .eq('status', 'draft')
-          .eq('listing_media.caption', 'Survey Plan')
+          .neq('owner_id', profile.id)
           .order('created_at', { ascending: false });
 
-        if (requestedError) throw requestedError;
-        setAllRequestedDrafts(requestedDrafts || []);
+        if (allError) throw allError;
+        setAllRequestedDrafts(allDrafts || []);
       }
     } catch (error) {
       console.error('Error fetching drafts:', error);
