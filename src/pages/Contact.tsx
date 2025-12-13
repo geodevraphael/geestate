@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
-import { useState } from 'react';
+import { Mail, Phone, MapPin, Send, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100),
@@ -16,9 +18,33 @@ const contactSchema = z.object({
   message: z.string().trim().min(10, 'Message must be at least 10 characters').max(2000),
 });
 
+interface ContactSetting {
+  id: string;
+  setting_key: string;
+  setting_value: string;
+  setting_label: string | null;
+}
+
+const getIcon = (key: string) => {
+  switch (key.toLowerCase()) {
+    case 'email':
+      return <Mail className="h-8 w-8 mx-auto text-primary" />;
+    case 'phone':
+      return <Phone className="h-8 w-8 mx-auto text-primary" />;
+    case 'address':
+      return <MapPin className="h-8 w-8 mx-auto text-primary" />;
+    case 'whatsapp':
+      return <MessageCircle className="h-8 w-8 mx-auto text-primary" />;
+    default:
+      return <Mail className="h-8 w-8 mx-auto text-primary" />;
+  }
+};
+
 export default function Contact() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [contactSettings, setContactSettings] = useState<ContactSetting[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,15 +52,33 @@ export default function Contact() {
     message: '',
   });
 
+  useEffect(() => {
+    fetchContactSettings();
+  }, []);
+
+  const fetchContactSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_settings')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setContactSettings(data || []);
+    } catch (error) {
+      console.error('Failed to fetch contact settings:', error);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Validate form data
       contactSchema.parse(formData);
-
-      // In a real implementation, this would send to an API endpoint
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast({
@@ -62,12 +106,16 @@ export default function Contact() {
     }
   };
 
+  const getSetting = (key: string) => {
+    const setting = contactSettings.find(s => s.setting_key.toLowerCase() === key.toLowerCase());
+    return setting?.setting_value || '';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="container mx-auto p-6 space-y-12 max-w-4xl">
-        {/* Hero Section */}
         <div className="text-center space-y-4 py-12">
           <h1 className="text-5xl font-bold">Contact Us</h1>
           <p className="text-xl text-muted-foreground">
@@ -76,32 +124,25 @@ export default function Contact() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card>
-            <CardContent className="p-6 text-center space-y-2">
-              <Mail className="h-8 w-8 mx-auto text-primary" />
-              <h3 className="font-semibold">Email</h3>
-              <p className="text-sm text-muted-foreground">support@geoestate.co.tz</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 text-center space-y-2">
-              <Phone className="h-8 w-8 mx-auto text-primary" />
-              <h3 className="font-semibold">Phone</h3>
-              <p className="text-sm text-muted-foreground">+255 XXX XXX XXX</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6 text-center space-y-2">
-              <MapPin className="h-8 w-8 mx-auto text-primary" />
-              <h3 className="font-semibold">Office</h3>
-              <p className="text-sm text-muted-foreground">Dar es Salaam, Tanzania</p>
-            </CardContent>
-          </Card>
+          {settingsLoading ? (
+            <>
+              <Card><CardContent className="p-6"><Skeleton className="h-24" /></CardContent></Card>
+              <Card><CardContent className="p-6"><Skeleton className="h-24" /></CardContent></Card>
+              <Card><CardContent className="p-6"><Skeleton className="h-24" /></CardContent></Card>
+            </>
+          ) : (
+            contactSettings.slice(0, 3).map((setting) => (
+              <Card key={setting.id}>
+                <CardContent className="p-6 text-center space-y-2">
+                  {getIcon(setting.setting_key)}
+                  <h3 className="font-semibold">{setting.setting_label || setting.setting_key}</h3>
+                  <p className="text-sm text-muted-foreground">{setting.setting_value}</p>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
-        {/* Contact Form */}
         <Card>
           <CardHeader>
             <CardTitle>Send us a Message</CardTitle>
@@ -161,7 +202,6 @@ export default function Contact() {
           </CardContent>
         </Card>
 
-        {/* FAQ Section */}
         <Card>
           <CardHeader>
             <CardTitle>Frequently Asked Questions</CardTitle>

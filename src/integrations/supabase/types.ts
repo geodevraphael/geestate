@@ -335,6 +335,39 @@ export type Database = {
           },
         ]
       }
+      contact_settings: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean
+          setting_key: string
+          setting_label: string | null
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          setting_key: string
+          setting_label?: string | null
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          setting_key?: string
+          setting_label?: string | null
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_tasks: {
         Row: {
           created_at: string
@@ -1564,6 +1597,39 @@ export type Database = {
           },
         ]
       }
+      mobile_money_accounts: {
+        Row: {
+          account_name: string
+          business_number: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          phone_number: string
+          provider_name: string
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          business_number?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          phone_number: string
+          provider_name: string
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          business_number?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          phone_number?: string
+          provider_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -2204,6 +2270,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seller_payment_info: {
+        Row: {
+          account_name: string
+          account_number: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_primary: boolean | null
+          payment_type: string
+          provider_name: string | null
+          seller_id: string
+          swift_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean | null
+          payment_type: string
+          provider_name?: string | null
+          seller_id: string
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean | null
+          payment_type?: string
+          provider_name?: string | null
+          seller_id?: string
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       service_bookings: {
         Row: {
