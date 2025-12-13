@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase, Users, Home, ChevronDown, Navigation } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, ArrowRight, Briefcase, Users, Home, ChevronDown, Navigation, Building2, FileText, Shield } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { LocationAwareWelcome } from '@/components/LocationAwareWelcome';
 import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import mobileHeroImage from '@/assets/mobile-hero-property.jpg';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -16,9 +17,11 @@ const Index = () => {
   const startYRef = useRef(0);
   const isPullingRef = useRef(false);
 
-  // Pull-down gesture handler
+  // Pull-down gesture handler for map navigation
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (window.scrollY === 0) {
+    const target = e.target as HTMLElement;
+    const scrollContainer = target.closest('[data-scroll-container]');
+    if (scrollContainer && scrollContainer.scrollTop === 0) {
       startYRef.current = e.touches[0].clientY;
       isPullingRef.current = true;
     }
@@ -62,6 +65,37 @@ const Index = () => {
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
+  const quickActions = [
+    {
+      icon: MapPin,
+      label: t('home.exploreMapShort'),
+      sublabel: 'Interactive map',
+      to: '/map',
+      color: 'bg-primary/10 text-primary',
+    },
+    {
+      icon: Search,
+      label: t('home.browseListingsShort'),
+      sublabel: 'All properties',
+      to: '/listings',
+      color: 'bg-accent/10 text-accent',
+    },
+    {
+      icon: Users,
+      label: t('home.viewSellersShort'),
+      sublabel: 'Verified sellers',
+      to: '/sellers',
+      color: 'bg-success/10 text-success',
+    },
+    {
+      icon: Briefcase,
+      label: 'Services',
+      sublabel: 'Find providers',
+      to: '/service-providers',
+      color: 'bg-secondary text-secondary-foreground',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
@@ -70,93 +104,150 @@ const Index = () => {
       {/* ===== MOBILE APP VIEW ===== */}
       <div 
         ref={containerRef}
-        className={`md:hidden h-[100dvh] bg-background flex flex-col transition-transform duration-300 ${
-          isTransitioning ? '-translate-y-full' : ''
+        className={`md:hidden h-[100dvh] bg-background flex flex-col transition-all duration-300 ${
+          isTransitioning ? 'opacity-0 -translate-y-8' : ''
         }`}
-        style={{ transform: isTransitioning ? 'translateY(-100%)' : `translateY(${pullProgress * 30}px)` }}
       >
         {/* Pull-down indicator */}
         <div 
-          className="absolute top-0 left-0 right-0 flex flex-col items-center justify-center py-3 z-50 transition-opacity"
-          style={{ opacity: pullProgress, transform: `translateY(${-20 + pullProgress * 20}px)` }}
+          className="absolute top-14 left-0 right-0 flex flex-col items-center justify-center py-2 z-50 transition-all pointer-events-none"
+          style={{ opacity: pullProgress, transform: `translateY(${-10 + pullProgress * 10}px)` }}
         >
-          <div className="flex items-center gap-2 text-primary">
+          <div className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg">
             <MapPin className="h-4 w-4" />
-            <span className="text-xs font-medium">Pull to open map</span>
+            <span className="text-xs font-semibold">Release to open map</span>
           </div>
-          <ChevronDown className={`h-4 w-4 text-primary mt-1 transition-transform ${pullProgress >= 1 ? 'rotate-180' : ''}`} />
         </div>
 
-        {/* Main Content - Fixed height, no scroll */}
-        <div className="flex-1 flex flex-col px-5 pt-16 pb-6 overflow-hidden">
-          {/* Compact Location Card */}
-          <div className="mb-6">
-            <LocationAwareWelcome />
-          </div>
-
-          {/* Hero Section */}
-          <div className="flex-1 flex flex-col justify-center">
-            {/* Trust Badge */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-              </div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {t('home.verifiedBadge')}
-              </span>
-            </div>
-
-            {/* Main Title */}
-            <h1 className="text-3xl font-display font-bold tracking-tight leading-tight mb-3">
-              {t('home.heroTitle1')}{' '}
-              <span className="text-gradient">{t('home.heroTitle2')}</span>
-              {' '}{t('home.heroTitle3')}
-            </h1>
+        {/* Scrollable Content */}
+        <div 
+          data-scroll-container
+          className="flex-1 overflow-y-auto pt-14 pb-24"
+          style={{ transform: `translateY(${pullProgress * 20}px)` }}
+        >
+          {/* Hero Section with Image */}
+          <div className="relative h-56 overflow-hidden">
+            <img 
+              src={mobileHeroImage} 
+              alt="Premium Property" 
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             
-            <p className="text-sm text-muted-foreground leading-relaxed mb-8">
-              {t('home.heroSubtitle')}
-            </p>
-
-            {/* Primary Action */}
-            <Link to="/map" className="block mb-4">
-              <Button 
-                size="lg" 
-                className="w-full h-14 text-base font-semibold rounded-2xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-transform"
-              >
-                <MapPin className="mr-2 h-5 w-5" />
-                {t('home.exploreMapShort')}
-                <ArrowRight className="ml-auto h-5 w-5" />
-              </Button>
-            </Link>
-
-            {/* Secondary Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <Link to="/listings" className="block">
-                <Button 
-                  variant="outline" 
-                  className="w-full h-12 text-sm font-medium rounded-xl border-border/60 active:scale-[0.98] transition-transform"
-                >
-                  <Search className="mr-1.5 h-4 w-4" />
-                  {t('home.browseListingsShort')}
-                </Button>
-              </Link>
-              <Link to="/sellers" className="block">
-                <Button 
-                  variant="outline" 
-                  className="w-full h-12 text-sm font-medium rounded-xl border-border/60 active:scale-[0.98] transition-transform"
-                >
-                  <Users className="mr-1.5 h-4 w-4" />
-                  {t('home.viewSellersShort')}
-                </Button>
-              </Link>
+            {/* Floating Location Card */}
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="bg-card/95 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-border/50">
+                <LocationAwareWelcome />
+              </div>
             </div>
           </div>
 
-          {/* Bottom Pull Hint */}
-          <div className="flex flex-col items-center pt-4 animate-bounce">
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground mt-1">Swipe down for map</span>
+          {/* Search Bar */}
+          <div className="px-4 -mt-2 relative z-10">
+            <Link to="/listings">
+              <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 shadow-sm active:scale-[0.98] transition-transform">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Search className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Search properties</p>
+                  <p className="text-xs text-muted-foreground">Location, price, size...</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </Link>
+          </div>
+
+          {/* Quick Actions Grid */}
+          <div className="px-4 mt-6">
+            <h2 className="text-sm font-semibold text-foreground mb-3 px-1">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {quickActions.map((action) => (
+                <Link key={action.to} to={action.to}>
+                  <div className="bg-card border border-border/60 rounded-2xl p-4 active:scale-[0.97] transition-transform">
+                    <div className={`h-11 w-11 rounded-xl ${action.color} flex items-center justify-center mb-3`}>
+                      <action.icon className="h-5 w-5" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{action.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{action.sublabel}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Trust Section */}
+          <div className="px-4 mt-6">
+            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-4 border border-primary/10">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-semibold text-foreground">{t('home.verifiedBadge')}</span>
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {t('home.heroSubtitle')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Featured Categories */}
+          <div className="px-4 mt-6">
+            <h2 className="text-sm font-semibold text-foreground mb-3 px-1">Browse by Type</h2>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+              {[
+                { icon: Building2, label: 'Commercial', count: '120+' },
+                { icon: Home, label: 'Residential', count: '450+' },
+                { icon: MapPin, label: 'Land', count: '890+' },
+                { icon: FileText, label: 'Projects', count: '45+' },
+              ].map((category, idx) => (
+                <Link key={idx} to="/listings" className="flex-shrink-0">
+                  <div className="bg-card border border-border/60 rounded-2xl px-5 py-4 text-center min-w-[100px] active:scale-[0.97] transition-transform">
+                    <category.icon className="h-6 w-6 text-primary mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-foreground">{category.label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{category.count}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Map CTA */}
+          <div className="px-4 mt-6 mb-6">
+            <Link to="/map">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="h-5 w-5 text-primary-foreground" />
+                    <span className="text-xs font-medium text-primary-foreground/80 uppercase tracking-wider">Featured</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-primary-foreground mb-1">
+                    {t('home.exploreMap')}
+                  </h3>
+                  <p className="text-sm text-primary-foreground/80 mb-4">
+                    View all properties on an interactive map
+                  </p>
+                  <div className="inline-flex items-center gap-2 bg-primary-foreground/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+                    <span className="text-sm font-semibold text-primary-foreground">Open Map</span>
+                    <ArrowRight className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                </div>
+                {/* Decorative elements */}
+                <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-primary-foreground/10" />
+                <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary-foreground/5" />
+              </div>
+            </Link>
+          </div>
+
+          {/* Pull hint at bottom */}
+          <div className="flex flex-col items-center py-4 opacity-50">
+            <ChevronDown className="h-5 w-5 text-muted-foreground animate-bounce" />
+            <span className="text-[10px] text-muted-foreground">Pull down for map</span>
           </div>
         </div>
       </div>
