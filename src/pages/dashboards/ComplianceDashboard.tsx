@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, Shield, Flag, Eye, TrendingDown, Activity, Clock, Target } from 'lucide-react';
+import { AlertTriangle, Shield, Flag, Eye, TrendingDown, Activity, Clock, Target, Sparkles } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 export function ComplianceDashboard() {
@@ -168,12 +168,23 @@ export function ComplianceDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Compliance Dashboard</h1>
-        <p className="text-muted-foreground">
-          Monitor and manage compliance issues
-        </p>
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8 pb-24 md:pb-8 w-full">
+      {/* Welcome Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 md:p-8 text-primary-foreground">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-accent" />
+            <span className="text-sm font-medium text-primary-foreground/80">Compliance Dashboard</span>
+          </div>
+          <h1 className="text-2xl md:text-4xl font-display font-bold mb-2">
+            Welcome back, {profile?.full_name?.split(' ')[0] || 'Officer'}
+          </h1>
+          <p className="text-primary-foreground/80">
+            Monitor and manage compliance issues
+          </p>
+        </div>
       </div>
 
       {/* Stats Grid */}

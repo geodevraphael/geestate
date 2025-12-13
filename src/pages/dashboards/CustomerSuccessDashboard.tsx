@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, MessageSquare, TrendingUp, HelpCircle, Star, Activity, UserPlus, Clock, Shield, Mail, Phone } from 'lucide-react';
+import { Users, MessageSquare, TrendingUp, HelpCircle, Star, Activity, UserPlus, Clock, Shield, Mail, Phone, Sparkles } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { toast } from 'sonner';
 
@@ -166,18 +166,29 @@ export function CustomerSuccessDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Customer Success Dashboard</h1>
-          <p className="text-muted-foreground">
-            Support and engage with your user community
-          </p>
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8 pb-24 md:pb-8 w-full">
+      {/* Welcome Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 md:p-8 text-primary-foreground">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-5 w-5 text-accent" />
+              <span className="text-sm font-medium text-primary-foreground/80">Customer Success Dashboard</span>
+            </div>
+            <h1 className="text-2xl md:text-4xl font-display font-bold mb-2">
+              Welcome back, {profile?.full_name?.split(' ')[0] || 'Agent'}
+            </h1>
+            <p className="text-primary-foreground/80">
+              Support and engage with your user community
+            </p>
+          </div>
+          <Badge variant="secondary" className="text-sm self-start md:self-auto">
+            <Activity className="h-3 w-3 mr-1" />
+            Live Monitoring
+          </Badge>
         </div>
-        <Badge variant="outline" className="text-sm">
-          <Activity className="h-3 w-3 mr-1" />
-          Live Monitoring
-        </Badge>
       </div>
 
       {/* Stats Grid */}

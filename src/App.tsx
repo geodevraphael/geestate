@@ -22,7 +22,7 @@ import Messages from "./pages/Messages";
 import Reputation from "./pages/Reputation";
 import FraudDetection from "./pages/FraudDetection";
 import Subscriptions from "./pages/Subscriptions";
-import AdminDashboard from "./pages/AdminDashboard";
+
 import AuditLogs from "./pages/AuditLogs";
 import InstitutionalSellers from "./pages/InstitutionalSellers";
 import VisitRequests from './pages/VisitRequests';
@@ -104,7 +104,7 @@ const App = () => (
             <Route path="/reputation" element={<Reputation />} />
             <Route path="/fraud-detection" element={<FraudDetection />} />
             <Route path="/subscriptions" element={<Subscriptions />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-dashboard" element={<Dashboard />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/institutional-sellers" element={<InstitutionalSellers />} />
             <Route path="/admin/approvals" element={<AdminApprovals />} />

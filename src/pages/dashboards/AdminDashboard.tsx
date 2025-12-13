@@ -85,7 +85,7 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8 pb-24 md:pb-8 max-w-7xl mx-auto">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8 pb-24 md:pb-8 w-full">
       {/* Welcome Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 md:p-8 text-primary-foreground">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -97,7 +97,7 @@ export function AdminDashboard() {
               <span className="text-sm font-medium text-primary-foreground/80">Admin Dashboard</span>
             </div>
             <h1 className="text-2xl md:text-4xl font-display font-bold mb-2">
-              System Overview
+              Welcome back, {profile?.full_name?.split(' ')[0] || 'Admin'}
             </h1>
             <p className="text-primary-foreground/80">
               Monitor and manage platform operations
