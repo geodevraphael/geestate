@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { CreateListingFromRequestDialog } from '@/components/admin/CreateListingFromRequestDialog';
 
 interface ListingRequest {
   id: string;
@@ -45,6 +45,7 @@ interface ListingRequest {
 }
 
 export default function AdminListingRequests() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [requests, setRequests] = useState<ListingRequest[]>([]);
@@ -53,8 +54,6 @@ export default function AdminListingRequests() {
   const [adminNotes, setAdminNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [createListingOpen, setCreateListingOpen] = useState(false);
-  const [requestToCreateListing, setRequestToCreateListing] = useState<ListingRequest | null>(null);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -245,10 +244,7 @@ export default function AdminListingRequests() {
                       {(request.status === 'pending' || request.status === 'approved') && (
                         <Button
                           size="sm"
-                          onClick={() => {
-                            setRequestToCreateListing(request);
-                            setCreateListingOpen(true);
-                          }}
+                          onClick={() => navigate(`/admin/listing-requests/${request.id}/create`)}
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           Create Listing
@@ -357,13 +353,6 @@ export default function AdminListingRequests() {
           </DialogContent>
         </Dialog>
 
-        {/* Create Listing Dialog */}
-        <CreateListingFromRequestDialog
-          request={requestToCreateListing}
-          open={createListingOpen}
-          onOpenChange={setCreateListingOpen}
-          onSuccess={fetchRequests}
-        />
       </div>
     </MainLayout>
   );
