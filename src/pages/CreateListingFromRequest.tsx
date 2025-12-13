@@ -124,12 +124,16 @@ export default function CreateListingFromRequest() {
     fetchRequest();
   }, [requestId]);
 
-  // Initialize map
+  // Initialize map - wait for loading to complete so DOM is ready
   useEffect(() => {
-    if (mapRef.current && !mapInstance.current) {
-      initializeMap();
+    if (!loading && mapRef.current && !mapInstance.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        initializeMap();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, [loading]);
 
   const fetchRequest = async () => {
     setLoading(true);
