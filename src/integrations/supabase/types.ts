@@ -73,7 +73,13 @@ export type Database = {
         Row: {
           agreement_date: string | null
           agreement_notes: string | null
+          assigned_at: string | null
+          assigned_staff_id: string | null
           buyer_id: string
+          commission_amount: number | null
+          commission_paid: boolean | null
+          commission_paid_at: string | null
+          commission_rate: number | null
           created_at: string
           current_step: number
           encumbrance_status: string | null
@@ -97,6 +103,7 @@ export type Database = {
           sale_agreement_completed: boolean | null
           sale_agreement_completed_at: string | null
           seller_id: string
+          staff_notes: string | null
           title_deed_number: string | null
           title_registry_office: string | null
           title_verification_completed: boolean | null
@@ -116,7 +123,13 @@ export type Database = {
         Insert: {
           agreement_date?: string | null
           agreement_notes?: string | null
+          assigned_at?: string | null
+          assigned_staff_id?: string | null
           buyer_id: string
+          commission_amount?: number | null
+          commission_paid?: boolean | null
+          commission_paid_at?: string | null
+          commission_rate?: number | null
           created_at?: string
           current_step?: number
           encumbrance_status?: string | null
@@ -140,6 +153,7 @@ export type Database = {
           sale_agreement_completed?: boolean | null
           sale_agreement_completed_at?: string | null
           seller_id: string
+          staff_notes?: string | null
           title_deed_number?: string | null
           title_registry_office?: string | null
           title_verification_completed?: boolean | null
@@ -159,7 +173,13 @@ export type Database = {
         Update: {
           agreement_date?: string | null
           agreement_notes?: string | null
+          assigned_at?: string | null
+          assigned_staff_id?: string | null
           buyer_id?: string
+          commission_amount?: number | null
+          commission_paid?: boolean | null
+          commission_paid_at?: string | null
+          commission_rate?: number | null
           created_at?: string
           current_step?: number
           encumbrance_status?: string | null
@@ -183,6 +203,7 @@ export type Database = {
           sale_agreement_completed?: boolean | null
           sale_agreement_completed_at?: string | null
           seller_id?: string
+          staff_notes?: string | null
           title_deed_number?: string | null
           title_registry_office?: string | null
           title_verification_completed?: boolean | null
@@ -200,6 +221,20 @@ export type Database = {
           visit_request_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "buying_process_tracker_assigned_staff_id_fkey"
+            columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buying_process_tracker_assigned_staff_id_fkey"
+            columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "buying_process_tracker_buyer_id_fkey"
             columns: ["buyer_id"]
