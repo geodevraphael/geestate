@@ -7,9 +7,10 @@ import { LocationAwareWelcome } from '@/components/LocationAwareWelcome';
 import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import mobileHeroImage from '@/assets/mobile-hero-property.jpg';
-
 const Index = () => {
-  const { t } = useTranslation();
+  const {
+    t
+  } = useTranslation();
   const navigate = useNavigate();
   const [pullProgress, setPullProgress] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -26,15 +27,12 @@ const Index = () => {
       isPullingRef.current = true;
     }
   }, []);
-
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isPullingRef.current) return;
-    
     const deltaY = e.touches[0].clientY - startYRef.current;
     if (deltaY > 0) {
       const progress = Math.min(deltaY / 150, 1);
       setPullProgress(progress);
-      
       if (progress >= 1) {
         isPullingRef.current = false;
         setIsTransitioning(true);
@@ -42,77 +40,66 @@ const Index = () => {
       }
     }
   }, [navigate]);
-
   const handleTouchEnd = useCallback(() => {
     isPullingRef.current = false;
     if (pullProgress < 1) {
       setPullProgress(0);
     }
   }, [pullProgress]);
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: true });
-    container.addEventListener('touchend', handleTouchEnd, { passive: true });
-
+    container.addEventListener('touchstart', handleTouchStart, {
+      passive: true
+    });
+    container.addEventListener('touchmove', handleTouchMove, {
+      passive: true
+    });
+    container.addEventListener('touchend', handleTouchEnd, {
+      passive: true
+    });
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
-
-  const quickActions = [
-    {
-      icon: MapPin,
-      label: t('home.exploreMapShort'),
-      sublabel: 'Interactive map',
-      to: '/map',
-      color: 'bg-primary/10 text-primary',
-    },
-    {
-      icon: Search,
-      label: t('home.browseListingsShort'),
-      sublabel: 'All properties',
-      to: '/listings',
-      color: 'bg-accent/10 text-accent',
-    },
-    {
-      icon: Users,
-      label: t('home.viewSellersShort'),
-      sublabel: 'Verified sellers',
-      to: '/sellers',
-      color: 'bg-success/10 text-success',
-    },
-    {
-      icon: Briefcase,
-      label: 'Services',
-      sublabel: 'Find providers',
-      to: '/service-providers',
-      color: 'bg-secondary text-secondary-foreground',
-    },
-  ];
-
-  return (
-    <div className="min-h-screen bg-background overflow-hidden">
+  const quickActions = [{
+    icon: MapPin,
+    label: t('home.exploreMapShort'),
+    sublabel: 'Interactive map',
+    to: '/map',
+    color: 'bg-primary/10 text-primary'
+  }, {
+    icon: Search,
+    label: t('home.browseListingsShort'),
+    sublabel: 'All properties',
+    to: '/listings',
+    color: 'bg-accent/10 text-accent'
+  }, {
+    icon: Users,
+    label: t('home.viewSellersShort'),
+    sublabel: 'Verified sellers',
+    to: '/sellers',
+    color: 'bg-success/10 text-success'
+  }, {
+    icon: Briefcase,
+    label: 'Services',
+    sublabel: 'Find providers',
+    to: '/service-providers',
+    color: 'bg-secondary text-secondary-foreground'
+  }];
+  return <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       <MobileBottomNav />
       
       {/* ===== MOBILE APP VIEW ===== */}
-      <div 
-        ref={containerRef}
-        className={`md:hidden h-[100dvh] bg-background flex flex-col transition-all duration-300 ${
-          isTransitioning ? 'opacity-0 -translate-y-8' : ''
-        }`}
-      >
+      <div ref={containerRef} className={`md:hidden h-[100dvh] bg-background flex flex-col transition-all duration-300 ${isTransitioning ? 'opacity-0 -translate-y-8' : ''}`}>
         {/* Pull-down indicator */}
-        <div 
-          className="absolute top-14 left-0 right-0 flex flex-col items-center justify-center py-2 z-50 transition-all pointer-events-none"
-          style={{ opacity: pullProgress, transform: `translateY(${-10 + pullProgress * 10}px)` }}
-        >
+        <div className="absolute top-14 left-0 right-0 flex flex-col items-center justify-center py-2 z-50 transition-all pointer-events-none" style={{
+        opacity: pullProgress,
+        transform: `translateY(${-10 + pullProgress * 10}px)`
+      }}>
           <div className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg">
             <MapPin className="h-4 w-4" />
             <span className="text-xs font-semibold">Release to open map</span>
@@ -120,18 +107,12 @@ const Index = () => {
         </div>
 
         {/* Scrollable Content */}
-        <div 
-          data-scroll-container
-          className="flex-1 overflow-y-auto pt-14 pb-24"
-          style={{ transform: `translateY(${pullProgress * 20}px)` }}
-        >
+        <div data-scroll-container className="flex-1 overflow-y-auto pt-14 pb-24" style={{
+        transform: `translateY(${pullProgress * 20}px)`
+      }}>
           {/* Hero Section with Image */}
           <div className="relative h-56 overflow-hidden">
-            <img 
-              src={mobileHeroImage} 
-              alt="Premium Property" 
-              className="w-full h-full object-cover"
-            />
+            <img src={mobileHeroImage} alt="Premium Property" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             
             {/* Floating Location Card */}
@@ -162,8 +143,7 @@ const Index = () => {
           <div className="px-4 mt-6">
             <h2 className="text-sm font-semibold text-foreground mb-3 px-1">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-3">
-              {quickActions.map((action) => (
-                <Link key={action.to} to={action.to}>
+              {quickActions.map(action => <Link key={action.to} to={action.to}>
                   <div className="bg-card border border-border/60 rounded-2xl p-4 active:scale-[0.97] transition-transform">
                     <div className={`h-11 w-11 rounded-xl ${action.color} flex items-center justify-center mb-3`}>
                       <action.icon className="h-5 w-5" />
@@ -171,8 +151,7 @@ const Index = () => {
                     <p className="text-sm font-semibold text-foreground">{action.label}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{action.sublabel}</p>
                   </div>
-                </Link>
-              ))}
+                </Link>)}
             </div>
           </div>
 
@@ -200,55 +179,37 @@ const Index = () => {
           <div className="px-4 mt-6">
             <h2 className="text-sm font-semibold text-foreground mb-3 px-1">Browse by Type</h2>
             <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-              {[
-                { icon: Building2, label: 'Commercial', count: '120+' },
-                { icon: Home, label: 'Residential', count: '450+' },
-                { icon: MapPin, label: 'Land', count: '890+' },
-                { icon: FileText, label: 'Projects', count: '45+' },
-              ].map((category, idx) => (
-                <Link key={idx} to="/listings" className="flex-shrink-0">
+              {[{
+              icon: Building2,
+              label: 'Commercial',
+              count: '120+'
+            }, {
+              icon: Home,
+              label: 'Residential',
+              count: '450+'
+            }, {
+              icon: MapPin,
+              label: 'Land',
+              count: '890+'
+            }, {
+              icon: FileText,
+              label: 'Projects',
+              count: '45+'
+            }].map((category, idx) => <Link key={idx} to="/listings" className="flex-shrink-0">
                   <div className="bg-card border border-border/60 rounded-2xl px-5 py-4 text-center min-w-[100px] active:scale-[0.97] transition-transform">
                     <category.icon className="h-6 w-6 text-primary mx-auto mb-2" />
                     <p className="text-xs font-semibold text-foreground">{category.label}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{category.count}</p>
                   </div>
-                </Link>
-              ))}
+                </Link>)}
             </div>
           </div>
 
           {/* Map CTA */}
-          <div className="px-4 mt-6 mb-6">
-            <Link to="/map">
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-5 w-5 text-primary-foreground" />
-                    <span className="text-xs font-medium text-primary-foreground/80 uppercase tracking-wider">Featured</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-primary-foreground mb-1">
-                    {t('home.exploreMap')}
-                  </h3>
-                  <p className="text-sm text-primary-foreground/80 mb-4">
-                    View all properties on an interactive map
-                  </p>
-                  <div className="inline-flex items-center gap-2 bg-primary-foreground/20 backdrop-blur-sm px-4 py-2 rounded-xl">
-                    <span className="text-sm font-semibold text-primary-foreground">Open Map</span>
-                    <ArrowRight className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                </div>
-                {/* Decorative elements */}
-                <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-primary-foreground/10" />
-                <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary-foreground/5" />
-              </div>
-            </Link>
-          </div>
+          
 
           {/* Pull hint at bottom */}
-          <div className="flex flex-col items-center py-4 opacity-50">
-            <ChevronDown className="h-5 w-5 text-muted-foreground animate-bounce" />
-            <span className="text-[10px] text-muted-foreground">Pull down for map</span>
-          </div>
+          
         </div>
       </div>
       
@@ -339,7 +300,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
 export default Index;
