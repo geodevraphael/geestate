@@ -148,18 +148,20 @@ export function CreateListingFromRequestDialog({
         });
       }
 
-      // 3. Update the request status to approved
-      const { error: updateError } = await (supabase as any)
-        .from('listing_requests')
-        .update({
-          status: 'approved',
-          admin_notes: adminNotes,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq('id', request.id);
+      // 3. Update the request status to approved (only if pending)
+      if (request.status === 'pending') {
+        const { error: updateError } = await (supabase as any)
+          .from('listing_requests')
+          .update({
+            status: 'approved',
+            admin_notes: adminNotes,
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', request.id);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      }
 
       // 4. Create notification for the user
       await supabase.from('notifications').insert([{

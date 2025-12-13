@@ -242,30 +242,31 @@ export default function AdminListingRequests() {
                         View Full
                       </Button>
                       
+                      {(request.status === 'pending' || request.status === 'approved') && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setRequestToCreateListing(request);
+                            setCreateListingOpen(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Create Listing
+                        </Button>
+                      )}
+                      
                       {request.status === 'pending' && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setRequestToCreateListing(request);
-                              setCreateListingOpen(true);
-                            }}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Create Listing
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setAdminNotes('');
-                            }}
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Review
-                          </Button>
-                        </>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setAdminNotes('');
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
                       )}
                     </div>
                   </div>
