@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, MapPin, DollarSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -37,7 +36,6 @@ export default function ListingFeeBreakdown() {
 
   const fetchListingBreakdown = async () => {
     try {
-      // Fetch user's published listings
       const { data: userListings, error } = await supabase
         .from('listings')
         .select('id, title, location_label, price, currency')
@@ -53,7 +51,7 @@ export default function ListingFeeBreakdown() {
         location_label: listing.location_label,
         price: listing.price || 0,
         currency: listing.currency || 'TZS',
-        fee: (listing.price || 0) * 0.001, // 0.1%
+        fee: (listing.price || 0) * 0.001,
       }));
 
       setListings(breakdowns);
@@ -77,21 +75,21 @@ export default function ListingFeeBreakdown() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
-          className="mb-6"
+          className="mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Listing Fee Breakdown
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <DollarSign className="h-5 w-5 flex-shrink-0" />
+              <span>Listing Fee Breakdown</span>
             </CardTitle>
             <p className="text-muted-foreground text-sm">
               Monthly listing fee is 0.1% of your total property selling prices
@@ -101,7 +99,7 @@ export default function ListingFeeBreakdown() {
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
+                  <Skeleton key={i} className="h-20 w-full" />
                 ))}
               </div>
             ) : listings.length === 0 ? (
@@ -110,45 +108,78 @@ export default function ListingFeeBreakdown() {
               </p>
             ) : (
               <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Property</TableHead>
-                      <TableHead className="text-right">Selling Price</TableHead>
-                      <TableHead className="text-right">Fee (0.1%)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {listings.map((listing) => (
-                      <TableRow key={listing.id}>
-                        <TableCell>
+                {/* Mobile Card View */}
+                <div className="space-y-3 md:hidden">
+                  {listings.map((listing) => (
+                    <Card key={listing.id} className="p-4">
+                      <div className="space-y-2">
+                        <p className="font-medium line-clamp-2">{listing.title}</p>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="line-clamp-1">{listing.location_label}</span>
+                        </p>
+                        <div className="flex justify-between items-center pt-2 border-t">
                           <div>
-                            <p className="font-medium">{listing.title}</p>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {listing.location_label}
+                            <p className="text-xs text-muted-foreground">Price</p>
+                            <p className="font-mono text-sm">{formatCurrency(listing.price, listing.currency)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Fee (0.1%)</p>
+                            <p className="font-mono text-sm text-primary font-semibold">
+                              {formatCurrency(listing.fee, listing.currency)}
                             </p>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(listing.price, listing.currency)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-primary">
-                          {formatCurrency(listing.fee, listing.currency)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
 
-                <div className="mt-6 pt-4 border-t space-y-2">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-2 font-medium">Property</th>
+                        <th className="text-right py-3 px-2 font-medium">Selling Price</th>
+                        <th className="text-right py-3 px-2 font-medium">Fee (0.1%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {listings.map((listing) => (
+                        <tr key={listing.id} className="border-b">
+                          <td className="py-3 px-2">
+                            <div>
+                              <p className="font-medium">{listing.title}</p>
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {listing.location_label}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="text-right py-3 px-2 font-mono">
+                            {formatCurrency(listing.price, listing.currency)}
+                          </td>
+                          <td className="text-right py-3 px-2 font-mono text-primary font-semibold">
+                            {formatCurrency(listing.fee, listing.currency)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Summary */}
+                <div className="mt-6 pt-4 border-t space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Property Value:</span>
                     <span className="font-mono">{formatCurrency(totalValue)}</span>
                   </div>
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total Monthly Fee:</span>
-                    <span className="text-primary">{formatCurrency(totalFee)}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Total Monthly Fee:</span>
+                    <span className="text-lg sm:text-xl font-bold text-primary">
+                      {formatCurrency(totalFee)}
+                    </span>
                   </div>
                 </div>
               </>

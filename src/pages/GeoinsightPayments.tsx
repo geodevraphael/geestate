@@ -106,56 +106,56 @@ export default function GeoinsightPayments() {
     <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">My GeoInsight Fee</h1>
-          <p className="text-muted-foreground">View and pay your monthly platform fees</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">My GeoInsight Fee</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">View and pay your monthly platform fees</p>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Outstanding</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(summary.totalOutstanding)}</div>
-              <p className="text-xs text-muted-foreground">Amount you owe</p>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold">{formatCurrency(summary.totalOutstanding)}</div>
+              <p className="text-xs text-muted-foreground hidden sm:block">Amount you owe</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Overdue</CardTitle>
               <AlertCircle className="h-4 w-4 text-destructive" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">{formatCurrency(summary.totalOverdue)}</div>
-              <p className="text-xs text-muted-foreground">Past due date</p>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold text-destructive">{formatCurrency(summary.totalOverdue)}</div>
+              <p className="text-xs text-muted-foreground hidden sm:block">Past due date</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Paid (12 months)</CardTitle>
+          <Card className="col-span-2 md:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6 sm:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Paid (12 months)</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(summary.totalPaid)}</div>
-              <p className="text-xs text-muted-foreground">Total paid</p>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold">{formatCurrency(summary.totalPaid)}</div>
+              <p className="text-xs text-muted-foreground hidden sm:block">Total paid</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Tabs for different statuses */}
         <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="pending">
-              Pending ({pendingRecords.length})
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="pending" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Pending </span>({pendingRecords.length})
             </TabsTrigger>
-            <TabsTrigger value="review">
-              Under Review ({awaitingReviewRecords.length})
+            <TabsTrigger value="review" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Under </span>Review ({awaitingReviewRecords.length})
             </TabsTrigger>
-            <TabsTrigger value="paid">
+            <TabsTrigger value="paid" className="text-xs sm:text-sm">
               Paid ({paidRecords.length})
             </TabsTrigger>
           </TabsList>
@@ -170,71 +170,142 @@ export default function GeoinsightPayments() {
                 {pendingRecords.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No pending payments</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    {/* Mobile Card View */}
+                    <div className="space-y-4 md:hidden">
                       {pendingRecords.map((record) => (
-                        <TableRow key={record.id}>
-                          <TableCell>{new Date(record.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell className="max-w-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="line-clamp-2">{record.description}</span>
-                              {record.fee_definition?.code === 'LISTING_FEE' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 px-2"
-                                  onClick={() => navigate(`/listing-fee-breakdown?recordId=${record.id}`)}
-                                >
-                                  <Info className="w-4 h-4" />
-                                </Button>
-                              )}
+                        <Card key={record.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(record.created_at).toLocaleDateString()}
+                                </p>
+                                <p className="font-medium line-clamp-2 mt-1">{record.description}</p>
+                                {record.fee_definition?.code === 'LISTING_FEE' && (
+                                  <Button
+                                    size="sm"
+                                    variant="link"
+                                    className="h-auto p-0 text-primary"
+                                    onClick={() => navigate(`/listing-fee-breakdown?recordId=${record.id}`)}
+                                  >
+                                    <Info className="w-3 h-3 mr-1" />
+                                    View breakdown
+                                  </Button>
+                                )}
+                              </div>
+                              {getStatusBadge(record.status)}
                             </div>
-                          </TableCell>
-                          <TableCell className="font-medium">{formatCurrency(record.amount_due, record.currency)}</TableCell>
-                          <TableCell>
-                            {record.due_date ? (
-                              <span className={record.status === 'overdue' ? 'text-destructive' : ''}>
-                                {formatDistanceToNow(new Date(record.due_date), { addSuffix: true })}
-                              </span>
-                            ) : '-'}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(record.status)}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
+                            
+                            <div className="flex justify-between items-center pt-2 border-t">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Amount</p>
+                                <p className="font-bold text-lg">{formatCurrency(record.amount_due, record.currency)}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground">Due</p>
+                                <p className={`text-sm ${record.status === 'overdue' ? 'text-destructive font-medium' : ''}`}>
+                                  {record.due_date ? formatDistanceToNow(new Date(record.due_date), { addSuffix: true }) : '-'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2 pt-2">
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="flex-1"
                                 onClick={() => {
                                   setSelectedRecord(record);
                                   setShowInstructionsDialog(true);
                                 }}
                               >
                                 <FileText className="w-4 h-4 mr-1" />
-                                Instructions
+                                Pay
                               </Button>
                               <Button
                                 size="sm"
+                                className="flex-1"
                                 onClick={() => navigate(`/upload-payment-proof/${record.id}`)}
                               >
                                 <Upload className="w-4 h-4 mr-1" />
-                                Upload Proof
+                                Upload
                               </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
+                          </div>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Due Date</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingRecords.map((record) => (
+                            <TableRow key={record.id}>
+                              <TableCell>{new Date(record.created_at).toLocaleDateString()}</TableCell>
+                              <TableCell className="max-w-xs">
+                                <div className="flex items-center gap-2">
+                                  <span className="line-clamp-2">{record.description}</span>
+                                  {record.fee_definition?.code === 'LISTING_FEE' && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 px-2"
+                                      onClick={() => navigate(`/listing-fee-breakdown?recordId=${record.id}`)}
+                                    >
+                                      <Info className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium">{formatCurrency(record.amount_due, record.currency)}</TableCell>
+                              <TableCell>
+                                {record.due_date ? (
+                                  <span className={record.status === 'overdue' ? 'text-destructive' : ''}>
+                                    {formatDistanceToNow(new Date(record.due_date), { addSuffix: true })}
+                                  </span>
+                                ) : '-'}
+                              </TableCell>
+                              <TableCell>{getStatusBadge(record.status)}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedRecord(record);
+                                      setShowInstructionsDialog(true);
+                                    }}
+                                  >
+                                    <FileText className="w-4 h-4 mr-1" />
+                                    Instructions
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => navigate(`/upload-payment-proof/${record.id}`)}
+                                  >
+                                    <Upload className="w-4 h-4 mr-1" />
+                                    Upload Proof
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

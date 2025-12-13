@@ -9,13 +9,14 @@ import { GeospatialServiceRequest } from '@/components/GeospatialServiceRequest'
 import { GeoInsightServices } from '@/components/GeoInsightServices';
 import { PropertyMapThumbnail } from '@/components/PropertyMapThumbnail';
 import { BuyingProcessTracker } from '@/components/BuyingProcessTracker';
+import { SellerPaymentInstructionsDialog } from '@/components/SellerPaymentInstructionsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink, Share2, Map as MapIcon } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertCircle, Calendar, Building2, DollarSign, Edit, ArrowLeft, Droplets, TreePine, TrendingUp, Navigation, Hospital, School, ShoppingCart, Bus, ExternalLink, Share2, Map as MapIcon, CreditCard } from 'lucide-react';
 import { ShareDialog } from '@/components/ShareDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -53,6 +54,7 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [riskAnalyzing, setRiskAnalyzing] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [paymentInstructionsOpen, setPaymentInstructionsOpen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 
@@ -1198,6 +1200,14 @@ export default function ListingDetail() {
                     ) : (
                       <VisitRequestDialog listingId={id!} sellerId={listing.owner_id} />
                     )}
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setPaymentInstructionsOpen(true)}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Payment Instructions
+                    </Button>
                     <PaymentProofDialog listing={listing} />
                   </div>
                 )}
@@ -1238,6 +1248,13 @@ export default function ListingDetail() {
           </div>
         </div>
       </div>
+      {/* Seller Payment Instructions Dialog */}
+      <SellerPaymentInstructionsDialog
+        open={paymentInstructionsOpen}
+        onOpenChange={setPaymentInstructionsOpen}
+        sellerId={listing.owner_id}
+        sellerName={owner?.organization_name || owner?.full_name}
+      />
     </MainLayout>
   );
 }
