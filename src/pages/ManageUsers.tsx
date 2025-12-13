@@ -10,8 +10,19 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCog, Search, Shield, Mail, Phone, Calendar } from 'lucide-react';
+import { Loader2, UserCog, Search, Shield, Mail, Phone, Calendar, Ban, UserCheck } from 'lucide-react';
 import { AppRole } from '@/types/database';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 interface UserWithRoles {
   id: string;
@@ -20,6 +31,8 @@ interface UserWithRoles {
   phone: string | null;
   created_at: string;
   roles: AppRole[];
+  banned_at: string | null;
+  ban_reason: string | null;
 }
 
 export default function ManageUsers() {
@@ -32,12 +45,18 @@ export default function ManageUsers() {
 
 function ManageUsersContent() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserWithRoles[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [unbanDialogOpen, setUnbanDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [banning, setBanning] = useState(false);
 
   const availableRoles: AppRole[] = [
     'admin',
@@ -66,7 +85,7 @@ function ManageUsersContent() {
       // Fetch all users from auth.users via profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, phone, created_at')
+        .select('id, email, full_name, phone, created_at, banned_at, ban_reason')
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -85,6 +104,8 @@ function ManageUsersContent() {
         full_name: profile.full_name,
         phone: profile.phone,
         created_at: profile.created_at,
+        banned_at: profile.banned_at,
+        ban_reason: profile.ban_reason,
         roles: rolesData
           ?.filter((r) => r.user_id === profile.id)
           .map((r) => r.role as AppRole) || [],
@@ -101,6 +122,79 @@ function ManageUsersContent() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBanUser = async () => {
+    if (!selectedUser || !user) return;
+    
+    setBanning(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          banned_at: new Date().toISOString(),
+          banned_by: user.id,
+          ban_reason: banReason || null,
+        })
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'User Banned',
+        description: `${selectedUser.full_name} has been banned.`,
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error banning user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to ban user. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBanning(false);
+      setBanDialogOpen(false);
+      setSelectedUser(null);
+      setBanReason('');
+    }
+  };
+
+  const handleUnbanUser = async () => {
+    if (!selectedUser) return;
+    
+    setBanning(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          banned_at: null,
+          banned_by: null,
+          ban_reason: null,
+        })
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'User Unbanned',
+        description: `${selectedUser.full_name} has been unbanned.`,
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to unban user. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBanning(false);
+      setUnbanDialogOpen(false);
+      setSelectedUser(null);
     }
   };
 
@@ -230,6 +324,7 @@ function ManageUsersContent() {
                     <TableHead>User</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Roles</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -237,25 +332,25 @@ function ManageUsersContent() {
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No users found matching your criteria
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
+                    filteredUsers.map((userItem) => (
+                      <TableRow key={userItem.id} className={userItem.banned_at ? 'bg-destructive/10' : ''}>
                         <TableCell>
-                          <div className="font-medium">{user.full_name}</div>
+                          <div className="font-medium">{userItem.full_name}</div>
                           <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                             <Mail className="h-3 w-3" />
-                            {user.email}
+                            {userItem.email}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {user.phone ? (
+                          {userItem.phone ? (
                             <div className="flex items-center gap-1 text-sm">
                               <Phone className="h-3 w-3 text-muted-foreground" />
-                              {user.phone}
+                              {userItem.phone}
                             </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">—</span>
@@ -263,8 +358,8 @@ function ManageUsersContent() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {user.roles.length > 0 ? (
-                              user.roles.map((role) => (
+                            {userItem.roles.length > 0 ? (
+                              userItem.roles.map((role) => (
                                 <Badge
                                   key={role}
                                   variant={getRoleBadgeVariant(role)}
@@ -281,21 +376,70 @@ function ManageUsersContent() {
                           </div>
                         </TableCell>
                         <TableCell>
+                          {userItem.banned_at ? (
+                            <div>
+                              <Badge variant="destructive" className="text-xs">
+                                <Ban className="h-3 w-3 mr-1" />
+                                Banned
+                              </Badge>
+                              {userItem.ban_reason && (
+                                <p className="text-xs text-muted-foreground mt-1 max-w-[150px] truncate" title={userItem.ban_reason}>
+                                  {userItem.ban_reason}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-green-600 border-green-600">
+                              <UserCheck className="h-3 w-3 mr-1" />
+                              Active
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {formatDate(user.created_at)}
+                            {formatDate(userItem.created_at)}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/admin/users/${user.id}/roles`)}
-                            className="gap-2"
-                          >
-                            <UserCog className="h-4 w-4" />
-                            Manage Roles
-                          </Button>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/admin/users/${userItem.id}/roles`)}
+                              className="gap-1"
+                            >
+                              <UserCog className="h-4 w-4" />
+                              Roles
+                            </Button>
+                            {userItem.banned_at ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(userItem);
+                                  setUnbanDialogOpen(true);
+                                }}
+                                className="gap-1 text-green-600 border-green-600 hover:bg-green-50"
+                              >
+                                <UserCheck className="h-4 w-4" />
+                                Unban
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(userItem);
+                                  setBanDialogOpen(true);
+                                }}
+                                className="gap-1 text-destructive border-destructive hover:bg-destructive/10"
+                              >
+                                <Ban className="h-4 w-4" />
+                                Ban
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -306,6 +450,69 @@ function ManageUsersContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ban User Dialog */}
+      <AlertDialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Ban className="h-5 w-5" />
+              Ban User
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to ban <strong>{selectedUser?.full_name}</strong>? 
+              This will prevent them from accessing the platform.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium">Ban Reason (optional)</label>
+            <Textarea
+              placeholder="Enter the reason for banning this user..."
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={banning}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBanUser}
+              disabled={banning}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {banning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
+              Ban User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unban User Dialog */}
+      <AlertDialog open={unbanDialogOpen} onOpenChange={setUnbanDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-green-600">
+              <UserCheck className="h-5 w-5" />
+              Unban User
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unban <strong>{selectedUser?.full_name}</strong>? 
+              This will restore their access to the platform.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={banning}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnbanUser}
+              disabled={banning}
+              className="bg-green-600 text-white hover:bg-green-700"
+            >
+              {banning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />}
+              Unban User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
