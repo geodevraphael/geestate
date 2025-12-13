@@ -8,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Upload, FileText, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, FileText, DollarSign, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { IncomeRecordWithDetails } from '@/types/geoinsight-income';
 import { PaymentInstructionsDialog } from '@/components/PaymentInstructionsDialog';
+import { ListingFeeBreakdownDialog } from '@/components/ListingFeeBreakdownDialog';
 
 export default function GeoinsightPayments() {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ export default function GeoinsightPayments() {
   const [incomeRecords, setIncomeRecords] = useState<IncomeRecordWithDetails[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<IncomeRecordWithDetails | null>(null);
   const [showInstructionsDialog, setShowInstructionsDialog] = useState(false);
+  const [showBreakdownDialog, setShowBreakdownDialog] = useState(false);
+  const [breakdownRecord, setBreakdownRecord] = useState<IncomeRecordWithDetails | null>(null);
 
   const [summary, setSummary] = useState({
     totalOutstanding: 0,
@@ -186,7 +189,22 @@ export default function GeoinsightPayments() {
                         <TableRow key={record.id}>
                           <TableCell>{new Date(record.created_at).toLocaleDateString()}</TableCell>
                           <TableCell className="max-w-xs">
-                            {record.description}
+                            <div className="flex items-center gap-2">
+                              <span className="line-clamp-2">{record.description}</span>
+                              {record.fee_definition?.code === 'LISTING_FEE' && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2"
+                                  onClick={() => {
+                                    setBreakdownRecord(record);
+                                    setShowBreakdownDialog(true);
+                                  }}
+                                >
+                                  <Info className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="font-medium">{formatCurrency(record.amount_due, record.currency)}</TableCell>
                           <TableCell>
@@ -326,6 +344,16 @@ export default function GeoinsightPayments() {
           open={showInstructionsDialog}
           onOpenChange={setShowInstructionsDialog}
           incomeRecord={selectedRecord}
+        />
+      )}
+
+      {breakdownRecord && user && (
+        <ListingFeeBreakdownDialog
+          open={showBreakdownDialog}
+          onOpenChange={setShowBreakdownDialog}
+          userId={user.id}
+          totalFee={breakdownRecord.amount_due}
+          currency={breakdownRecord.currency}
         />
       )}
     </MainLayout>
