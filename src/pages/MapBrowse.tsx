@@ -894,12 +894,12 @@ export default function MapBrowse() {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Default to detailed OpenStreetMap street view
+    // Default to light gray canvas (CartoDB Positron) - highly detailed OSM
     const streetLayer = new TileLayer({
       source: new XYZ({ 
-        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attributions: '© OpenStreetMap contributors',
-        maxZoom: 19,
+        url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+        attributions: '© OpenStreetMap contributors, © CARTO',
+        maxZoom: 20,
       }),
     });
     baseTileLayerRef.current = streetLayer;
@@ -975,9 +975,9 @@ export default function MapBrowse() {
     // High-quality tile sources with good zoom support
     const sources: Record<string, { url: string; maxZoom: number; attributions: string }> = {
       street: { 
-        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        maxZoom: 19,
-        attributions: '© OpenStreetMap contributors'
+        url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+        maxZoom: 20,
+        attributions: '© OpenStreetMap contributors, © CARTO'
       },
       satellite: { 
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
