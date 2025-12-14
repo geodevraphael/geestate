@@ -518,11 +518,28 @@ export default function MapBrowse() {
     );
   }, [createUserLocationMarker, searchRadius]);
 
-  // Update marker when search radius changes
+  // Update marker when search radius changes and zoom to fit
   const updateSearchRadius = useCallback((newRadius: number) => {
     setSearchRadius(newRadius);
-    if (userLocation) {
+    if (userLocation && mapInstance.current) {
+      // Update the marker with new radius
       createUserLocationMarker(userLocation.lat, userLocation.lng, newRadius);
+      
+      // Calculate zoom level to fit the radius
+      // Create a circle and fit the view to its extent
+      const center = fromLonLat([userLocation.lng, userLocation.lat]);
+      const metersPerUnit = mapInstance.current.getView().getProjection().getMetersPerUnit() || 1;
+      const bufferRadius = newRadius / metersPerUnit;
+      
+      const bufferCircle = new CircleGeom(center, bufferRadius);
+      const extent = bufferCircle.getExtent();
+      
+      // Animate to fit the radius with padding
+      mapInstance.current.getView().fit(extent, {
+        padding: [60, 60, 60, 60],
+        duration: 800,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+      });
     }
   }, [userLocation, createUserLocationMarker]);
 
@@ -561,6 +578,18 @@ export default function MapBrowse() {
     return [];
   }, [wardFilter, districtFilter, regionFilter, wards]);
 
+  // Calculate distance in meters between two lat/lng points using Haversine formula
+  const calculateDistanceMeters = useCallback((lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
   // Filtered listings
   const filteredListings = useMemo(() => {
     return listings.filter(l => {
@@ -581,25 +610,39 @@ export default function MapBrowse() {
       // Area
       if (l.polygon?.area_m2 && (l.polygon.area_m2 < areaRange[0] || l.polygon.area_m2 > areaRange[1])) return false;
       
-      // Location
-      if (spatialFilterMode === 'boundary' && activeWardGeometries.length > 0) {
-        if (wardFilter !== 'all') {
-          if (l.ward_id !== wardFilter && !isListingInWards(l, activeWardGeometries)) return false;
-        } else if (districtFilter !== 'all') {
-          if (l.district_id !== districtFilter && !isListingInWards(l, activeWardGeometries)) return false;
-        } else if (regionFilter !== 'all') {
-          if (l.region_id !== regionFilter && !isListingInWards(l, activeWardGeometries)) return false;
-        }
-      } else {
-        if (wardFilter !== 'all' && l.ward_id !== wardFilter) return false;
-        if (districtFilter !== 'all' && l.district_id !== districtFilter) return false;
-        if (regionFilter !== 'all' && l.region_id !== regionFilter) return false;
+      // RADIUS FILTER: If user location is active and radius control is shown, filter by distance
+      if (showRadiusControl && userLocation && l.polygon?.centroid_lat && l.polygon?.centroid_lng) {
+        const distance = calculateDistanceMeters(
+          userLocation.lat, 
+          userLocation.lng, 
+          l.polygon.centroid_lat, 
+          l.polygon.centroid_lng
+        );
+        if (distance > searchRadius) return false;
       }
       
-      if (streetFilter !== 'all' && l.street_village_id !== streetFilter) return false;
+      // Location (only apply if not using radius filter)
+      if (!showRadiusControl) {
+        if (spatialFilterMode === 'boundary' && activeWardGeometries.length > 0) {
+          if (wardFilter !== 'all') {
+            if (l.ward_id !== wardFilter && !isListingInWards(l, activeWardGeometries)) return false;
+          } else if (districtFilter !== 'all') {
+            if (l.district_id !== districtFilter && !isListingInWards(l, activeWardGeometries)) return false;
+          } else if (regionFilter !== 'all') {
+            if (l.region_id !== regionFilter && !isListingInWards(l, activeWardGeometries)) return false;
+          }
+        } else {
+          if (wardFilter !== 'all' && l.ward_id !== wardFilter) return false;
+          if (districtFilter !== 'all' && l.district_id !== districtFilter) return false;
+          if (regionFilter !== 'all' && l.region_id !== regionFilter) return false;
+        }
+        
+        if (streetFilter !== 'all' && l.street_village_id !== streetFilter) return false;
+      }
+      
       return true;
     });
-  }, [listings, searchQuery, listingTypeFilter, propertyTypeFilter, dealerFilter, priceRange, areaRange, spatialFilterMode, activeWardGeometries, wardFilter, districtFilter, regionFilter, streetFilter]);
+  }, [listings, searchQuery, listingTypeFilter, propertyTypeFilter, dealerFilter, priceRange, areaRange, spatialFilterMode, activeWardGeometries, wardFilter, districtFilter, regionFilter, streetFilter, showRadiusControl, userLocation, searchRadius, calculateDistanceMeters]);
 
   // Sorted listings
   const sortedListings = useMemo(() => {
