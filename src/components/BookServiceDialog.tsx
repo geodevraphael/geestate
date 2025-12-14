@@ -339,14 +339,14 @@ export function BookServiceDialog({
                   {i18n.language === 'sw' ? 'Mali (Hiari)' : 'Property (Optional)'}
                 </Label>
                 <Select
-                  value={bookingForm.listing_id}
-                  onValueChange={(v) => setBookingForm({ ...bookingForm, listing_id: v })}
+                  value={bookingForm.listing_id || 'none'}
+                  onValueChange={(v) => setBookingForm({ ...bookingForm, listing_id: v === 'none' ? '' : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={i18n.language === 'sw' ? 'Chagua mali' : 'Select property'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">
+                    <SelectItem value="none">
                       {i18n.language === 'sw' ? 'Bila mali' : 'No property'}
                     </SelectItem>
                     {userListings.map(listing => (
