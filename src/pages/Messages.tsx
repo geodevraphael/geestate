@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ import { TypingIndicator } from '@/components/messaging/TypingIndicator';
 import { MessageDateSeparator } from '@/components/messaging/MessageDateSeparator';
 import { EmojiPicker } from '@/components/messaging/EmojiPicker';
 import { QuickReplies } from '@/components/messaging/QuickReplies';
+import { ScrollToBottom } from '@/components/messaging/ScrollToBottom';
 import { useCall } from '@/contexts/CallContext';
 
 export default function Messages() {
@@ -47,8 +48,22 @@ export default function Messages() {
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Handle scroll to detect if user scrolled up
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowScrollButton(!isNearBottom);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -661,67 +676,82 @@ export default function Messages() {
                 </div>
 
                 {/* Messages Container - Scrollable area */}
-                <div 
-                  className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 bg-muted/10 min-h-0"
-                  style={{
-                    backgroundImage: 'radial-gradient(circle at 1px 1px, hsl(var(--muted)) 1px, transparent 0)',
-                    backgroundSize: '40px 40px'
-                  }}
-                >
-                  {messagesLoading ? (
-                    <div className="space-y-3 animate-in fade-in duration-200">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'} animate-pulse`}>
-                          <div className={`max-w-[85%] md:max-w-[70%] ${i % 2 === 0 ? 'bg-primary/5' : 'bg-card/50'} rounded-2xl p-3 space-y-2 border border-border/30`}>
-                            <div className="h-3 bg-muted/40 rounded w-32"></div>
-                            <div className="h-3 bg-muted/40 rounded w-24"></div>
+                <div className="relative flex-1 min-h-0">
+                  <div 
+                    ref={messagesContainerRef}
+                    onScroll={handleScroll}
+                    className="absolute inset-0 overflow-y-auto p-3 md:p-4 space-y-1"
+                    style={{
+                      background: 'linear-gradient(to bottom, hsl(var(--muted) / 0.05), hsl(var(--muted) / 0.1))',
+                      backgroundImage: 'radial-gradient(circle at 1px 1px, hsl(var(--muted) / 0.3) 1px, transparent 0)',
+                      backgroundSize: '32px 32px'
+                    }}
+                  >
+                    {messagesLoading ? (
+                      <div className="space-y-4 animate-in fade-in duration-300">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] md:max-w-[70%] ${i % 2 === 0 ? 'bg-primary/10' : 'bg-card'} rounded-2xl p-4 space-y-2 border border-border/30 animate-pulse`}>
+                              <div className="h-3 bg-muted/50 rounded-full w-36"></div>
+                              <div className="h-3 bg-muted/50 rounded-full w-24"></div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center p-8">
-                        <div className="h-20 w-20 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
-                          <Send className="h-10 w-10 text-muted-foreground/50" />
-                        </div>
-                        <p className="text-sm font-medium text-foreground mb-1">No messages yet</p>
-                        <p className="text-xs text-muted-foreground">Send a message to start the conversation</p>
+                        ))}
                       </div>
-                    </div>
-                  ) : (
-                    messages.map((message, index) => {
-                      const isSender = message.sender_id === user?.id;
-                      const showAvatar = shouldShowAvatar(message, messages[index + 1]);
-                      const isFirstInGroup = index === 0 || messages[index - 1].sender_id !== message.sender_id;
-                      const showDateSeparator = index === 0 || !isSameDay(new Date(messages[index - 1].timestamp), new Date(message.timestamp));
-                      
-                      return (
-                        <div key={message.id}>
-                          {showDateSeparator && (
-                            <MessageDateSeparator date={new Date(message.timestamp)} />
-                          )}
-                          <ChatBubble
-                            message={message}
-                            isSender={isSender}
-                            showAvatar={showAvatar}
-                            senderName={selectedConversation.other_user_name}
-                            isFirstInGroup={isFirstInGroup}
-                            onReply={(msg) => {
-                              setReplyingTo(msg);
-                              inputRef.current?.focus();
-                            }}
-                          />
+                    ) : messages.length === 0 ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center p-8 animate-in fade-in zoom-in-95 duration-500">
+                          <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <Send className="h-12 w-12 text-primary/60" />
+                          </div>
+                          <p className="text-base font-semibold text-foreground mb-2">Start the conversation</p>
+                          <p className="text-sm text-muted-foreground max-w-[200px] mx-auto">
+                            Send a message to {selectedConversation.other_user_name}
+                          </p>
                         </div>
-                      );
-                    })
-                  )}
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {messages.map((message, index) => {
+                          const isSender = message.sender_id === user?.id;
+                          const showAvatar = shouldShowAvatar(message, messages[index + 1]);
+                          const isFirstInGroup = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                          const showDateSeparator = index === 0 || !isSameDay(new Date(messages[index - 1].timestamp), new Date(message.timestamp));
+                          
+                          return (
+                            <div key={message.id} className="animate-in fade-in slide-in-from-bottom-1 duration-200">
+                              {showDateSeparator && (
+                                <MessageDateSeparator date={new Date(message.timestamp)} />
+                              )}
+                              <ChatBubble
+                                message={message}
+                                isSender={isSender}
+                                showAvatar={showAvatar}
+                                senderName={selectedConversation.other_user_name}
+                                isFirstInGroup={isFirstInGroup}
+                                onReply={(msg) => {
+                                  setReplyingTo(msg);
+                                  inputRef.current?.focus();
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {isTyping && (
+                      <TypingIndicator userName={selectedConversation.other_user_name} />
+                    )}
+                    
+                    <div ref={messagesEndRef} className="h-2" />
+                  </div>
                   
-                  {isTyping && (
-                    <TypingIndicator userName={selectedConversation.other_user_name} />
-                  )}
-                  
-                  <div ref={messagesEndRef} />
+                  {/* Scroll to bottom button */}
+                  <ScrollToBottom 
+                    show={showScrollButton} 
+                    onClick={scrollToBottom}
+                  />
                 </div>
 
                 {/* Message Input - Fixed at bottom */}

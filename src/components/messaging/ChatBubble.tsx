@@ -70,10 +70,10 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
           </p>
           <Link 
             to={parsed.url.replace(window.location.origin, '')}
-            className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-background/10 hover:bg-background/20 transition-colors text-[13px] font-medium"
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-background/15 hover:bg-background/25 transition-all duration-200 text-[13px] font-medium border border-white/10"
           >
             <span>Browse Listings</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>
       );
@@ -81,13 +81,13 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
       return (
         <div className="space-y-2">
           <p className="text-[13px] md:text-sm">Check out this property:</p>
-          <p className="text-[13px] font-medium">{parsed.title}</p>
+          <p className="text-[13px] font-semibold">{parsed.title}</p>
           <Link 
             to={parsed.url.replace(window.location.origin, '')}
-            className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-background/10 hover:bg-background/20 transition-colors text-[13px] font-medium"
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-background/15 hover:bg-background/25 transition-all duration-200 text-[13px] font-medium border border-white/10"
           >
             <span>View Property</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>
       );
@@ -103,7 +103,7 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
                   href={part}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline hover:opacity-80"
+                  className="underline decoration-2 underline-offset-2 hover:opacity-80 transition-opacity"
                 >
                   {part}
                 </a>
@@ -123,13 +123,13 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
   };
 
   return (
-    <div className={`flex ${isSender ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'} group`}>
-      <div className="flex items-end gap-1.5 max-w-[85%] md:max-w-[70%] animate-in fade-in slide-in-from-bottom-1 duration-200">
+    <div className={`flex ${isSender ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-4' : 'mt-1'} group`}>
+      <div className="flex items-end gap-2 max-w-[85%] md:max-w-[70%]">
         {!isSender && (
-          <div className="w-7 flex-shrink-0">
+          <div className="w-8 flex-shrink-0">
             {showAvatar && senderName ? (
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary text-xs font-semibold">
+              <Avatar className="h-8 w-8 ring-2 ring-background shadow-md">
+                <AvatarFallback className="bg-gradient-to-br from-accent to-accent/60 text-accent-foreground text-xs font-bold">
                   {senderName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -139,31 +139,46 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
         
         {/* Actions for received messages */}
         {!isSender && (
-          <div className="self-center">
+          <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <MessageActions message={message} isSender={false} onReply={onReply} />
           </div>
         )}
         
         <div
-          className={`rounded-2xl px-3 md:px-4 py-2 md:py-2.5 shadow-sm transition-all hover:shadow-md ${
+          className={`relative rounded-2xl px-4 py-2.5 transition-all duration-200 ${
             isSender
-              ? 'bg-primary text-primary-foreground rounded-br-sm'
-              : 'bg-card border border-border/50 rounded-bl-sm'
+              ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-md shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30'
+              : 'bg-card text-card-foreground border border-border/60 rounded-bl-md shadow-sm hover:shadow-md hover:border-border'
           }`}
         >
+          {/* Tail for sent messages */}
+          {isSender && isFirstInGroup && (
+            <div className="absolute -right-1.5 bottom-0 w-3 h-3 overflow-hidden">
+              <div className="absolute w-4 h-4 bg-gradient-to-br from-primary to-primary/90 rotate-45 transform origin-top-left translate-y-1"></div>
+            </div>
+          )}
+          
+          {/* Tail for received messages */}
+          {!isSender && isFirstInGroup && (
+            <div className="absolute -left-1.5 bottom-0 w-3 h-3 overflow-hidden">
+              <div className="absolute w-4 h-4 bg-card border-l border-b border-border/60 rotate-45 transform origin-top-right translate-y-1 -translate-x-2"></div>
+            </div>
+          )}
+          
           {renderContent()}
+          
           <div
-            className={`flex items-center gap-1 justify-end text-[9px] md:text-[10px] mt-1 ${
-              isSender ? 'text-primary-foreground/70' : 'text-muted-foreground'
+            className={`flex items-center gap-1.5 justify-end text-[10px] mt-1.5 ${
+              isSender ? 'text-primary-foreground/60' : 'text-muted-foreground'
             }`}
           >
-            <span>{format(new Date(message.timestamp), 'HH:mm')}</span>
+            <span className="font-medium">{format(new Date(message.timestamp), 'HH:mm')}</span>
             {isSender && (
-              <span className="ml-0.5">
+              <span className="flex items-center">
                 {message.is_read ? (
-                  <CheckCheck className="h-3 w-3 text-success" />
+                  <CheckCheck className="h-3.5 w-3.5 text-success" />
                 ) : (
-                  <Check className="h-3 w-3" />
+                  <Check className="h-3.5 w-3.5" />
                 )}
               </span>
             )}
@@ -172,7 +187,7 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
         
         {/* Actions for sent messages */}
         {isSender && (
-          <div className="self-center">
+          <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <MessageActions message={message} isSender={true} onReply={onReply} />
           </div>
         )}
