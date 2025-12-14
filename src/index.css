@@ -239,7 +239,16 @@ All colors MUST be HSL.
       @apply min-h-[48px] text-base font-medium;
     }
   }
-
+ 
+  /* Hide scrollbars while keeping scroll behavior */
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+ 
   /* OpenLayers map fixes - ensure proper rendering */
   .ol-viewport, .ol-viewport canvas {
     width: 100% !important;
