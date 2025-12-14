@@ -41,20 +41,37 @@ export async function checkPolygonOverlap(
   geojson: any, 
   excludeListingId?: string
 ): Promise<OverlapCheckResult> {
+  console.log('=== OVERLAP CHECK STARTED ===');
+  console.log('GeoJSON:', JSON.stringify(geojson));
+  console.log('Exclude listing ID:', excludeListingId);
+  
   try {
     const { data: result, error } = await supabase.functions.invoke('check-polygon-overlap', {
       body: { geojson, exclude_listing_id: excludeListingId },
     });
 
+    console.log('Overlap check response:', result, 'Error:', error);
+
     if (error) {
       console.error('Error checking polygon overlap:', error);
-      // On error, allow to proceed to not block users
+      // CRITICAL: Block on error to prevent duplicates from slipping through
       return { 
-        can_proceed: true, 
+        can_proceed: false, 
         has_overlaps: false, 
         max_overlap_percentage: 0, 
         overlapping_properties: [],
-        message: 'Could not check for overlaps' 
+        message: `Overlap check failed: ${error.message || 'Unknown error'}. Please try again.` 
+      };
+    }
+
+    if (!result) {
+      console.error('Empty result from overlap check');
+      return { 
+        can_proceed: false, 
+        has_overlaps: false, 
+        max_overlap_percentage: 0, 
+        overlapping_properties: [],
+        message: 'Overlap check returned no data. Please try again.' 
       };
     }
 
@@ -62,12 +79,13 @@ export async function checkPolygonOverlap(
     return result;
   } catch (error) {
     console.error('Exception in checkPolygonOverlap:', error);
+    // CRITICAL: Block on exception to prevent duplicates
     return { 
-      can_proceed: true, 
+      can_proceed: false, 
       has_overlaps: false, 
       max_overlap_percentage: 0, 
       overlapping_properties: [],
-      message: 'Could not check for overlaps' 
+      message: `Overlap verification failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.` 
     };
   }
 }
