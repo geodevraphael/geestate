@@ -7,8 +7,8 @@ export function MobileSellersFloatingButton() {
   const isMobile = useIsMobile();
   const location = useLocation();
 
-  // Only show on mobile devices and hide on messages page
-  if (!isMobile || location.pathname === '/messages') return null;
+  // Only show on mobile devices and hide on messages and map pages
+  if (!isMobile || location.pathname === '/messages' || location.pathname === '/map') return null;
 
   return (
     <Link 
