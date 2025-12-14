@@ -894,10 +894,10 @@ export default function MapBrowse() {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Default to light gray canvas (CartoDB Positron) - highly detailed OSM
+    // Default to CartoDB Voyager - detailed light gray with POIs and labels
     const streetLayer = new TileLayer({
       source: new XYZ({ 
-        url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+        url: 'https://{a-c}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
         attributions: '© OpenStreetMap contributors, © CARTO',
         maxZoom: 20,
       }),
@@ -975,7 +975,7 @@ export default function MapBrowse() {
     // High-quality tile sources with good zoom support
     const sources: Record<string, { url: string; maxZoom: number; attributions: string }> = {
       street: { 
-        url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+        url: 'https://{a-c}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
         maxZoom: 20,
         attributions: '© OpenStreetMap contributors, © CARTO'
       },
