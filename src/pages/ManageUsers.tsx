@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCog, Search, Shield, Mail, Phone, Calendar, Ban, UserCheck, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Loader2, UserCog, Search, Shield, Mail, Phone, Calendar, Ban, UserCheck, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, KeyRound } from 'lucide-react';
 import { AppRole } from '@/types/database';
 import {
   AlertDialog,
@@ -54,9 +54,12 @@ function ManageUsersContent() {
   const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [unbanDialogOpen, setUnbanDialogOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [banReason, setBanReason] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [banning, setBanning] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -237,6 +240,49 @@ function ManageUsersContent() {
       setBanning(false);
       setUnbanDialogOpen(false);
       setSelectedUser(null);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUser || !newPassword) return;
+    
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 6 characters',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setResettingPassword(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('admin-reset-password', {
+        body: { user_id: selectedUser.id, new_password: newPassword },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+
+      toast({
+        title: 'Password Reset',
+        description: `Password for ${selectedUser.full_name} has been reset successfully.`,
+      });
+
+      setResetPasswordDialogOpen(false);
+      setSelectedUser(null);
+      setNewPassword('');
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reset password. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -457,6 +503,18 @@ function ManageUsersContent() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => {
+                                setSelectedUser(userItem);
+                                setResetPasswordDialogOpen(true);
+                              }}
+                              className="gap-1"
+                              title="Reset Password"
+                            >
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => navigate(`/admin/users/${userItem.id}/roles`)}
                               className="gap-1"
                             >
@@ -619,6 +677,45 @@ function ManageUsersContent() {
             >
               {banning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />}
               Unban User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Password Dialog */}
+      <AlertDialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" />
+              Reset Password
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Set a new password for <strong>{selectedUser?.full_name}</strong> ({selectedUser?.email}).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium">New Password</label>
+            <Input
+              type="password"
+              placeholder="Enter new password (min 6 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              The user will need to use this new password to log in.
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resettingPassword} onClick={() => setNewPassword('')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPassword}
+              disabled={resettingPassword || newPassword.length < 6}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {resettingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
+              Reset Password
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

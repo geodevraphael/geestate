@@ -11,12 +11,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveModal } from '@/components/ResponsiveModal';
+import { maskPhoneNumber } from '@/lib/phoneUtils';
 
 import { useToast } from '@/hooks/use-toast';
 import { 
   Scale, Building2, Hammer, Package, MapPin, Ruler, 
   Pencil, Star, CheckCircle2, Phone, Mail, Globe,
-  ArrowLeft, Send, Clock, Briefcase, Calendar, Home
+  ArrowLeft, Send, Clock, Briefcase, Calendar, Home, Lock
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -387,12 +388,24 @@ export default function ServiceProviderDetail() {
               {/* Contact Actions */}
               <div className="flex flex-wrap gap-3 pt-2">
                 {provider.contact_phone && (
-                  <a href={`tel:${provider.contact_phone}`}>
-                    <Button variant="outline" size="lg" className="gap-2">
-                      <Phone className="h-4 w-4" />
-                      {provider.contact_phone}
+                  user ? (
+                    <a href={`tel:${provider.contact_phone}`}>
+                      <Button variant="outline" size="lg" className="gap-2">
+                        <Phone className="h-4 w-4" />
+                        {provider.contact_phone}
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      className="gap-2"
+                      onClick={() => navigate('/auth?redirect=' + encodeURIComponent(`/service-providers/${id}`))}
+                    >
+                      <Lock className="h-4 w-4" />
+                      {maskPhoneNumber(provider.contact_phone)}
                     </Button>
-                  </a>
+                  )
                 )}
                 <a href={`mailto:${provider.contact_email}`}>
                   <Button variant="outline" size="lg" className="gap-2">
