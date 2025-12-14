@@ -1071,109 +1071,19 @@ export default function MapBrowse() {
               </SheetContent>
             </Sheet>
 
-            {/* Bottom Property Carousel - Shows properties in a swipeable horizontal list */}
-            <div className="fixed bottom-4 left-0 right-0 z-20 pointer-events-none">
-              {sortedListings.length > 0 && !showRadiusControl ? (
-                <div className="pointer-events-auto">
-                  {/* Header bar */}
-                  <div className="mx-4 mb-2 flex items-center justify-between">
-                    <div className="bg-card/95 backdrop-blur-md rounded-full px-3 py-1.5 shadow-lg border flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">{sortedListings.length} Properties</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-full shadow-lg"
-                      onClick={() => setShowPropertyList(true)}
-                    >
-                      View All
-                    </Button>
-                  </div>
-                  
-                  {/* Horizontal scrollable cards */}
-                  <div 
-                    className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide"
-                    style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                  >
-                    {sortedListings.slice(0, 10).map((listing) => (
-                      <div
-                        key={listing.id}
-                        className={cn(
-                          "snap-start shrink-0 w-[280px] bg-card/95 backdrop-blur-md rounded-2xl border-2 shadow-xl overflow-hidden transition-all duration-300 active:scale-[0.98]",
-                          selectedListing?.id === listing.id 
-                            ? "border-primary ring-2 ring-primary/30" 
-                            : "border-border/50"
-                        )}
-                        onClick={() => zoomToListing(listing)}
-                      >
-                        <div className="p-3">
-                          {/* Title and badges */}
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <h3 className="font-semibold text-sm line-clamp-1 flex-1">{listing.title}</h3>
-                            {listing.verification_status === 'verified' && (
-                              <Badge className="shrink-0 bg-emerald-500/90 text-white text-[10px] px-1.5 py-0 gap-0.5">
-                                <CheckCircle2 className="h-3 w-3" />
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          {/* Location */}
-                          <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="line-clamp-1">{listing.location_label}</span>
-                          </div>
-                          
-                          {/* Price and area row */}
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-primary text-sm">
-                              {listing.price 
-                                ? `${listing.currency || 'TZS'} ${(listing.price / 1000000).toFixed(1)}M`
-                                : 'Contact'}
-                            </span>
-                            {listing.polygon?.area_m2 && (
-                              <span className="text-xs text-muted-foreground">
-                                {listing.polygon.area_m2 < 10000 
-                                  ? `${listing.polygon.area_m2.toLocaleString()} m²` 
-                                  : `${(listing.polygon.area_m2 / 10000).toFixed(1)} ha`}
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Distance badge if available */}
-                          {userLocation && listing.polygon?.centroid_lat && (
-                            <div className="mt-2 pt-2 border-t border-border/50">
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                <Navigation2 className="h-2.5 w-2.5 mr-1" />
-                                {(() => {
-                                  const dist = Math.sqrt(
-                                    Math.pow((listing.polygon.centroid_lat - userLocation.lat) * 111000, 2) +
-                                    Math.pow((listing.polygon.centroid_lng! - userLocation.lng) * 111000 * Math.cos(userLocation.lat * Math.PI / 180), 2)
-                                  );
-                                  return dist < 1000 ? `${Math.round(dist)}m away` : `${(dist / 1000).toFixed(1)}km away`;
-                                })()}
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* "See More" card if there are more than 10 */}
-                    {sortedListings.length > 10 && (
-                      <div
-                        key="see-more"
-                        className="snap-start shrink-0 w-[120px] bg-muted/50 backdrop-blur-md rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center p-4 active:scale-[0.98]"
-                        onClick={() => setShowPropertyList(true)}
-                      >
-                        <span className="text-2xl font-bold text-muted-foreground">+{sortedListings.length - 10}</span>
-                        <span className="text-xs text-muted-foreground">more</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            {/* Simple Property Button */}
+            {sortedListings.length > 0 && (
+              <Button
+                onClick={() => setShowPropertyList(true)}
+                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 rounded-full shadow-xl px-6 h-12 gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <MapPin className="h-5 w-5" />
+                <span className="font-semibold">Properties</span>
+                <Badge variant="secondary" className="ml-1 bg-primary-foreground/20 text-primary-foreground">
+                  {sortedListings.length}
+                </Badge>
+              </Button>
+            )}
 
             {/* Full Property List Drawer */}
             <Drawer open={showPropertyList} onOpenChange={setShowPropertyList}>
