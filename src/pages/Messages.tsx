@@ -597,11 +597,11 @@ export default function Messages() {
           </div>
 
           {/* Messages Area */}
-          <div className={`flex-1 flex flex-col bg-background relative ${!selectedConversation ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`flex-1 flex flex-col bg-background overflow-hidden ${!selectedConversation ? 'hidden md:flex' : 'flex'}`}>
             {selectedConversation ? (
-              <div className="flex flex-col h-full">
+              <div className="flex flex-col h-full overflow-hidden">
                 {/* Chat Header - Fixed at top */}
-                <div className="sticky top-0 z-10 border-b border-border/50 px-3 md:px-4 py-2 md:py-3 bg-card/95 backdrop-blur-md shadow-sm">
+                <div className="flex-shrink-0 border-b border-border/50 px-3 md:px-4 py-2 md:py-3 bg-card/95 backdrop-blur-md shadow-sm z-10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Button
@@ -725,7 +725,7 @@ export default function Messages() {
                 </div>
 
                 {/* Message Input - Fixed at bottom */}
-                <div className="sticky bottom-0 z-10 border-t border-border/50 bg-card/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+                <div className="flex-shrink-0 border-t border-border/50 bg-card/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-10">
                   {/* Reply indicator */}
                   {replyingTo && (
                     <div className="px-3 md:px-4 pt-2 flex items-center gap-2 text-xs text-muted-foreground">
