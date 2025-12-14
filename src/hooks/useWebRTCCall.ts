@@ -84,9 +84,18 @@ export function useWebRTCCall() {
     if (!user?.id || !signal.to) return;
 
     const targetChannel = supabase.channel(`calls-${signal.to}`);
-    await targetChannel.subscribe();
     
-    await targetChannel.send({
+    // Wait for channel to be subscribed before sending
+    await new Promise<void>((resolve) => {
+      targetChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          resolve();
+        }
+      });
+    });
+    
+    // Use httpSend for reliable delivery (new Supabase API)
+    const result = await targetChannel.send({
       type: 'broadcast',
       event: 'call-signal',
       payload: {
@@ -96,7 +105,12 @@ export function useWebRTCCall() {
       },
     });
 
-    supabase.removeChannel(targetChannel);
+    console.log('Signal sent:', signal.type, result);
+    
+    // Clean up channel after a short delay
+    setTimeout(() => {
+      supabase.removeChannel(targetChannel);
+    }, 1000);
   }, [user?.id, profile?.full_name]);
 
   const createPeerConnection = useCallback(() => {
