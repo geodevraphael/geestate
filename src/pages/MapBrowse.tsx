@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MapPin, SlidersHorizontal, List, Navigation2, Layers, X, Maximize2, CheckCircle2, ExternalLink, Sparkles, Locate } from 'lucide-react';
+import { MapPin, SlidersHorizontal, List, Navigation2, Layers, X, Maximize2, CheckCircle2, ExternalLink, Sparkles, Locate, Radar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ListingWithDetails, ListingPolygon } from '@/types/database';
@@ -91,6 +91,8 @@ export default function MapBrowse() {
   const [showPropertyList, setShowPropertyList] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [sortBy, setSortBy] = useState('distance');
+  const [searchRadius, setSearchRadius] = useState<number>(1000); // Default 1km in meters
+  const [showRadiusControl, setShowRadiusControl] = useState(false);
   
   // Map refs
   const mapRef = useRef<HTMLDivElement>(null);
@@ -379,8 +381,8 @@ export default function MapBrowse() {
     }
   };
 
-  // Create animated user location marker with 1km buffer
-  const createUserLocationMarker = useCallback((lat: number, lng: number) => {
+  // Create animated user location marker with dynamic buffer
+  const createUserLocationMarker = useCallback((lat: number, lng: number, radiusMeters: number = 1000) => {
     if (!mapInstance.current) return;
 
     // Remove existing user location layer
@@ -397,10 +399,10 @@ export default function MapBrowse() {
 
     const center = fromLonLat([lng, lat]);
     
-    // Create 1km buffer circle (1000 meters)
+    // Create buffer circle with dynamic radius
     // In EPSG:3857, we need to account for projection distortion
     const metersPerUnit = mapInstance.current.getView().getProjection().getMetersPerUnit() || 1;
-    const bufferRadius = 1000 / metersPerUnit;
+    const bufferRadius = radiusMeters / metersPerUnit;
     
     const bufferFeature = new Feature({
       geometry: new CircleGeom(center, bufferRadius),
@@ -493,18 +495,19 @@ export default function MapBrowse() {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setUserLocation({ lat: latitude, lng: longitude });
+        setShowRadiusControl(true); // Show radius control when location is found
         
-        // Create animated marker with 1km buffer
-        createUserLocationMarker(latitude, longitude);
+        // Create animated marker with current search radius
+        createUserLocationMarker(latitude, longitude, searchRadius);
         
         if (mapInstance.current) {
           const targetCenter = fromLonLat([longitude, latitude]);
           const currentZoom = mapInstance.current.getView().getZoom() || 6;
           
-          // Smooth fly-to animation - zoom to show 1km buffer
+          // Smooth fly-to animation
           mapInstance.current.getView().animate(
             { zoom: Math.min(currentZoom, 8), duration: 300 },
-            { center: targetCenter, zoom: 19, duration: 1000, easing: (t) => 1 - Math.pow(1 - t, 3) } // Close building-level zoom
+            { center: targetCenter, zoom: 19, duration: 1000, easing: (t) => 1 - Math.pow(1 - t, 3) }
           );
         }
       },
@@ -513,7 +516,15 @@ export default function MapBrowse() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [createUserLocationMarker]);
+  }, [createUserLocationMarker, searchRadius]);
+
+  // Update marker when search radius changes
+  const updateSearchRadius = useCallback((newRadius: number) => {
+    setSearchRadius(newRadius);
+    if (userLocation) {
+      createUserLocationMarker(userLocation.lat, userLocation.lng, newRadius);
+    }
+  }, [userLocation, createUserLocationMarker]);
 
   // Point in polygon check
   const isPointInPolygon = (point: [number, number], polygon: [number, number][]) => {
@@ -1050,6 +1061,51 @@ export default function MapBrowse() {
                 </div>
               </PopoverContent>
             </Popover>
+
+            {/* Search Radius Control - Mobile */}
+            {showRadiusControl && userLocation && (
+              <div className="fixed bottom-24 left-4 right-4 z-20 animate-fade-in">
+                <div className="bg-card/95 backdrop-blur-md border-2 border-primary/30 rounded-2xl shadow-2xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Radar className="h-5 w-5 text-primary animate-pulse" />
+                    <span className="font-semibold text-sm">Search Radius</span>
+                    <Badge variant="secondary" className="ml-auto">
+                      {searchRadius >= 1000 ? `${searchRadius / 1000} km` : `${searchRadius} m`}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => setShowRadiusControl(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { value: 500, label: '500m' },
+                      { value: 1000, label: '1 km' },
+                      { value: 2000, label: '2 km' },
+                      { value: 5000, label: '5 km' },
+                      { value: 10000, label: '10 km' },
+                    ].map(opt => (
+                      <Button
+                        key={opt.value}
+                        size="sm"
+                        variant={searchRadius === opt.value ? 'default' : 'outline'}
+                        onClick={() => updateSearchRadius(opt.value)}
+                        className={cn(
+                          "flex-1 min-w-[60px]",
+                          searchRadius === opt.value && "bg-primary text-primary-foreground"
+                        )}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -1106,6 +1162,49 @@ export default function MapBrowse() {
                   </div>
                 </PopoverContent>
               </Popover>
+
+              {/* Search Radius Control - Desktop */}
+              {showRadiusControl && userLocation && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      size="icon" 
+                      variant="secondary" 
+                      className="rounded-xl shadow-xl h-10 w-10 bg-blue-500 text-white hover:bg-blue-600 animate-pulse"
+                      title="Search Radius"
+                    >
+                      <Radar className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="left" className="w-52 p-3" align="start">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Radar className="h-4 w-4 text-primary" />
+                        <span className="font-semibold text-sm">Search Radius</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: 500, label: '500m' },
+                          { value: 1000, label: '1 km' },
+                          { value: 2000, label: '2 km' },
+                          { value: 5000, label: '5 km' },
+                          { value: 10000, label: '10 km' },
+                        ].map(opt => (
+                          <Button
+                            key={opt.value}
+                            size="sm"
+                            variant={searchRadius === opt.value ? 'default' : 'outline'}
+                            onClick={() => updateSearchRadius(opt.value)}
+                            className="w-full"
+                          >
+                            {opt.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           )}
 
