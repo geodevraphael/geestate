@@ -35,7 +35,7 @@ interface ListingPolygon {
 }
 
 export default function AdminOverlapReview() {
-  const { user, profile } = useAuth();
+  const { user, roles } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -49,13 +49,16 @@ export default function AdminOverlapReview() {
       navigate('/auth');
       return;
     }
-    if (profile?.role && !allowedRoles.includes(profile.role)) {
+
+    // Enforce role-based access using roles from user_roles
+    if (roles && roles.length > 0 && !roles.some((r) => allowedRoles.includes(r))) {
       navigate('/dashboard');
       toast.error('You do not have permission to access this page');
       return;
     }
+
     setLoading(false);
-  }, [user, profile, navigate]);
+  }, [user, roles, navigate]);
 
   const analyzeOverlaps = async () => {
     setAnalyzing(true);
