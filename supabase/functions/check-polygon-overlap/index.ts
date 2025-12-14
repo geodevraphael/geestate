@@ -96,6 +96,26 @@ Deno.serve(async (req) => {
 
         const existingPolygon = turf.polygon(existing.geojson.coordinates);
         
+        // Check for EXACT duplicate first (100% match)
+        try {
+          const isExactDuplicate = turf.booleanEqual(newPolygon, existingPolygon);
+          if (isExactDuplicate) {
+            console.log(`EXACT DUPLICATE detected with listing ${existing.listing_id}!`);
+            const listingData = existing.listings as any;
+            overlaps.push({
+              listing_id: existing.listing_id,
+              listing_title: listingData?.title || 'Unknown Property',
+              overlap_percentage: 100,
+              overlap_area_m2: Math.round(newArea),
+            });
+            hasBlockingOverlap = true;
+            maxOverlap = 100;
+            continue; // Skip to next polygon
+          }
+        } catch (e) {
+          console.log('booleanEqual check failed, continuing with overlap check');
+        }
+        
         // Quick bounding box check first
         const newBbox = turf.bbox(newPolygon);
         const existingBbox = turf.bbox(existingPolygon);
@@ -111,7 +131,11 @@ Deno.serve(async (req) => {
         
         if (intersection) {
           const intersectionArea = turf.area(intersection);
-          const overlapPercentage = (intersectionArea / newArea) * 100;
+          const existingArea = turf.area(existingPolygon);
+          
+          // Calculate overlap as percentage of SMALLER polygon (catches duplicates better)
+          const smallerArea = Math.min(newArea, existingArea);
+          const overlapPercentage = (intersectionArea / smallerArea) * 100;
 
           console.log(`Overlap with ${existing.listing_id}: ${overlapPercentage.toFixed(2)}% (${intersectionArea.toFixed(2)} m²)`);
 
@@ -131,6 +155,7 @@ Deno.serve(async (req) => {
             // Block if overlap > 20%
             if (overlapPercentage > 20) {
               hasBlockingOverlap = true;
+              console.log(`BLOCKING overlap detected: ${overlapPercentage.toFixed(2)}% > 20%`);
             }
           }
         }
