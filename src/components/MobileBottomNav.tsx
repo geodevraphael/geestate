@@ -65,8 +65,8 @@ export function MobileBottomNav() {
 
   return (
     <>
-      {/* Floating Action Button for Create - positioned safely above bottom nav */}
-      {canCreateListing && (
+      {/* Floating Action Button for Create - positioned safely above bottom nav, hidden on messages */}
+      {canCreateListing && location.pathname !== '/messages' && (
         <Link
           to="/listings/new"
           className="md:hidden fixed right-4 bottom-40 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-primary via-primary to-accent shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] active:scale-95 transition-all duration-300 group"
