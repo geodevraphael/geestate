@@ -504,7 +504,7 @@ export default function MapBrowse() {
           // Smooth fly-to animation - zoom to show 1km buffer
           mapInstance.current.getView().animate(
             { zoom: Math.min(currentZoom, 8), duration: 300 },
-            { center: targetCenter, zoom: 15, duration: 1000, easing: (t) => 1 - Math.pow(1 - t, 3) }
+            { center: targetCenter, zoom: 18, duration: 1000, easing: (t) => 1 - Math.pow(1 - t, 3) } // Building-level zoom
           );
         }
       },
