@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   AlertTriangle, 
   RefreshCw, 
@@ -33,25 +35,46 @@ import {
   BarChart3,
   AlertCircle,
   FileText,
-  Settings
+  Settings,
+  User,
+  Mail,
+  Phone,
+  Map as MapIcon,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as turf from '@turf/turf';
+import { format } from 'date-fns';
+
+interface OwnerInfo {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  profile_photo_url: string | null;
+}
 
 interface OverlapPair {
   id: string;
   listing1_id: string;
   listing1_title: string;
   listing1_status: string;
-  listing1_owner_id: string;
+  listing1_owner: OwnerInfo;
   listing1_region: string | null;
+  listing1_district: string | null;
+  listing1_geojson: any;
+  listing1_created_at: string;
   listing2_id: string;
   listing2_title: string;
   listing2_status: string;
-  listing2_owner_id: string;
+  listing2_owner: OwnerInfo;
   listing2_region: string | null;
+  listing2_district: string | null;
+  listing2_geojson: any;
+  listing2_created_at: string;
   overlap_percentage: number;
   overlap_area_m2: number;
+  intersection_geojson: any;
   is_same_owner: boolean;
   created_at: Date;
 }
@@ -68,6 +91,7 @@ interface ListingPolygon {
     region: string | null;
     district: string | null;
     created_at: string;
+    profiles: OwnerInfo;
   };
 }
 
@@ -80,9 +104,22 @@ interface OverlapStats {
   differentOwner: number;
 }
 
+interface AuditLogEntry {
+  id: string;
+  action_type: string;
+  actor_id: string;
+  action_details: any;
+  created_at: string;
+  profiles?: {
+    full_name: string;
+    email: string;
+  };
+}
+
 export default function AdminOverlapReview() {
   const { user, roles } = useAuth();
   const navigate = useNavigate();
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [overlaps, setOverlaps] = useState<OverlapPair[]>([]);
@@ -92,13 +129,20 @@ export default function AdminOverlapReview() {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
-  const [actionDialog, setActionDialog] = useState<{open: boolean; type: 'archive' | 'delete' | null; listingId: string | null}>({
+  const [actionDialog, setActionDialog] = useState<{open: boolean; type: 'archive' | 'delete' | null; listingId: string | null; listingTitle: string | null}>({
     open: false,
     type: null,
-    listingId: null
+    listingId: null,
+    listingTitle: null
   });
   const [actionNotes, setActionNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [mapDialog, setMapDialog] = useState<{open: boolean; overlap: OverlapPair | null}>({
+    open: false,
+    overlap: null
+  });
 
   const allowedRoles = ['admin', 'verification_officer', 'spatial_analyst'];
 
@@ -113,24 +157,25 @@ export default function AdminOverlapReview() {
       return;
     }
     setLoading(false);
+    fetchAuditLogs();
   }, [user, roles, navigate]);
 
   // Filter overlaps when search/filters change
   useEffect(() => {
     let filtered = [...overlaps];
     
-    // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(o => 
         o.listing1_title.toLowerCase().includes(term) ||
         o.listing2_title.toLowerCase().includes(term) ||
-        o.listing1_id.toLowerCase().includes(term) ||
-        o.listing2_id.toLowerCase().includes(term)
+        o.listing1_owner.full_name.toLowerCase().includes(term) ||
+        o.listing2_owner.full_name.toLowerCase().includes(term) ||
+        o.listing1_region?.toLowerCase().includes(term) ||
+        o.listing2_region?.toLowerCase().includes(term)
       );
     }
     
-    // Severity filter
     if (severityFilter !== 'all') {
       filtered = filtered.filter(o => {
         if (severityFilter === 'critical') return o.overlap_percentage >= 50;
@@ -140,7 +185,6 @@ export default function AdminOverlapReview() {
       });
     }
     
-    // Owner filter
     if (ownerFilter !== 'all') {
       filtered = filtered.filter(o => {
         if (ownerFilter === 'same') return o.is_same_owner;
@@ -151,6 +195,35 @@ export default function AdminOverlapReview() {
     
     setFilteredOverlaps(filtered);
   }, [overlaps, searchTerm, severityFilter, ownerFilter]);
+
+  const fetchAuditLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select(`
+          id,
+          action_type,
+          actor_id,
+          action_details,
+          created_at,
+          profiles:actor_id (
+            full_name,
+            email
+          )
+        `)
+        .in('action_type', ['AUTO_DELETE_OVERLAP', 'ARCHIVE_DUPLICATE_LISTING', 'DELETE_DUPLICATE_LISTING'])
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setAuditLogs((data || []) as unknown as AuditLogEntry[]);
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
 
   const getStats = (): OverlapStats => {
     return {
@@ -179,7 +252,14 @@ export default function AdminOverlapReview() {
             owner_id,
             region,
             district,
-            created_at
+            created_at,
+            profiles:owner_id (
+              id,
+              full_name,
+              email,
+              phone,
+              profile_photo_url
+            )
           )
         `)
         .not('listings.status', 'in', '("draft","archived")');
@@ -240,15 +320,22 @@ export default function AdminOverlapReview() {
                   listing1_id: poly1.listing_id,
                   listing1_title: poly1.listings.title,
                   listing1_status: poly1.listings.status,
-                  listing1_owner_id: poly1.listings.owner_id,
+                  listing1_owner: poly1.listings.profiles,
                   listing1_region: poly1.listings.region,
+                  listing1_district: poly1.listings.district,
+                  listing1_geojson: poly1.geojson,
+                  listing1_created_at: poly1.listings.created_at,
                   listing2_id: poly2.listing_id,
                   listing2_title: poly2.listings.title,
                   listing2_status: poly2.listings.status,
-                  listing2_owner_id: poly2.listings.owner_id,
+                  listing2_owner: poly2.listings.profiles,
                   listing2_region: poly2.listings.region,
+                  listing2_district: poly2.listings.district,
+                  listing2_geojson: poly2.geojson,
+                  listing2_created_at: poly2.listings.created_at,
                   overlap_percentage: Math.round(overlapPercentage * 10) / 10,
                   overlap_area_m2: Math.round(intersectionArea),
+                  intersection_geojson: intersection.geometry,
                   is_same_owner: poly1.listings.owner_id === poly2.listings.owner_id,
                   created_at: new Date(),
                 });
@@ -272,7 +359,7 @@ export default function AdminOverlapReview() {
     }
   };
 
-  const handleArchiveListing = async (listingId: string) => {
+  const handleArchiveListing = async (listingId: string, listingTitle: string) => {
     setProcessing(true);
     try {
       const { error } = await supabase
@@ -282,22 +369,24 @@ export default function AdminOverlapReview() {
 
       if (error) throw error;
 
-      // Log audit
       await supabase.from('audit_logs').insert({
         action_type: 'ARCHIVE_DUPLICATE_LISTING',
         actor_id: user?.id,
         listing_id: listingId,
-        action_details: { reason: actionNotes || 'Duplicate polygon detected' }
+        action_details: { 
+          listing_title: listingTitle,
+          reason: actionNotes || 'Duplicate polygon detected' 
+        }
       });
 
-      toast.success('Listing archived successfully');
-      setActionDialog({ open: false, type: null, listingId: null });
+      toast.success(`"${listingTitle}" archived successfully`);
+      setActionDialog({ open: false, type: null, listingId: null, listingTitle: null });
       setActionNotes('');
       
-      // Remove from overlaps list
       setOverlaps(prev => prev.filter(o => 
         o.listing1_id !== listingId && o.listing2_id !== listingId
       ));
+      fetchAuditLogs();
     } catch (error) {
       console.error('Error archiving listing:', error);
       toast.error('Failed to archive listing');
@@ -306,10 +395,9 @@ export default function AdminOverlapReview() {
     }
   };
 
-  const handleDeleteListing = async (listingId: string) => {
+  const handleDeleteListing = async (listingId: string, listingTitle: string) => {
     setProcessing(true);
     try {
-      // Delete related data first
       await supabase.from('listing_polygons').delete().eq('listing_id', listingId);
       await supabase.from('listing_media').delete().eq('listing_id', listingId);
       
@@ -320,24 +408,24 @@ export default function AdminOverlapReview() {
 
       if (error) throw error;
 
-      // Log audit
       await supabase.from('audit_logs').insert({
         action_type: 'DELETE_DUPLICATE_LISTING',
         actor_id: user?.id,
         action_details: { 
           deleted_listing_id: listingId,
+          deleted_listing_title: listingTitle,
           reason: actionNotes || 'Duplicate polygon detected' 
         }
       });
 
-      toast.success('Listing deleted successfully');
-      setActionDialog({ open: false, type: null, listingId: null });
+      toast.success(`"${listingTitle}" deleted permanently`);
+      setActionDialog({ open: false, type: null, listingId: null, listingTitle: null });
       setActionNotes('');
       
-      // Remove from overlaps list
       setOverlaps(prev => prev.filter(o => 
         o.listing1_id !== listingId && o.listing2_id !== listingId
       ));
+      fetchAuditLogs();
     } catch (error) {
       console.error('Error deleting listing:', error);
       toast.error('Failed to delete listing');
@@ -347,19 +435,23 @@ export default function AdminOverlapReview() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Severity', 'Property 1', 'Property 1 ID', 'Property 2', 'Property 2 ID', 'Overlap %', 'Overlap Area (m²)', 'Same Owner'];
+    const headers = ['Severity', 'Property 1', 'Owner 1', 'Email 1', 'Region 1', 'Property 2', 'Owner 2', 'Email 2', 'Region 2', 'Overlap %', 'Overlap Area (m²)', 'Same Owner'];
     const rows = filteredOverlaps.map(o => [
       o.overlap_percentage >= 50 ? 'Critical' : o.overlap_percentage >= 20 ? 'High' : 'Low',
       o.listing1_title,
-      o.listing1_id,
+      o.listing1_owner.full_name,
+      o.listing1_owner.email,
+      o.listing1_region || '',
       o.listing2_title,
-      o.listing2_id,
+      o.listing2_owner.full_name,
+      o.listing2_owner.email,
+      o.listing2_region || '',
       o.overlap_percentage,
       o.overlap_area_m2,
       o.is_same_owner ? 'Yes' : 'No'
     ]);
     
-    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -394,6 +486,44 @@ export default function AdminOverlapReview() {
     return `${area.toLocaleString()} m²`;
   };
 
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const renderOwnerInfo = (owner: OwnerInfo, region?: string | null, district?: string | null) => (
+    <div className="flex items-start gap-3">
+      <Avatar className="h-10 w-10 border">
+        <AvatarImage src={owner.profile_photo_url || undefined} />
+        <AvatarFallback className="bg-primary/10 text-primary text-xs">
+          {getInitials(owner.full_name)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <p className="font-medium text-sm truncate">{owner.full_name}</p>
+        <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+          <Mail className="h-3 w-3" />
+          {owner.email}
+        </p>
+        {owner.phone && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Phone className="h-3 w-3" />
+            {owner.phone}
+          </p>
+        )}
+        {(region || district) && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {[district, region].filter(Boolean).join(', ')}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  const openMapVisualization = (overlap: OverlapPair) => {
+    setMapDialog({ open: true, overlap });
+  };
+
   const stats = getStats();
 
   if (loading) {
@@ -421,7 +551,7 @@ export default function AdminOverlapReview() {
               Polygon Overlap Detection
             </h1>
             <p className="text-muted-foreground mt-1">
-              Detect, review, and resolve property boundary conflicts
+              Auto-detects overlaps, blocks &gt;20%, notifies users, and deletes duplicates
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -487,16 +617,15 @@ export default function AdminOverlapReview() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Same Owner</p>
-                  <p className="text-2xl font-bold">{stats.sameOwner}</p>
+                  <p className="text-sm text-muted-foreground">Different Owners</p>
+                  <p className="text-2xl font-bold">{stats.differentOwner}</p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-muted-foreground opacity-80" />
+                <User className="h-8 w-8 text-muted-foreground opacity-80" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Last Analyzed Alert */}
         {lastAnalyzed && (
           <Alert variant={stats.critical > 0 ? 'destructive' : 'default'}>
             <Clock className="h-4 w-4" />
@@ -519,13 +648,13 @@ export default function AdminOverlapReview() {
               <Layers className="h-4 w-4" />
               Overlaps ({filteredOverlaps.length})
             </TabsTrigger>
+            <TabsTrigger value="logs" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Action Logs ({auditLogs.length})
+            </TabsTrigger>
             <TabsTrigger value="policy" className="gap-2">
               <Settings className="h-4 w-4" />
               Policy Settings
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Action Logs
             </TabsTrigger>
           </TabsList>
 
@@ -538,7 +667,7 @@ export default function AdminOverlapReview() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="Search by property name or ID..."
+                        placeholder="Search by property name, owner, or region..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-9"
@@ -571,14 +700,14 @@ export default function AdminOverlapReview() {
               </CardContent>
             </Card>
 
-            {/* Overlaps Table */}
+            {/* Overlaps List */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Overlapping Property Pairs</CardTitle>
                     <CardDescription>
-                      Properties with ≥10% overlap. Items ≥20% would be blocked from creation.
+                      Properties with ≥10% overlap. Items ≥20% are auto-blocked and deleted on upload.
                     </CardDescription>
                   </div>
                   {selectedOverlaps.size > 0 && (
@@ -604,88 +733,87 @@ export default function AdminOverlapReview() {
                     )}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[40px]">
-                            <Checkbox 
-                              checked={selectedOverlaps.size === filteredOverlaps.length}
-                              onCheckedChange={toggleSelectAll}
-                            />
-                          </TableHead>
-                          <TableHead>Severity</TableHead>
-                          <TableHead>Property 1</TableHead>
-                          <TableHead>Property 2</TableHead>
-                          <TableHead>Overlap</TableHead>
-                          <TableHead>Owner</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredOverlaps.map((overlap) => (
-                          <TableRow 
-                            key={overlap.id}
-                            className={overlap.overlap_percentage >= 20 ? 'bg-destructive/5' : ''}
-                          >
-                            <TableCell>
-                              <Checkbox 
-                                checked={selectedOverlaps.has(overlap.id)}
-                                onCheckedChange={(checked) => {
-                                  const newSet = new Set(selectedOverlaps);
-                                  if (checked) newSet.add(overlap.id);
-                                  else newSet.delete(overlap.id);
-                                  setSelectedOverlaps(newSet);
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>{getSeverityBadge(overlap.overlap_percentage)}</TableCell>
-                            <TableCell>
-                              <div className="max-w-[200px]">
-                                <p className="font-medium truncate">{overlap.listing1_title}</p>
-                                <p className="text-xs text-muted-foreground truncate">{overlap.listing1_id}</p>
-                                {overlap.listing1_region && (
-                                  <p className="text-xs text-muted-foreground">{overlap.listing1_region}</p>
-                                )}
+                  <ScrollArea className="h-[600px]">
+                    <div className="space-y-4">
+                      {filteredOverlaps.map((overlap) => (
+                        <Card 
+                          key={overlap.id} 
+                          className={`border-l-4 ${
+                            overlap.overlap_percentage >= 50 
+                              ? 'border-l-destructive bg-destructive/5' 
+                              : overlap.overlap_percentage >= 20 
+                                ? 'border-l-orange-500 bg-orange-500/5' 
+                                : 'border-l-muted'
+                          }`}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex flex-col lg:flex-row gap-4">
+                              {/* Property 1 */}
+                              <div className="flex-1 space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">Property 1</Badge>
+                                  <Badge variant="secondary" className="text-xs">{overlap.listing1_status}</Badge>
+                                </div>
+                                <h4 className="font-semibold">{overlap.listing1_title}</h4>
+                                {renderOwnerInfo(overlap.listing1_owner, overlap.listing1_region, overlap.listing1_district)}
+                                <p className="text-xs text-muted-foreground">
+                                  Created: {format(new Date(overlap.listing1_created_at), 'MMM d, yyyy')}
+                                </p>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="max-w-[200px]">
-                                <p className="font-medium truncate">{overlap.listing2_title}</p>
-                                <p className="text-xs text-muted-foreground truncate">{overlap.listing2_id}</p>
-                                {overlap.listing2_region && (
-                                  <p className="text-xs text-muted-foreground">{overlap.listing2_region}</p>
-                                )}
+
+                              {/* Overlap Info */}
+                              <div className="flex flex-col items-center justify-center px-4 py-2 bg-muted/50 rounded-lg min-w-[160px]">
+                                <div className="text-center mb-2">
+                                  {getSeverityBadge(overlap.overlap_percentage)}
+                                </div>
+                                <p className="text-lg font-bold">{formatArea(overlap.overlap_area_m2)}</p>
+                                <p className="text-xs text-muted-foreground">overlap area</p>
+                                <Badge variant={overlap.is_same_owner ? 'secondary' : 'outline'} className="mt-2">
+                                  {overlap.is_same_owner ? 'Same Owner' : 'Different Owners'}
+                                </Badge>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{formatArea(overlap.overlap_area_m2)}</p>
-                                <p className="text-xs text-muted-foreground">{overlap.overlap_percentage}% overlap</p>
+
+                              {/* Property 2 */}
+                              <div className="flex-1 space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">Property 2</Badge>
+                                  <Badge variant="secondary" className="text-xs">{overlap.listing2_status}</Badge>
+                                </div>
+                                <h4 className="font-semibold">{overlap.listing2_title}</h4>
+                                {renderOwnerInfo(overlap.listing2_owner, overlap.listing2_region, overlap.listing2_district)}
+                                <p className="text-xs text-muted-foreground">
+                                  Created: {format(new Date(overlap.listing2_created_at), 'MMM d, yyyy')}
+                                </p>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={overlap.is_same_owner ? 'secondary' : 'outline'}>
-                                {overlap.is_same_owner ? 'Same' : 'Different'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-end gap-1">
+
+                              {/* Actions */}
+                              <div className="flex flex-col gap-2 min-w-[120px]">
                                 <Button
                                   size="sm"
-                                  variant="ghost"
-                                  onClick={() => window.open(`/listings/${overlap.listing1_id}`, '_blank')}
-                                  title="View Property 1"
+                                  variant="outline"
+                                  onClick={() => openMapVisualization(overlap)}
+                                  className="gap-2 w-full"
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <MapIcon className="h-4 w-4" />
+                                  View Map
                                 </Button>
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="outline"
+                                  onClick={() => window.open(`/listings/${overlap.listing1_id}`, '_blank')}
+                                  className="gap-2 w-full"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  View #1
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   onClick={() => window.open(`/listings/${overlap.listing2_id}`, '_blank')}
-                                  title="View Property 2"
+                                  className="gap-2 w-full"
                                 >
                                   <ExternalLink className="h-4 w-4" />
+                                  View #2
                                 </Button>
                                 <Button
                                   size="sm"
@@ -693,12 +821,13 @@ export default function AdminOverlapReview() {
                                   onClick={() => setActionDialog({ 
                                     open: true, 
                                     type: 'archive', 
-                                    listingId: overlap.listing2_id 
+                                    listingId: overlap.listing2_id,
+                                    listingTitle: overlap.listing2_title
                                   })}
-                                  title="Archive newer listing"
-                                  className="text-orange-500 hover:text-orange-600"
+                                  className="gap-2 w-full text-orange-600 hover:text-orange-700"
                                 >
                                   <Archive className="h-4 w-4" />
+                                  Archive
                                 </Button>
                                 <Button
                                   size="sm"
@@ -706,20 +835,101 @@ export default function AdminOverlapReview() {
                                   onClick={() => setActionDialog({ 
                                     open: true, 
                                     type: 'delete', 
-                                    listingId: overlap.listing2_id 
+                                    listingId: overlap.listing2_id,
+                                    listingTitle: overlap.listing2_title
                                   })}
-                                  title="Delete duplicate"
-                                  className="text-destructive hover:text-destructive"
+                                  className="gap-2 w-full text-destructive hover:text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4" />
+                                  Delete
                                 </Button>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Overlap Resolution History</CardTitle>
+                <CardDescription>
+                  Recent actions taken on overlapping properties (auto-deletions, manual archives, deletions)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingLogs ? (
+                  <div className="space-y-4">
+                    {[1,2,3].map(i => <Skeleton key={i} className="h-20" />)}
                   </div>
+                ) : auditLogs.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium">No actions recorded yet</p>
+                    <p className="text-sm mt-1">Action logs will appear here after overlap resolutions</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[500px]">
+                    <div className="space-y-4">
+                      {auditLogs.map((log) => (
+                        <Card key={log.id} className={`border-l-4 ${
+                          log.action_type === 'AUTO_DELETE_OVERLAP' 
+                            ? 'border-l-destructive' 
+                            : log.action_type === 'DELETE_DUPLICATE_LISTING'
+                              ? 'border-l-orange-500'
+                              : 'border-l-muted'
+                        }`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={
+                                    log.action_type === 'AUTO_DELETE_OVERLAP' ? 'destructive' : 
+                                    log.action_type === 'DELETE_DUPLICATE_LISTING' ? 'default' : 'secondary'
+                                  }>
+                                    {log.action_type === 'AUTO_DELETE_OVERLAP' ? 'Auto-Deleted' : 
+                                     log.action_type === 'DELETE_DUPLICATE_LISTING' ? 'Manually Deleted' : 'Archived'}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
+                                  </span>
+                                </div>
+                                
+                                <p className="font-medium">
+                                  {log.action_details?.deleted_listing_title || log.action_details?.listing_title || 'Unknown Listing'}
+                                </p>
+                                
+                                {log.action_details?.overlap_percentage && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {log.action_details.overlap_percentage.toFixed(1)}% overlap with "{log.action_details.overlapping_listing_title}"
+                                  </p>
+                                )}
+                                
+                                {log.action_details?.reason && (
+                                  <p className="text-sm text-muted-foreground italic">
+                                    Reason: {log.action_details.reason}
+                                  </p>
+                                )}
+                                
+                                {log.profiles && (
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <User className="h-3 w-3" />
+                                    By: {log.profiles.full_name}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
               </CardContent>
             </Card>
@@ -728,9 +938,9 @@ export default function AdminOverlapReview() {
           <TabsContent value="policy" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Overlap Detection Policy</CardTitle>
+                <CardTitle>Automatic Overlap Detection Policy</CardTitle>
                 <CardDescription>
-                  Configure how polygon overlaps are detected and handled
+                  How the system handles polygon overlaps during listing creation
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -741,7 +951,7 @@ export default function AdminOverlapReview() {
                       <h4 className="font-medium text-green-700 dark:text-green-400">Allowed (&lt;20%)</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Minor overlaps are allowed for adjacent properties with shared boundaries. These are considered normal for neighboring plots.
+                      Minor overlaps allowed for adjacent properties. Users see a warning but can proceed.
                     </p>
                   </div>
                   <div className="p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
@@ -750,18 +960,44 @@ export default function AdminOverlapReview() {
                       <h4 className="font-medium text-orange-700 dark:text-orange-400">Warning (10-20%)</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Users are warned about the overlap but can proceed. These are flagged for admin review after submission.
+                      Users warned about overlap. Flagged for admin review after submission.
                     </p>
                   </div>
                   <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
                     <div className="flex items-center gap-2 mb-2">
                       <XCircle className="h-5 w-5 text-red-600" />
-                      <h4 className="font-medium text-red-700 dark:text-red-400">Blocked (≥20%)</h4>
+                      <h4 className="font-medium text-red-700 dark:text-red-400">Blocked & Deleted (≥20%)</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Listing creation is blocked. The user must adjust boundaries or contact admin to resolve the conflict.
+                      Listing automatically rejected and permanently deleted. User notified via email.
                     </p>
                   </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <h4 className="font-medium mb-4">Automatic Actions for &gt;20% Overlap</h4>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">1.</span>
+                      New listing is <strong>permanently deleted</strong> from the database
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">2.</span>
+                      Uploader receives an <strong>email notification</strong> explaining the rejection
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">3.</span>
+                      Uploader receives an <strong>in-app notification</strong> with details
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">4.</span>
+                      <strong>All admins are notified</strong> via in-app notification
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-destructive">5.</span>
+                      An <strong>audit log entry</strong> is created for compliance tracking
+                    </li>
+                  </ul>
                 </div>
 
                 <div className="border-t pt-6">
@@ -769,38 +1005,18 @@ export default function AdminOverlapReview() {
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      Overlap percentage is calculated as: (Intersection Area / Smaller Polygon Area) × 100
+                      Overlap = (Intersection Area / Smaller Polygon Area) × 100
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      Using the smaller polygon ensures duplicates are always detected at near 100%
+                      Using smaller polygon ensures duplicates are detected at ~100%
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      Exact duplicate detection uses geometric equality check before overlap calculation
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary">•</span>
-                      Bounding box pre-filtering optimizes performance for large datasets
+                      Exact duplicate detection uses geometric equality before overlap calc
                     </li>
                   </ul>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Actions</CardTitle>
-                <CardDescription>
-                  History of overlap resolution actions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-12 text-muted-foreground">
-                  Action logs will appear here after you archive or delete duplicate listings
-                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -815,8 +1031,8 @@ export default function AdminOverlapReview() {
               </DialogTitle>
               <DialogDescription>
                 {actionDialog.type === 'archive' 
-                  ? 'This will archive the listing and remove it from public view. It can be restored later.'
-                  : 'This will permanently delete the listing and all associated data. This action cannot be undone.'}
+                  ? `This will archive "${actionDialog.listingTitle}" and remove it from public view. It can be restored later.`
+                  : `This will permanently delete "${actionDialog.listingTitle}" and all associated data. This action cannot be undone.`}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -833,18 +1049,18 @@ export default function AdminOverlapReview() {
             <DialogFooter>
               <Button 
                 variant="outline" 
-                onClick={() => setActionDialog({ open: false, type: null, listingId: null })}
+                onClick={() => setActionDialog({ open: false, type: null, listingId: null, listingTitle: null })}
               >
                 Cancel
               </Button>
               <Button
                 variant={actionDialog.type === 'delete' ? 'destructive' : 'default'}
                 onClick={() => {
-                  if (actionDialog.listingId) {
+                  if (actionDialog.listingId && actionDialog.listingTitle) {
                     if (actionDialog.type === 'archive') {
-                      handleArchiveListing(actionDialog.listingId);
+                      handleArchiveListing(actionDialog.listingId, actionDialog.listingTitle);
                     } else {
-                      handleDeleteListing(actionDialog.listingId);
+                      handleDeleteListing(actionDialog.listingId, actionDialog.listingTitle);
                     }
                   }
                 }}
@@ -855,7 +1071,158 @@ export default function AdminOverlapReview() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Map Visualization Dialog */}
+        <Dialog open={mapDialog.open} onOpenChange={(open) => setMapDialog({ ...mapDialog, open })}>
+          <DialogContent className="max-w-4xl h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MapIcon className="h-5 w-5" />
+                Overlap Visualization
+              </DialogTitle>
+              <DialogDescription>
+                {mapDialog.overlap && (
+                  <>
+                    {mapDialog.overlap.listing1_title} overlaps with {mapDialog.overlap.listing2_title} by {mapDialog.overlap.overlap_percentage}%
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 min-h-[400px] relative">
+              {mapDialog.overlap && (
+                <MapVisualization 
+                  polygon1={mapDialog.overlap.listing1_geojson}
+                  polygon2={mapDialog.overlap.listing2_geojson}
+                  intersection={mapDialog.overlap.intersection_geojson}
+                  title1={mapDialog.overlap.listing1_title}
+                  title2={mapDialog.overlap.listing2_title}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
+  );
+}
+
+// Simple SVG Map Visualization Component
+function MapVisualization({ 
+  polygon1, 
+  polygon2, 
+  intersection,
+  title1,
+  title2
+}: { 
+  polygon1: any; 
+  polygon2: any; 
+  intersection: any;
+  title1: string;
+  title2: string;
+}) {
+  if (!polygon1?.coordinates || !polygon2?.coordinates) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <p>Unable to render map visualization</p>
+      </div>
+    );
+  }
+
+  // Calculate bounds
+  const allCoords = [
+    ...polygon1.coordinates[0],
+    ...polygon2.coordinates[0]
+  ];
+  
+  const minLng = Math.min(...allCoords.map((c: number[]) => c[0]));
+  const maxLng = Math.max(...allCoords.map((c: number[]) => c[0]));
+  const minLat = Math.min(...allCoords.map((c: number[]) => c[1]));
+  const maxLat = Math.max(...allCoords.map((c: number[]) => c[1]));
+
+  const padding = 0.1;
+  const width = 100;
+  const height = 100;
+  const lngRange = (maxLng - minLng) * (1 + padding * 2);
+  const latRange = (maxLat - minLat) * (1 + padding * 2);
+  const scale = Math.min(width / lngRange, height / latRange);
+
+  const toSvgCoord = (coord: number[]) => {
+    const x = ((coord[0] - minLng) / lngRange + padding / (1 + padding * 2)) * width;
+    const y = height - ((coord[1] - minLat) / latRange + padding / (1 + padding * 2)) * height;
+    return [x, y];
+  };
+
+  const coordsToPath = (coords: number[][]) => {
+    return coords.map((c, i) => {
+      const [x, y] = toSvgCoord(c);
+      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+    }).join(' ') + ' Z';
+  };
+
+  const path1 = coordsToPath(polygon1.coordinates[0]);
+  const path2 = coordsToPath(polygon2.coordinates[0]);
+  const intersectionPath = intersection?.coordinates?.[0] 
+    ? coordsToPath(intersection.coordinates[0])
+    : null;
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex-1 relative bg-muted/30 rounded-lg overflow-hidden">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+          {/* Grid */}
+          <defs>
+            <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.2" className="text-muted-foreground/20" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+
+          {/* Polygon 1 */}
+          <path 
+            d={path1} 
+            fill="hsl(var(--primary))" 
+            fillOpacity="0.3" 
+            stroke="hsl(var(--primary))" 
+            strokeWidth="0.5"
+          />
+
+          {/* Polygon 2 */}
+          <path 
+            d={path2} 
+            fill="hsl(var(--secondary))" 
+            fillOpacity="0.3" 
+            stroke="hsl(var(--secondary-foreground))" 
+            strokeWidth="0.5"
+          />
+
+          {/* Intersection (overlap area) */}
+          {intersectionPath && (
+            <path 
+              d={intersectionPath} 
+              fill="hsl(var(--destructive))" 
+              fillOpacity="0.6" 
+              stroke="hsl(var(--destructive))" 
+              strokeWidth="0.8"
+            />
+          )}
+        </svg>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 mt-4 justify-center">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-primary/30 border border-primary" />
+          <span className="text-sm">{title1}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-secondary/30 border border-secondary-foreground" />
+          <span className="text-sm">{title2}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-destructive/60 border border-destructive" />
+          <span className="text-sm">Overlap Area</span>
+        </div>
+      </div>
+    </div>
   );
 }
