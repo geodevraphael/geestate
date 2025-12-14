@@ -21,10 +21,12 @@ import { TypingIndicator } from '@/components/messaging/TypingIndicator';
 import { MessageDateSeparator } from '@/components/messaging/MessageDateSeparator';
 import { EmojiPicker } from '@/components/messaging/EmojiPicker';
 import { QuickReplies } from '@/components/messaging/QuickReplies';
+import { useCall } from '@/contexts/CallContext';
 
 export default function Messages() {
   const { profile, user } = useAuth();
   const { toast } = useToast();
+  const { startCall, callStatus } = useCall();
   const [searchParams] = useSearchParams();
   const listingId = searchParams.get('listing');
   const sellerId = searchParams.get('seller');
@@ -635,10 +637,20 @@ export default function Messages() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 md:gap-2">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-9 w-9"
+                        onClick={() => startCall(
+                          selectedConversation.other_user_id,
+                          selectedConversation.other_user_name
+                        )}
+                        disabled={callStatus !== 'idle'}
+                        title="Start audio call"
+                      >
                         <Phone className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex" disabled title="Video call coming soon">
                         <Video className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9">
