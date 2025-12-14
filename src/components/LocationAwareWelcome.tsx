@@ -105,18 +105,8 @@ export const LocationAwareWelcome: React.FC = () => {
   };
 
   const buildMapUrl = () => {
-    const params = new URLSearchParams();
-    if (locationInfo?.region?.id) params.set("region", locationInfo.region.id);
-    if (locationInfo?.district?.id) params.set("district", locationInfo.district.id);
-    if (locationInfo?.ward?.id) params.set("ward", locationInfo.ward.id);
-    // Add user coordinates for precise zoom
-    if (locationInfo?.latitude && locationInfo?.longitude) {
-      params.set("lat", locationInfo.latitude.toFixed(6));
-      params.set("lng", locationInfo.longitude.toFixed(6));
-      params.set("zoom", "19"); // Close building-level zoom
-      params.set("locate", "true"); // Trigger animated user location marker
-    }
-    return `/map?${params.toString()}`;
+    // Simply navigate to map with locate=true - let the map handle everything
+    return `/map?locate=true`;
   };
 
   const hasLocation = locationInfo?.region || locationInfo?.district || locationInfo?.ward;
