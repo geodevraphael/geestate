@@ -45,6 +45,7 @@ const POLYGON_COLORS = {
   unverified: { fill: '#6b7280', stroke: '#4b5563', glow: '#6b728040' },
   selected: { fill: '#3b82f6', stroke: '#2563eb', glow: '#3b82f660' },
   hovered: { fill: '#60a5fa', stroke: '#3b82f6', glow: '#60a5fa40' },
+  discovered: { fill: '#06b6d4', stroke: '#0891b2', glow: '#06b6d480' }, // Cyan for discovered plots
 };
 
 export default function MapBrowse() {
@@ -381,7 +382,7 @@ export default function MapBrowse() {
     }
   };
 
-  // Create animated user location marker with dynamic buffer
+  // Create animated user location marker with dynamic buffer and glowing border
   const createUserLocationMarker = useCallback((lat: number, lng: number, radiusMeters: number = 1000) => {
     if (!mapInstance.current) return;
 
@@ -400,23 +401,20 @@ export default function MapBrowse() {
     const center = fromLonLat([lng, lat]);
     
     // Create buffer circle with dynamic radius
-    // In EPSG:3857, we need to account for projection distortion
     const metersPerUnit = mapInstance.current.getView().getProjection().getMetersPerUnit() || 1;
     const bufferRadius = radiusMeters / metersPerUnit;
     
+    // Main buffer fill (subtle blue)
     const bufferFeature = new Feature({
       geometry: new CircleGeom(center, bufferRadius),
       type: 'buffer',
     });
     
-    bufferFeature.setStyle(new Style({
-      fill: new Fill({ color: 'rgba(59, 130, 246, 0.1)' }), // Blue transparent fill
-      stroke: new Stroke({ 
-        color: 'rgba(59, 130, 246, 0.5)', 
-        width: 2,
-        lineDash: [8, 4],
-      }),
-    }));
+    // Animated glow ring for the buffer border
+    const glowRingFeature = new Feature({
+      geometry: new CircleGeom(center, bufferRadius),
+      type: 'glowRing',
+    });
 
     // Create center point marker
     const pointFeature = new Feature({
@@ -434,13 +432,13 @@ export default function MapBrowse() {
     pointFeature.setStyle(new Style({
       image: new CircleStyle({
         radius: 10,
-        fill: new Fill({ color: '#3b82f6' }), // Blue
+        fill: new Fill({ color: '#3b82f6' }),
         stroke: new Stroke({ color: '#ffffff', width: 3 }),
       }),
     }));
 
     const source = new VectorSource({
-      features: [bufferFeature, pulseFeature, pointFeature],
+      features: [bufferFeature, glowRingFeature, pulseFeature, pointFeature],
     });
 
     const layer = new VectorLayer({
@@ -451,15 +449,21 @@ export default function MapBrowse() {
     userLocationLayerRef.current = layer;
     mapInstance.current.addLayer(layer);
 
-    // Animate the pulse ring
+    // Animation variables
     let pulseRadius = 10;
     let growing = true;
     const maxRadius = 35;
     const minRadius = 10;
     
+    // Glow animation variables
+    let glowPhase = 0;
+    let borderWidth = 2;
+    let borderGrowing = true;
+    
     const animatePulse = () => {
       if (!userLocationLayerRef.current) return;
       
+      // Pulse animation for center point
       if (growing) {
         pulseRadius += 0.5;
         if (pulseRadius >= maxRadius) growing = false;
@@ -478,6 +482,35 @@ export default function MapBrowse() {
             color: `rgba(59, 130, 246, ${opacity})`, 
             width: 2 
           }),
+        }),
+      }));
+      
+      // Animated glowing border for the search radius
+      glowPhase += 0.03;
+      const glowIntensity = 0.5 + Math.sin(glowPhase) * 0.3;
+      const glowOpacity = 0.6 + Math.sin(glowPhase * 1.5) * 0.4;
+      
+      // Animate border width
+      if (borderGrowing) {
+        borderWidth += 0.05;
+        if (borderWidth >= 4) borderGrowing = false;
+      } else {
+        borderWidth -= 0.05;
+        if (borderWidth <= 2) borderGrowing = true;
+      }
+      
+      // Update buffer fill style
+      bufferFeature.setStyle(new Style({
+        fill: new Fill({ color: `rgba(59, 130, 246, ${0.08 + glowIntensity * 0.05})` }),
+      }));
+      
+      // Animated glowing border - tech blue effect
+      glowRingFeature.setStyle(new Style({
+        stroke: new Stroke({ 
+          color: `rgba(96, 165, 250, ${glowOpacity})`, // Lighter blue for glow
+          width: borderWidth,
+          lineDash: [12, 6],
+          lineDashOffset: -glowPhase * 20, // Moving dash animation
         }),
       }));
       
@@ -662,22 +695,33 @@ export default function MapBrowse() {
     }
   }, [filteredListings, sortBy, userLocation]);
 
-  // Get polygon style - labels only show at zoom >= 15
-  const getPolygonStyle = useCallback((listing: ListingWithPolygon, isSelected: boolean, isHovered: boolean, currentZoom: number = 6) => {
+  // Get polygon style - labels only show at zoom >= 15, discovered plots get special styling
+  const getPolygonStyle = useCallback((listing: ListingWithPolygon, isSelected: boolean, isHovered: boolean, currentZoom: number = 6, isDiscovered: boolean = false) => {
     let colors = POLYGON_COLORS.unverified;
+    
+    // Priority: selected > hovered > discovered > verification status
     if (isSelected) colors = POLYGON_COLORS.selected;
     else if (isHovered) colors = POLYGON_COLORS.hovered;
+    else if (isDiscovered) colors = POLYGON_COLORS.discovered;
     else if (listing.verification_status === 'verified') colors = POLYGON_COLORS.verified;
     else if (listing.verification_status === 'pending') colors = POLYGON_COLORS.pending;
 
     const showLabels = currentZoom >= 15;
+    
+    // Enhanced styling for discovered plots
+    const strokeWidth = isSelected ? 4 : isHovered ? 3 : isDiscovered ? 3 : 2;
+    const fillOpacity = isSelected ? 'aa' : isHovered ? '88' : isDiscovered ? '99' : '55';
 
     return new Style({
-      fill: new Fill({ color: colors.fill + (isSelected ? 'aa' : isHovered ? '88' : '55') }),
-      stroke: new Stroke({ color: colors.stroke, width: isSelected ? 4 : isHovered ? 3 : 2 }),
+      fill: new Fill({ color: colors.fill + fillOpacity }),
+      stroke: new Stroke({ 
+        color: colors.stroke, 
+        width: strokeWidth,
+        lineDash: isDiscovered && !isSelected && !isHovered ? [6, 3] : undefined, // Dashed for discovered
+      }),
       text: showLabels ? new Text({
         text: listing.title || 'Plot',
-        font: `bold ${isSelected ? '14px' : '12px'} sans-serif`,
+        font: `bold ${isSelected ? '14px' : isDiscovered ? '13px' : '12px'} sans-serif`,
         fill: new Fill({ color: '#fff' }),
         stroke: new Stroke({ color: colors.stroke, width: 3 }),
         overflow: true,
@@ -790,7 +834,7 @@ export default function MapBrowse() {
     baseTileLayerRef.current.setSource(new XYZ({ url: sources[basemap] }));
   }, [basemap]);
 
-  // Render listings layer - optimized for performance
+  // Render listings layer - optimized for performance with discovered plot highlighting
   useEffect(() => {
     if (!mapInstance.current || loading) return;
 
@@ -808,7 +852,11 @@ export default function MapBrowse() {
         const geo = typeof listing.polygon.geojson === 'string' ? JSON.parse(listing.polygon.geojson) : listing.polygon.geojson;
         const coords = geo.coordinates[0].map((c: [number, number]) => fromLonLat([c[0], c[1]]));
         const feature = new Feature({ geometry: new Polygon([coords]), listing });
-        feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id, currentZoom));
+        
+        // Check if this listing is "discovered" (within search radius when radius mode is active)
+        const isDiscovered = !!(showRadiusControl && userLocation);
+        
+        feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id, currentZoom, isDiscovered));
         features.push(feature);
       } catch {}
     });
@@ -828,7 +876,8 @@ export default function MapBrowse() {
       listingsLayerRef.current.getSource()?.getFeatures().forEach(feature => {
         const listing = feature.get('listing');
         if (listing) {
-          feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id, newZoom));
+          const isDiscovered = !!(showRadiusControl && userLocation);
+          feature.setStyle(getPolygonStyle(listing, selectedListing?.id === listing.id, hoveredListingId === listing.id, newZoom, isDiscovered));
         }
       });
     };
