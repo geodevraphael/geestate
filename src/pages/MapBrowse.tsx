@@ -388,7 +388,11 @@ export default function MapBrowse() {
     }
   };
 
-  // Create animated user location marker with dynamic buffer and glowing border
+  // Track which plots are currently highlighted by radar
+  const radarHighlightedPlotsRef = useRef<Set<string>>(new Set());
+  const radarAngleRef = useRef<number>(0);
+
+  // Create animated user location marker with dynamic buffer and radar sweep (desktop only)
   const createUserLocationMarker = useCallback((lat: number, lng: number, radiusMeters: number = 1000) => {
     if (!mapInstance.current) return;
 
@@ -443,9 +447,20 @@ export default function MapBrowse() {
       }),
     }));
 
-    const source = new VectorSource({
-      features: [bufferFeature, glowRingFeature, pulseFeature, pointFeature],
-    });
+    const features: Feature[] = [bufferFeature, glowRingFeature, pulseFeature, pointFeature];
+
+    // Create radar sweep feature for desktop only
+    let radarSweepFeature: Feature | null = null;
+    if (!isMobile) {
+      // Create a pie-slice polygon for radar sweep
+      radarSweepFeature = new Feature({
+        geometry: new Polygon([[]]), // Will be updated in animation
+        type: 'radarSweep',
+      });
+      features.push(radarSweepFeature);
+    }
+
+    const source = new VectorSource({ features });
 
     const layer = new VectorLayer({
       source,
@@ -465,6 +480,10 @@ export default function MapBrowse() {
     let glowPhase = 0;
     let borderWidth = 2;
     let borderGrowing = true;
+    
+    // Radar sweep variables (desktop only)
+    const radarSweepAngle = Math.PI / 6; // 30 degree sweep width
+    const radarSpeed = 0.02; // Rotation speed
     
     const animatePulse = () => {
       if (!userLocationLayerRef.current) return;
@@ -513,18 +532,133 @@ export default function MapBrowse() {
       // Animated glowing border - tech blue effect
       glowRingFeature.setStyle(new Style({
         stroke: new Stroke({ 
-          color: `rgba(96, 165, 250, ${glowOpacity})`, // Lighter blue for glow
+          color: `rgba(96, 165, 250, ${glowOpacity})`,
           width: borderWidth,
           lineDash: [12, 6],
-          lineDashOffset: -glowPhase * 20, // Moving dash animation
+          lineDashOffset: -glowPhase * 20,
         }),
       }));
+
+      // Radar sweep animation (desktop only)
+      if (!isMobile && radarSweepFeature) {
+        radarAngleRef.current += radarSpeed;
+        if (radarAngleRef.current > Math.PI * 2) {
+          radarAngleRef.current = 0;
+        }
+
+        // Create pie slice geometry for radar sweep
+        const segments = 20;
+        const sweepCoords: number[][] = [[center[0], center[1]]];
+        
+        for (let i = 0; i <= segments; i++) {
+          const angle = radarAngleRef.current - radarSweepAngle + (radarSweepAngle * 2 * i / segments);
+          const x = center[0] + Math.cos(angle) * bufferRadius;
+          const y = center[1] + Math.sin(angle) * bufferRadius;
+          sweepCoords.push([x, y]);
+        }
+        sweepCoords.push([center[0], center[1]]);
+
+        radarSweepFeature.setGeometry(new Polygon([sweepCoords]));
+        
+        // Gradient-like effect for radar sweep
+        radarSweepFeature.setStyle(new Style({
+          fill: new Fill({ 
+            color: 'rgba(34, 197, 94, 0.35)' // Green radar sweep
+          }),
+          stroke: new Stroke({
+            color: 'rgba(34, 197, 94, 0.8)',
+            width: 2,
+          }),
+        }));
+
+        // Check which plots the radar is sweeping over and highlight them
+        if (listingsLayerRef.current) {
+          const listingsSource = listingsLayerRef.current.getSource();
+          if (listingsSource) {
+            const sweepGeometry = radarSweepFeature.getGeometry();
+            const sweepExtent = sweepGeometry?.getExtent();
+            
+            if (sweepExtent) {
+              // Get all features that intersect with radar sweep
+              const intersectingFeatures = listingsSource.getFeaturesInExtent(sweepExtent);
+              
+              intersectingFeatures.forEach((feature) => {
+                const listingId = feature.get('listingId');
+                if (!listingId) return;
+                
+                const featureGeom = feature.getGeometry();
+                if (!featureGeom) return;
+                
+                // Check if feature center is within the sweep angle
+                const featureExtent = featureGeom.getExtent();
+                const featureCenter = getCenter(featureExtent);
+                const dx = featureCenter[0] - center[0];
+                const dy = featureCenter[1] - center[1];
+                const featureAngle = Math.atan2(dy, dx);
+                
+                // Normalize angles for comparison
+                let normalizedRadarAngle = radarAngleRef.current % (Math.PI * 2);
+                let normalizedFeatureAngle = featureAngle;
+                if (normalizedFeatureAngle < 0) normalizedFeatureAngle += Math.PI * 2;
+                
+                // Check if feature is within radar sweep arc
+                const angleDiff = Math.abs(normalizedRadarAngle - normalizedFeatureAngle);
+                const inSweep = angleDiff < radarSweepAngle || angleDiff > (Math.PI * 2 - radarSweepAngle);
+                
+                if (inSweep && !radarHighlightedPlotsRef.current.has(listingId)) {
+                  // Add to highlighted set
+                  radarHighlightedPlotsRef.current.add(listingId);
+                  
+                  // Apply red highlight style
+                  feature.setStyle(new Style({
+                    fill: new Fill({ color: 'rgba(239, 68, 68, 0.7)' }), // Vibrant red
+                    stroke: new Stroke({ 
+                      color: '#dc2626', 
+                      width: 4,
+                    }),
+                    text: new Text({
+                      text: feature.get('title') || 'Plot',
+                      font: 'bold 13px sans-serif',
+                      fill: new Fill({ color: '#fff' }),
+                      stroke: new Stroke({ color: '#dc2626', width: 3 }),
+                      overflow: true,
+                    }),
+                  }));
+                  
+                  // Remove highlight after 800ms and return to blue
+                  setTimeout(() => {
+                    radarHighlightedPlotsRef.current.delete(listingId);
+                    const listing = feature.get('listing');
+                    if (listing && feature.getGeometry()) {
+                      feature.setStyle(new Style({
+                        fill: new Fill({ color: 'rgba(6, 182, 212, 0.6)' }), // Cyan/discovered color
+                        stroke: new Stroke({ 
+                          color: '#0891b2', 
+                          width: 3,
+                          lineDash: [6, 3],
+                        }),
+                        text: new Text({
+                          text: feature.get('title') || 'Plot',
+                          font: 'bold 12px sans-serif',
+                          fill: new Fill({ color: '#fff' }),
+                          stroke: new Stroke({ color: '#0891b2', width: 3 }),
+                          overflow: true,
+                        }),
+                      }));
+                    }
+                  }, 800);
+                }
+              });
+            }
+          }
+        }
+      }
       
       userLocationAnimationRef.current = requestAnimationFrame(animatePulse);
     };
     
     animatePulse();
-  }, []);
+  }, [isMobile]);
 
   // Fly to user's current location with smooth animation and show marker
   const flyToUserLocation = useCallback(() => {
