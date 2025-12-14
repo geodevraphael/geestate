@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Scale, Building2, Hammer, Package, MapPin, Ruler, 
   Pencil, Star, CheckCircle2, Search, Phone, 
-  ArrowRight, UserPlus, Briefcase, MessageCircle
+  ArrowRight, UserPlus, Briefcase, MessageCircle, CalendarDays
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -409,8 +409,8 @@ export default function ServiceProviders() {
                           onClick={() => handleRequestService(provider.id)}
                           className="flex-1 rounded-xl h-11 font-semibold group-hover:shadow-md transition-all"
                         >
-                          {i18n.language === 'sw' ? 'Omba Huduma' : 'Request'}
-                          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          {i18n.language === 'sw' ? 'Panga Miadi' : 'Book'}
                         </Button>
                         <Button 
                           variant="outline"

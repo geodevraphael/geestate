@@ -11,13 +11,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveModal } from '@/components/ResponsiveModal';
+import { BookServiceDialog } from '@/components/BookServiceDialog';
 import { maskPhoneNumber } from '@/lib/phoneUtils';
 
 import { useToast } from '@/hooks/use-toast';
 import { 
   Scale, Building2, Hammer, Package, MapPin, Ruler, 
   Pencil, Star, CheckCircle2, Phone, Mail, Globe,
-  ArrowLeft, Send, Clock, Briefcase, Calendar, Home, Lock
+  ArrowLeft, Send, Clock, Briefcase, Calendar, Home, Lock, CalendarDays
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -91,6 +92,7 @@ export default function ServiceProviderDetail() {
   const [userListings, setUserListings] = useState<UserListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [requestForm, setRequestForm] = useState({
     service_type: '',
@@ -424,8 +426,29 @@ export default function ServiceProviderDetail() {
               </div>
             </div>
 
-            {/* CTA Button */}
-            <div className="lg:flex-shrink-0">
+            {/* CTA Buttons */}
+            <div className="lg:flex-shrink-0 flex flex-col sm:flex-row gap-2">
+              {/* Book Appointment Button - Primary Action */}
+              {providerServices.length > 0 && (
+                <BookServiceDialog
+                  open={bookingOpen}
+                  onOpenChange={setBookingOpen}
+                  provider={{
+                    id: provider.id,
+                    user_id: provider.user_id,
+                    company_name: provider.company_name,
+                  }}
+                  providerServices={providerServices}
+                  trigger={
+                    <Button size="lg" className="w-full lg:w-auto shadow-lg">
+                      <CalendarDays className="mr-2 h-5 w-5" />
+                      {i18n.language === 'sw' ? 'Panga Miadi' : 'Book Appointment'}
+                    </Button>
+                  }
+                />
+              )}
+              
+              {/* Request Service Button - Secondary */}
               <ResponsiveModal
                 open={requestOpen}
                 onOpenChange={setRequestOpen}
@@ -434,7 +457,7 @@ export default function ServiceProviderDetail() {
                   ? 'Tuma ombi lako kwa mtoa huduma huyu'
                   : 'Send your service request to this provider'}
                 trigger={
-                    <Button size="lg" className="w-full lg:w-auto shadow-lg">
+                    <Button size="lg" variant={providerServices.length > 0 ? "outline" : "default"} className="w-full lg:w-auto">
                       <Send className="mr-2 h-5 w-5" />
                       {i18n.language === 'sw' ? 'Omba Huduma' : 'Request Service'}
                     </Button>
@@ -652,6 +675,20 @@ export default function ServiceProviderDetail() {
                   <p className="text-muted-foreground italic">
                     {i18n.language === 'sw' ? 'Hakuna huduma zilizoorodheshwa' : 'No services listed'}
                   </p>
+                )}
+                
+                {/* Book Now CTA */}
+                {providerServices.length > 0 && (
+                  <div className="pt-4 border-t mt-4">
+                    <Button 
+                      onClick={() => setBookingOpen(true)}
+                      size="lg"
+                      className="w-full"
+                    >
+                      <CalendarDays className="mr-2 h-5 w-5" />
+                      {i18n.language === 'sw' ? 'Panga Miadi Sasa' : 'Book Appointment Now'}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
