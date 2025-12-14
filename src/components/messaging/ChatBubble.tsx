@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Check, CheckCheck, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { Message } from '@/types/database';
+import { MessageActions } from './MessageActions';
 
 interface ChatBubbleProps {
   message: Message;
@@ -10,9 +11,10 @@ interface ChatBubbleProps {
   showAvatar: boolean;
   senderName?: string;
   isFirstInGroup: boolean;
+  onReply?: (message: Message) => void;
 }
 
-export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstInGroup }: ChatBubbleProps) {
+export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstInGroup, onReply }: ChatBubbleProps) {
   const parseMessageContent = (content: string) => {
     // Check if message contains a listings URL
     const listingsUrlRegex = /View all my (\d+) listings?:\n(https?:\/\/[^\s]+\/listings\?owner=[^\s]+)/;
@@ -121,7 +123,7 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
   };
 
   return (
-    <div className={`flex ${isSender ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'}`}>
+    <div className={`flex ${isSender ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-3' : 'mt-0.5'} group`}>
       <div className="flex items-end gap-1.5 max-w-[85%] md:max-w-[70%] animate-in fade-in slide-in-from-bottom-1 duration-200">
         {!isSender && (
           <div className="w-7 flex-shrink-0">
@@ -132,6 +134,13 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
                 </AvatarFallback>
               </Avatar>
             ) : null}
+          </div>
+        )}
+        
+        {/* Actions for received messages */}
+        {!isSender && (
+          <div className="self-center">
+            <MessageActions message={message} isSender={false} onReply={onReply} />
           </div>
         )}
         
@@ -160,6 +169,13 @@ export function ChatBubble({ message, isSender, showAvatar, senderName, isFirstI
             )}
           </div>
         </div>
+        
+        {/* Actions for sent messages */}
+        {isSender && (
+          <div className="self-center">
+            <MessageActions message={message} isSender={true} onReply={onReply} />
+          </div>
+        )}
       </div>
     </div>
   );

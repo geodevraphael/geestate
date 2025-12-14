@@ -9,15 +9,18 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Send, Search, Smile, Paperclip, MoreVertical, 
-  Phone, Video, Share2, Plus, ArrowLeft
+  Send, Search, Paperclip, MoreVertical, 
+  Phone, Video, Share2, Plus, ArrowLeft, CheckCheck
 } from 'lucide-react';
 import { Message } from '@/types/database';
-import { format, isToday, isYesterday, differenceInMinutes } from 'date-fns';
+import { format, isToday, isYesterday, differenceInMinutes, isSameDay } from 'date-fns';
 import { usePresence } from '@/hooks/usePresence';
 import { NewConversationDialog } from '@/components/messaging/NewConversationDialog';
 import { ChatBubble } from '@/components/messaging/ChatBubble';
 import { TypingIndicator } from '@/components/messaging/TypingIndicator';
+import { MessageDateSeparator } from '@/components/messaging/MessageDateSeparator';
+import { EmojiPicker } from '@/components/messaging/EmojiPicker';
+import { QuickReplies } from '@/components/messaging/QuickReplies';
 
 export default function Messages() {
   const { profile, user } = useAuth();
@@ -40,6 +43,8 @@ export default function Messages() {
   const [isTyping, setIsTyping] = useState(false);
   const [isUserSeller, setIsUserSeller] = useState(false);
   const [showNewConversation, setShowNewConversation] = useState(false);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -264,6 +269,8 @@ export default function Messages() {
               last_message: msg.content,
               last_message_time: msg.timestamp,
               unread_count: 0,
+              last_message_is_mine: msg.sender_id === user?.id,
+              last_message_is_read: msg.is_read,
             };
           }
           
@@ -563,9 +570,14 @@ export default function Messages() {
                             </p>
                             
                             <div className="flex items-center justify-between gap-2">
-                              <p className={`text-xs truncate flex-1 ${conv.unread_count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-                                {conv.last_message}
-                              </p>
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                {conv.last_message_is_mine && (
+                                  <CheckCheck className={`h-3 w-3 flex-shrink-0 ${conv.last_message_is_read ? 'text-success' : 'text-muted-foreground'}`} />
+                                )}
+                                <p className={`text-xs truncate ${conv.unread_count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                                  {conv.last_message}
+                                </p>
+                              </div>
                               {conv.unread_count > 0 && (
                                 <Badge className="h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
                                   {conv.unread_count}
@@ -670,16 +682,25 @@ export default function Messages() {
                       const isSender = message.sender_id === user?.id;
                       const showAvatar = shouldShowAvatar(message, messages[index + 1]);
                       const isFirstInGroup = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                      const showDateSeparator = index === 0 || !isSameDay(new Date(messages[index - 1].timestamp), new Date(message.timestamp));
                       
                       return (
-                        <ChatBubble
-                          key={message.id}
-                          message={message}
-                          isSender={isSender}
-                          showAvatar={showAvatar}
-                          senderName={selectedConversation.other_user_name}
-                          isFirstInGroup={isFirstInGroup}
-                        />
+                        <div key={message.id}>
+                          {showDateSeparator && (
+                            <MessageDateSeparator date={new Date(message.timestamp)} />
+                          )}
+                          <ChatBubble
+                            message={message}
+                            isSender={isSender}
+                            showAvatar={showAvatar}
+                            senderName={selectedConversation.other_user_name}
+                            isFirstInGroup={isFirstInGroup}
+                            onReply={(msg) => {
+                              setReplyingTo(msg);
+                              inputRef.current?.focus();
+                            }}
+                          />
+                        </div>
                       );
                     })
                   )}
@@ -692,64 +713,82 @@ export default function Messages() {
                 </div>
 
                 {/* Message Input */}
-                <form onSubmit={sendMessage} className="border-t border-border/50 p-3 md:p-4 bg-card/50 backdrop-blur-sm">
-                  <div className="flex items-end gap-2">
-                    <Button 
-                      type="button"
-                      variant="ghost" 
-                      size="icon"
-                      className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground hidden md:flex"
-                    >
-                      <Smile className="h-5 w-5" />
-                    </Button>
-                    <Button 
-                      type="button"
-                      variant="ghost" 
-                      size="icon"
-                      className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground hidden md:flex"
-                    >
-                      <Paperclip className="h-5 w-5" />
-                    </Button>
-                    {isUserSeller && (
+                <div className="border-t border-border/50 bg-card/50 backdrop-blur-sm">
+                  {/* Reply indicator */}
+                  {replyingTo && (
+                    <div className="px-3 md:px-4 pt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Replying to: {replyingTo.content.substring(0, 50)}{replyingTo.content.length > 50 ? '...' : ''}</span>
+                      <Button variant="ghost" size="sm" className="h-5 px-1" onClick={() => setReplyingTo(null)}>×</Button>
+                    </div>
+                  )}
+                  
+                  {/* Quick Replies */}
+                  {messages.length === 0 && (
+                    <div className="px-3 md:px-4 pt-2">
+                      <QuickReplies 
+                        onSelect={(reply) => {
+                          setNewMessage(reply);
+                          inputRef.current?.focus();
+                        }}
+                        isUserSeller={isUserSeller}
+                      />
+                    </div>
+                  )}
+
+                  <form onSubmit={sendMessage} className="p-3 md:p-4">
+                    <div className="flex items-end gap-2">
+                      <div className="hidden md:block">
+                        <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
+                      </div>
                       <Button 
                         type="button"
                         variant="ghost" 
                         size="icon"
-                        onClick={handleShareListing}
-                        className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground"
-                        title="Share all your listings"
+                        className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground hidden md:flex"
                       >
-                        <Share2 className="h-5 w-5" />
+                        <Paperclip className="h-5 w-5" />
                       </Button>
-                    )}
-                    <div className="flex-1 relative">
-                      <Input
-                        ref={inputRef}
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="pr-12 rounded-3xl border-border/50 bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/50"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            sendMessage(e as any);
-                          }
-                        }}
-                      />
+                      {isUserSeller && (
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="icon"
+                          onClick={handleShareListing}
+                          className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-foreground"
+                          title="Share all your listings"
+                        >
+                          <Share2 className="h-5 w-5" />
+                        </Button>
+                      )}
+                      <div className="flex-1 relative">
+                        <Input
+                          ref={inputRef}
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder="Type a message..."
+                          className="pr-12 rounded-3xl border-border/50 bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/50"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              sendMessage(e as any);
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        size="icon"
+                        className="rounded-full h-10 w-10 md:h-11 md:w-11 flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                        disabled={!newMessage.trim()}
+                      >
+                        <Send className="h-4 w-4 md:h-5 md:w-5" />
+                      </Button>
                     </div>
-                    <Button 
-                      type="submit" 
-                      size="icon"
-                      className="rounded-full h-10 w-10 md:h-11 md:w-11 flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
-                      disabled={!newMessage.trim()}
-                    >
-                      <Send className="h-4 w-4 md:h-5 md:w-5" />
-                    </Button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-2 text-center hidden md:block">
-                    Press Enter to send
-                  </p>
-                </form>
+                    <p className="text-[10px] text-muted-foreground mt-2 text-center hidden md:block">
+                      Press Enter to send
+                    </p>
+                  </form>
+                </div>
               </>
             ) : (
               <div className="flex items-center justify-center h-full text-center p-8">
