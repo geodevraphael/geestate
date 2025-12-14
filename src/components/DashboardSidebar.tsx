@@ -30,6 +30,7 @@ import {
   Settings,
   Home,
   Wrench,
+  Layers,
 } from 'lucide-react';
 
 interface NavItem {
@@ -108,6 +109,7 @@ const navGroups: NavGroup[] = [
       { title: 'Income Management', href: '/admin/income', icon: CreditCard, roles: ['admin', 'compliance_officer'] },
       { title: 'Compliance', href: '/admin/compliance', icon: Shield, roles: ['admin', 'verification_officer', 'compliance_officer'] },
       { title: 'Verify Listings', href: '/admin/verification', icon: FileCheck, roles: ['admin', 'verification_officer', 'compliance_officer'] },
+      { title: 'Overlap Review', href: '/admin/overlap-review', icon: Layers, roles: ['admin', 'verification_officer', 'spatial_analyst'] },
       { title: 'Buying Processes', href: '/admin/buying-processes', icon: ShoppingCart, roles: ['admin', 'verification_officer', 'compliance_officer', 'spatial_analyst', 'customer_success'] },
     ],
   },
