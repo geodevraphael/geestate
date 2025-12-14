@@ -5,6 +5,7 @@ import { MainLayout } from '@/components/layouts/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -94,6 +95,7 @@ export default function MapBrowse() {
   const [sortBy, setSortBy] = useState('distance');
   const [searchRadius, setSearchRadius] = useState<number>(1000); // Default 1km in meters
   const [showRadiusControl, setShowRadiusControl] = useState(false);
+  const [customRadiusInput, setCustomRadiusInput] = useState<string>('');
   
   // Map refs
   const mapRef = useRef<HTMLDivElement>(null);
@@ -1171,7 +1173,7 @@ export default function MapBrowse() {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap mb-3">
                     {[
                       { value: 500, label: '500m' },
                       { value: 1000, label: '1 km' },
@@ -1192,6 +1194,30 @@ export default function MapBrowse() {
                         {opt.label}
                       </Button>
                     ))}
+                  </div>
+                  {/* Custom radius input */}
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      placeholder="Custom (meters)"
+                      value={customRadiusInput}
+                      onChange={(e) => setCustomRadiusInput(e.target.value)}
+                      className="flex-1 h-9"
+                      min={100}
+                      max={50000}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const value = parseInt(customRadiusInput);
+                        if (value >= 100 && value <= 50000) {
+                          updateSearchRadius(value);
+                        }
+                      }}
+                      disabled={!customRadiusInput || parseInt(customRadiusInput) < 100 || parseInt(customRadiusInput) > 50000}
+                    >
+                      Apply
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1253,7 +1279,6 @@ export default function MapBrowse() {
                 </PopoverContent>
               </Popover>
 
-              {/* Search Radius Control - Desktop */}
               {showRadiusControl && userLocation && (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -1266,11 +1291,14 @@ export default function MapBrowse() {
                       <Radar className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent side="left" className="w-52 p-3" align="start">
+                  <PopoverContent side="left" className="w-56 p-3" align="start">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Radar className="h-4 w-4 text-primary" />
                         <span className="font-semibold text-sm">Search Radius</span>
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          {searchRadius >= 1000 ? `${searchRadius / 1000} km` : `${searchRadius} m`}
+                        </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {[
@@ -1290,6 +1318,34 @@ export default function MapBrowse() {
                             {opt.label}
                           </Button>
                         ))}
+                      </div>
+                      {/* Custom radius input */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Custom (100m - 50km)</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            placeholder="Meters"
+                            value={customRadiusInput}
+                            onChange={(e) => setCustomRadiusInput(e.target.value)}
+                            className="flex-1 h-8 text-sm"
+                            min={100}
+                            max={50000}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8"
+                            onClick={() => {
+                              const value = parseInt(customRadiusInput);
+                              if (value >= 100 && value <= 50000) {
+                                updateSearchRadius(value);
+                              }
+                            }}
+                            disabled={!customRadiusInput || parseInt(customRadiusInput) < 100 || parseInt(customRadiusInput) > 50000}
+                          >
+                            Apply
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </PopoverContent>
