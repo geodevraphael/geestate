@@ -518,28 +518,12 @@ export default function MapBrowse() {
     );
   }, [createUserLocationMarker, searchRadius]);
 
-  // Update marker when search radius changes and zoom to fit
+  // Update marker when search radius changes (no zoom)
   const updateSearchRadius = useCallback((newRadius: number) => {
     setSearchRadius(newRadius);
-    if (userLocation && mapInstance.current) {
-      // Update the marker with new radius
+    if (userLocation) {
+      // Only update the marker with new radius, don't zoom
       createUserLocationMarker(userLocation.lat, userLocation.lng, newRadius);
-      
-      // Calculate zoom level to fit the radius
-      // Create a circle and fit the view to its extent
-      const center = fromLonLat([userLocation.lng, userLocation.lat]);
-      const metersPerUnit = mapInstance.current.getView().getProjection().getMetersPerUnit() || 1;
-      const bufferRadius = newRadius / metersPerUnit;
-      
-      const bufferCircle = new CircleGeom(center, bufferRadius);
-      const extent = bufferCircle.getExtent();
-      
-      // Animate to fit the radius with padding
-      mapInstance.current.getView().fit(extent, {
-        padding: [60, 60, 60, 60],
-        duration: 800,
-        easing: (t) => 1 - Math.pow(1 - t, 3),
-      });
     }
   }, [userLocation, createUserLocationMarker]);
 
