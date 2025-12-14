@@ -680,7 +680,7 @@ export default function Messages() {
                   <div 
                     ref={messagesContainerRef}
                     onScroll={handleScroll}
-                    className="absolute inset-0 overflow-y-auto p-3 md:p-4 space-y-1"
+                    className="absolute inset-0 overflow-y-auto no-scrollbar p-3 md:p-4 space-y-1"
                     style={{
                       background: 'linear-gradient(to bottom, hsl(var(--muted) / 0.05), hsl(var(--muted) / 0.1))',
                       backgroundImage: 'radial-gradient(circle at 1px 1px, hsl(var(--muted) / 0.3) 1px, transparent 0)',
