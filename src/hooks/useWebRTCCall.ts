@@ -33,6 +33,9 @@ export function useWebRTCCall() {
   const remoteAudio = useRef<HTMLAudioElement | null>(null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pendingOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
+  const ringtoneRef = useRef<AudioContext | null>(null);
+  const ringtoneIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize remote audio element
   useEffect(() => {
@@ -45,16 +48,72 @@ export function useWebRTCCall() {
     };
   }, []);
 
+  // Play ringtone for incoming calls
+  const startRingtone = useCallback(() => {
+    try {
+      ringtoneRef.current = new AudioContext();
+      
+      const playBeep = () => {
+        if (!ringtoneRef.current || ringtoneRef.current.state === 'closed') return;
+        
+        const oscillator = ringtoneRef.current.createOscillator();
+        const gainNode = ringtoneRef.current.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ringtoneRef.current.destination);
+        
+        oscillator.frequency.value = 440;
+        oscillator.type = 'sine';
+        gainNode.gain.value = 0.3;
+        
+        oscillator.start();
+        oscillator.stop(ringtoneRef.current.currentTime + 0.2);
+        
+        // Second beep
+        setTimeout(() => {
+          if (!ringtoneRef.current || ringtoneRef.current.state === 'closed') return;
+          const osc2 = ringtoneRef.current.createOscillator();
+          const gain2 = ringtoneRef.current.createGain();
+          osc2.connect(gain2);
+          gain2.connect(ringtoneRef.current.destination);
+          osc2.frequency.value = 520;
+          osc2.type = 'sine';
+          gain2.gain.value = 0.3;
+          osc2.start();
+          osc2.stop(ringtoneRef.current.currentTime + 0.2);
+        }, 250);
+      };
+      
+      playBeep();
+      ringtoneIntervalRef.current = setInterval(playBeep, 2000);
+    } catch (error) {
+      console.error('Error playing ringtone:', error);
+    }
+  }, []);
+
+  const stopRingtone = useCallback(() => {
+    if (ringtoneIntervalRef.current) {
+      clearInterval(ringtoneIntervalRef.current);
+      ringtoneIntervalRef.current = null;
+    }
+    if (ringtoneRef.current) {
+      ringtoneRef.current.close();
+      ringtoneRef.current = null;
+    }
+  }, []);
+
   // Subscribe to call signals
   useEffect(() => {
     if (!user?.id) return;
 
+    console.log('Setting up call channel for user:', user.id);
+    
     const channel = supabase.channel(`calls-${user.id}`)
       .on('broadcast', { event: 'call-signal' }, async ({ payload }) => {
         const signal = payload as CallSignal;
         if (signal.to !== user.id) return;
 
-        console.log('Received signal:', signal.type);
+        console.log('Received signal:', signal.type, 'from:', signal.from);
 
         switch (signal.type) {
           case 'offer':
@@ -71,7 +130,9 @@ export function useWebRTCCall() {
             break;
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Call channel status:', status);
+      });
 
     channelRef.current = channel;
 
@@ -83,18 +144,24 @@ export function useWebRTCCall() {
   const sendSignal = useCallback(async (signal: Omit<CallSignal, 'from' | 'fromName'>) => {
     if (!user?.id || !signal.to) return;
 
+    console.log('Sending signal:', signal.type, 'to:', signal.to);
+    
     const targetChannel = supabase.channel(`calls-${signal.to}`);
     
     // Wait for channel to be subscribed before sending
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Channel subscription timeout'));
+      }, 5000);
+      
       targetChannel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
+          clearTimeout(timeout);
           resolve();
         }
       });
     });
     
-    // Use httpSend for reliable delivery (new Supabase API)
     const result = await targetChannel.send({
       type: 'broadcast',
       event: 'call-signal',
@@ -105,7 +172,7 @@ export function useWebRTCCall() {
       },
     });
 
-    console.log('Signal sent:', signal.type, result);
+    console.log('Signal sent result:', result);
     
     // Clean up channel after a short delay
     setTimeout(() => {
@@ -137,6 +204,7 @@ export function useWebRTCCall() {
       console.log('Connection state:', pc.connectionState);
       if (pc.connectionState === 'connected') {
         setCallStatus('connected');
+        stopRingtone();
         startCallTimer();
       } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
         endCall(false);
@@ -145,7 +213,7 @@ export function useWebRTCCall() {
 
     peerConnection.current = pc;
     return pc;
-  }, [remoteUserId, sendSignal]);
+  }, [remoteUserId, sendSignal, stopRingtone]);
 
   const startCallTimer = useCallback(() => {
     setCallDuration(0);
@@ -201,26 +269,50 @@ export function useWebRTCCall() {
     }
   }, [createPeerConnection, sendSignal]);
 
-  const handleIncomingCall = useCallback(async (signal: CallSignal) => {
+  const handleIncomingCall = useCallback((signal: CallSignal) => {
     if (callStatus !== 'idle') {
       // Already in a call, reject
       sendSignal({ type: 'end-call', to: signal.from, payload: {} });
       return;
     }
 
+    console.log('Incoming call from:', signal.fromName, 'payload:', signal.payload);
+    
     setRemoteUserId(signal.from);
     setRemoteUserName(signal.fromName || 'Unknown');
     setCallStatus('incoming');
-
-    // Store the offer for when user accepts
-    peerConnection.current = null;
-    (window as any).__pendingOffer = signal.payload;
-  }, [callStatus, sendSignal]);
+    
+    // Store the offer in ref (not window)
+    pendingOfferRef.current = signal.payload;
+    
+    // Start ringtone
+    startRingtone();
+    
+    // Show toast notification
+    toast.info(`Incoming call from ${signal.fromName || 'Unknown'}`, {
+      duration: 30000,
+      id: 'incoming-call',
+    });
+  }, [callStatus, sendSignal, startRingtone]);
 
   const acceptCall = useCallback(async () => {
-    if (!remoteUserId) return;
+    if (!remoteUserId) {
+      console.error('No remote user ID');
+      return;
+    }
+    
+    const offer = pendingOfferRef.current;
+    if (!offer || !offer.type || !offer.sdp) {
+      console.error('No valid pending offer:', offer);
+      toast.error('Call data not received properly. Please try again.');
+      endCall(false);
+      return;
+    }
 
     try {
+      stopRingtone();
+      toast.dismiss('incoming-call');
+      
       // Get local audio stream
       localStream.current = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -238,7 +330,7 @@ export function useWebRTCCall() {
       });
 
       // Set remote description from stored offer
-      const offer = (window as any).__pendingOffer;
+      console.log('Setting remote description with offer:', offer);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
       // Create and send answer
@@ -251,18 +343,19 @@ export function useWebRTCCall() {
         payload: answer,
       });
 
-      delete (window as any).__pendingOffer;
+      pendingOfferRef.current = null;
     } catch (error) {
       console.error('Error accepting call:', error);
       toast.error('Failed to accept call');
       endCall(false);
     }
-  }, [remoteUserId, createPeerConnection, sendSignal]);
+  }, [remoteUserId, createPeerConnection, sendSignal, stopRingtone]);
 
   const handleAnswer = useCallback(async (signal: CallSignal) => {
     if (!peerConnection.current) return;
 
     try {
+      console.log('Setting remote description with answer:', signal.payload);
       await peerConnection.current.setRemoteDescription(
         new RTCSessionDescription(signal.payload)
       );
@@ -284,13 +377,19 @@ export function useWebRTCCall() {
   }, []);
 
   const rejectCall = useCallback(() => {
+    stopRingtone();
+    toast.dismiss('incoming-call');
+    
     if (remoteUserId) {
       sendSignal({ type: 'end-call', to: remoteUserId, payload: {} });
     }
     endCall(false);
-  }, [remoteUserId, sendSignal]);
+  }, [remoteUserId, sendSignal, stopRingtone]);
 
   const endCall = useCallback((sendEndSignal = true) => {
+    stopRingtone();
+    toast.dismiss('incoming-call');
+    
     if (sendEndSignal && remoteUserId) {
       sendSignal({ type: 'end-call', to: remoteUserId, payload: {} });
     }
@@ -314,7 +413,8 @@ export function useWebRTCCall() {
     setRemoteUserName('');
     setCallDuration(0);
     setIsMuted(false);
-  }, [remoteUserId, sendSignal, stopCallTimer]);
+    pendingOfferRef.current = null;
+  }, [remoteUserId, sendSignal, stopCallTimer, stopRingtone]);
 
   const toggleMute = useCallback(() => {
     if (localStream.current) {
