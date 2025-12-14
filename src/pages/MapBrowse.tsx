@@ -990,9 +990,9 @@ export default function MapBrowse() {
         attributions: 'Map data © Google'
       },
       terrain: { 
-        url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
-        maxZoom: 17,
-        attributions: '© OpenTopoMap'
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        maxZoom: 19,
+        attributions: 'Tiles © Esri'
       },
     };
     
