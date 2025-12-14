@@ -442,7 +442,7 @@ export default function Messages() {
   if (loading && !initialLoadDone) {
     return (
       <MainLayout>
-        <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
+        <div className="h-[calc(100vh-4rem)] flex flex-col bg-background overflow-hidden">
           <div className="hidden md:block px-4 md:px-6 py-3 md:py-4 border-b border-border/50">
             <h1 className="text-xl md:text-2xl font-bold text-foreground">Messages</h1>
           </div>
@@ -479,7 +479,7 @@ export default function Messages() {
 
   return (
     <MainLayout>
-      <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
+      <div className="h-[calc(100vh-4rem)] flex flex-col bg-background overflow-hidden">
         {/* Header */}
         <div className="hidden md:flex px-4 md:px-6 py-3 md:py-4 border-b border-border/50 items-center justify-between">
           <h1 className="text-xl md:text-2xl font-bold text-foreground">Messages</h1>
