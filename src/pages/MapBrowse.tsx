@@ -83,7 +83,7 @@ export default function MapBrowse() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // UI states
-  const [basemap, setBasemap] = useState<'osm' | 'satellite' | 'topo' | 'terrain'>('satellite');
+  const [basemap, setBasemap] = useState<'street' | 'satellite' | 'hybrid' | 'terrain'>('street');
   const [showBasemapSelector, setShowBasemapSelector] = useState(false);
   const [selectedListing, setSelectedListing] = useState<ListingWithPolygon | null>(null);
   const [hoveredListingId, setHoveredListingId] = useState<string | null>(null);
@@ -894,14 +894,19 @@ export default function MapBrowse() {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const satellite = new TileLayer({
-      source: new XYZ({ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attributions: 'Tiles © Esri' }),
+    // Default to detailed OpenStreetMap street view
+    const streetLayer = new TileLayer({
+      source: new XYZ({ 
+        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attributions: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }),
     });
-    baseTileLayerRef.current = satellite;
+    baseTileLayerRef.current = streetLayer;
 
     const map = new Map({
       target: mapRef.current,
-      layers: [satellite],
+      layers: [streetLayer],
       view: new View({ center: fromLonLat([34.888822, -6.369028]), zoom: 6 }),
     });
     mapInstance.current = map;
@@ -963,16 +968,40 @@ export default function MapBrowse() {
     };
   }, []);
 
-  // Basemap switcher - using label-free versions
+  // Basemap switcher - high quality tile sources
   useEffect(() => {
     if (!baseTileLayerRef.current) return;
-    const sources: Record<string, string> = {
-      satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      topo: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',
-      terrain: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
-      osm: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    
+    // High-quality tile sources with good zoom support
+    const sources: Record<string, { url: string; maxZoom: number; attributions: string }> = {
+      street: { 
+        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        maxZoom: 19,
+        attributions: '© OpenStreetMap contributors'
+      },
+      satellite: { 
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        maxZoom: 19,
+        attributions: 'Tiles © Esri'
+      },
+      hybrid: { 
+        url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+        maxZoom: 20,
+        attributions: 'Map data © Google'
+      },
+      terrain: { 
+        url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        maxZoom: 17,
+        attributions: '© OpenTopoMap'
+      },
     };
-    baseTileLayerRef.current.setSource(new XYZ({ url: sources[basemap] }));
+    
+    const config = sources[basemap];
+    baseTileLayerRef.current.setSource(new XYZ({ 
+      url: config.url, 
+      maxZoom: config.maxZoom,
+      attributions: config.attributions,
+    }));
   }, [basemap]);
 
   // Render listings layer - optimized for performance with discovered plot highlighting
@@ -1277,11 +1306,11 @@ export default function MapBrowse() {
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground px-2 pb-1">Map Style</p>
                   {([
+                    { key: 'street', label: '🗺️ Street', desc: 'Detailed roads & places' },
                     { key: 'satellite', label: '🛰️ Satellite', desc: 'Aerial imagery' },
-                    { key: 'osm', label: '🗺️ Street', desc: 'OpenStreetMap' },
-                    { key: 'topo', label: '⛰️ Topo', desc: 'Terrain details' },
-                    { key: 'terrain', label: '🏔️ Terrain', desc: 'Natural features' },
-                  ] as const).map(opt => (
+                    { key: 'hybrid', label: '🌍 Hybrid', desc: 'Satellite + labels' },
+                    { key: 'terrain', label: '⛰️ Terrain', desc: 'Topographic map' },
+                  ] as { key: 'street' | 'satellite' | 'hybrid' | 'terrain'; label: string; desc: string }[]).map(opt => (
                     <button
                       key={opt.key}
                       onClick={() => { setBasemap(opt.key); setShowBasemapSelector(false); }}
@@ -1413,11 +1442,11 @@ export default function MapBrowse() {
                   <div className="space-y-1">
                     <p className="text-xs font-medium text-muted-foreground px-2 pb-1">Map Style</p>
                     {([
+                      { key: 'street', label: '🗺️ Street' },
                       { key: 'satellite', label: '🛰️ Satellite' },
-                      { key: 'osm', label: '🗺️ Street' },
-                      { key: 'topo', label: '⛰️ Topo' },
-                      { key: 'terrain', label: '🏔️ Terrain' },
-                    ] as const).map(opt => (
+                      { key: 'hybrid', label: '🌍 Hybrid' },
+                      { key: 'terrain', label: '⛰️ Terrain' },
+                    ] as { key: 'street' | 'satellite' | 'hybrid' | 'terrain'; label: string }[]).map(opt => (
                       <button
                         key={opt.key}
                         onClick={() => { setBasemap(opt.key); setShowBasemapSelector(false); }}
