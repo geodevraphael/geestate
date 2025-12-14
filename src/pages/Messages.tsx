@@ -597,11 +597,11 @@ export default function Messages() {
           </div>
 
           {/* Messages Area */}
-          <div className={`flex-1 flex flex-col bg-background ${!selectedConversation ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`flex-1 flex flex-col bg-background relative ${!selectedConversation ? 'hidden md:flex' : 'flex'}`}>
             {selectedConversation ? (
-              <>
-                {/* Chat Header */}
-                <div className="border-b border-border/50 px-3 md:px-4 py-2 md:py-3 bg-card/50 backdrop-blur-sm">
+              <div className="flex flex-col h-full">
+                {/* Chat Header - Fixed at top */}
+                <div className="sticky top-0 z-10 border-b border-border/50 px-3 md:px-4 py-2 md:py-3 bg-card/95 backdrop-blur-md shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Button
@@ -660,9 +660,9 @@ export default function Messages() {
                   </div>
                 </div>
 
-                {/* Messages Container */}
+                {/* Messages Container - Scrollable area */}
                 <div 
-                  className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 bg-muted/10"
+                  className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 bg-muted/10 min-h-0"
                   style={{
                     backgroundImage: 'radial-gradient(circle at 1px 1px, hsl(var(--muted)) 1px, transparent 0)',
                     backgroundSize: '40px 40px'
@@ -724,8 +724,8 @@ export default function Messages() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
-                <div className="border-t border-border/50 bg-card/50 backdrop-blur-sm">
+                {/* Message Input - Fixed at bottom */}
+                <div className="sticky bottom-0 z-10 border-t border-border/50 bg-card/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
                   {/* Reply indicator */}
                   {replyingTo && (
                     <div className="px-3 md:px-4 pt-2 flex items-center gap-2 text-xs text-muted-foreground">
@@ -801,7 +801,7 @@ export default function Messages() {
                     </p>
                   </form>
                 </div>
-              </>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full text-center p-8">
                 <div>
