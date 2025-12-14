@@ -748,7 +748,7 @@ export default function Messages() {
                 </div>
 
                 {/* Modern Input Area */}
-                <div className="flex-shrink-0 px-4 py-3 bg-background/80 backdrop-blur-xl border-t border-border/30">
+                <div className="flex-shrink-0 px-4 py-3 pb-24 md:pb-3 bg-background/80 backdrop-blur-xl border-t border-border/30">
                   {replyingTo && (
                     <div className="mb-2 px-3 py-2 rounded-xl bg-muted/50 flex items-center gap-2 text-sm">
                       <div className="w-1 h-8 bg-primary rounded-full" />
