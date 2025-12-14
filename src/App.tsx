@@ -160,7 +160,7 @@ const App = () => (
             <Route path="/listing-fee-breakdown" element={<ProtectedRoute><ListingFeeBreakdown /></ProtectedRoute>} />
             <Route path="/seller-payment-settings" element={<ProtectedRoute><SellerPaymentSettings /></ProtectedRoute>} />
             <Route path="/admin/buying-processes" element={<ProtectedRoute requireRole={['admin', 'verification_officer', 'compliance_officer', 'spatial_analyst', 'customer_success']}><BuyingProcessManagement /></ProtectedRoute>} />
-            <Route path="/admin/overlap-review" element={<ProtectedRoute requireRole={['admin', 'verification_officer', 'spatial_analyst']}><AdminOverlapReview /></ProtectedRoute>} />
+            <Route path="/admin/overlap-review" element={<ProtectedRoute><AdminOverlapReview /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
