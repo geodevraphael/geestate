@@ -37,17 +37,31 @@ interface OverlapCheckResult {
  * Check if a polygon overlaps with existing properties
  * Returns whether the listing can proceed (blocks if overlap > 20%)
  */
+/**
+ * Check if a polygon overlaps with existing properties
+ * Returns whether the listing can proceed (blocks if overlap > 20%)
+ * For overlaps >20%, the system will auto-delete and notify the uploader
+ */
 export async function checkPolygonOverlap(
   geojson: any, 
-  excludeListingId?: string
+  excludeListingId?: string,
+  listingTitle?: string,
+  uploaderId?: string
 ): Promise<OverlapCheckResult> {
   console.log('=== OVERLAP CHECK STARTED ===');
   console.log('GeoJSON:', JSON.stringify(geojson));
   console.log('Exclude listing ID:', excludeListingId);
+  console.log('Listing title:', listingTitle);
+  console.log('Uploader ID:', uploaderId);
   
   try {
     const { data: result, error } = await supabase.functions.invoke('check-polygon-overlap', {
-      body: { geojson, exclude_listing_id: excludeListingId },
+      body: { 
+        geojson, 
+        exclude_listing_id: excludeListingId,
+        listing_title: listingTitle,
+        uploader_id: uploaderId
+      },
     });
 
     console.log('Overlap check response:', result, 'Error:', error);
@@ -76,6 +90,15 @@ export async function checkPolygonOverlap(
     }
 
     console.log('Polygon overlap check result:', result);
+    
+    // If auto-deleted, update the message
+    if (result.was_auto_deleted) {
+      return {
+        ...result,
+        message: `Your listing was automatically rejected due to ${result.max_overlap_percentage}% overlap with an existing property. You have been notified via email with details.`
+      };
+    }
+    
     return result;
   } catch (error) {
     console.error('Exception in checkPolygonOverlap:', error);
