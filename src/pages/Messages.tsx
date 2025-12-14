@@ -616,7 +616,7 @@ export default function Messages() {
             {selectedConversation ? (
               <div className="flex flex-col h-full overflow-hidden">
                 {/* Modern Chat Header */}
-                <div className="flex-shrink-0 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/30 z-10">
+                <div className="fixed top-0 left-0 right-0 md:relative px-4 py-3 bg-background/95 backdrop-blur-xl border-b border-border/30 z-40">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Button
