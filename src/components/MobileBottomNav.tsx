@@ -11,6 +11,9 @@ export function MobileBottomNav() {
   const { user, hasRole } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Hide on map page to avoid overlapping map controls
+  if (location.pathname === '/map') return null;
+
   useEffect(() => {
     if (!user) return;
 
