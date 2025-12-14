@@ -128,8 +128,8 @@ Deno.serve(async (req) => {
               maxOverlap = overlapPercentage;
             }
 
-            // Block if overlap > 10%
-            if (overlapPercentage > 10) {
+            // Block if overlap > 20%
+            if (overlapPercentage > 20) {
               hasBlockingOverlap = true;
             }
           }
@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
       max_overlap_percentage: Math.round(maxOverlap * 10) / 10,
       overlapping_properties: overlaps.slice(0, 5), // Return top 5 overlaps
       message: hasBlockingOverlap 
-        ? `This property overlaps ${maxOverlap.toFixed(1)}% with an existing listing. Properties cannot overlap more than 10%.`
+        ? `This property overlaps ${maxOverlap.toFixed(1)}% with an existing listing. Properties cannot overlap more than 20%.`
         : overlaps.length > 0
           ? `Warning: Minor overlap detected (${maxOverlap.toFixed(1)}%) with existing properties.`
           : 'No overlaps detected.',

@@ -35,7 +35,7 @@ interface OverlapCheckResult {
 
 /**
  * Check if a polygon overlaps with existing properties
- * Returns whether the listing can proceed (blocks if overlap > 10%)
+ * Returns whether the listing can proceed (blocks if overlap > 20%)
  */
 export async function checkPolygonOverlap(
   geojson: any, 

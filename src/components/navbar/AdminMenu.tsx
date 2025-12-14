@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase, Map, DollarSign, FileUp, ShoppingCart } from 'lucide-react';
+import { Settings, Users, Building, FileCheck, BarChart3, FileText, Download, Webhook, Activity, Briefcase, Map, DollarSign, FileUp, ShoppingCart, Layers } from 'lucide-react';
 
 export function AdminMenu() {
   const { hasRole } = useAuth();
@@ -38,6 +38,13 @@ export function AdminMenu() {
           <Link to="/admin/verification" className="cursor-pointer">
             <FileCheck className="mr-2 h-4 w-4" />
             Verify Listings
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
+          <Link to="/admin/overlap-review" className="cursor-pointer">
+            <Layers className="mr-2 h-4 w-4" />
+            Overlap Review
           </Link>
         </DropdownMenuItem>
 
