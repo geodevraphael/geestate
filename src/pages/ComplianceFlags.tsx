@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, CheckCircle2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { Navigate, Link } from 'react-router-dom';
+import { sendEmailNotification } from '@/lib/emailNotifications';
 
 export default function ComplianceFlags() {
   const { profile, hasRole } = useAuth();
@@ -67,6 +68,18 @@ export default function ComplianceFlags() {
         .eq('id', selectedFlag.id);
 
       if (error) throw error;
+
+      // Send email to the user who triggered the flag
+      if (selectedFlag.triggered_by) {
+        sendEmailNotification({
+          userId: selectedFlag.triggered_by,
+          subject: 'Compliance Flag Resolved',
+          title: 'Your Compliance Flag Has Been Resolved',
+          message: `The compliance flag you raised for "${selectedFlag.listing?.title}" has been resolved. Resolution: ${resolutionNotes}`,
+          linkUrl: `/listings/${selectedFlag.listing_id}`,
+          linkText: 'View Listing',
+        }).catch(err => console.error('Email notification failed:', err));
+      }
 
       toast({
         title: 'Flag Resolved',

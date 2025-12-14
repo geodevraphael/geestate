@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { sendEmailNotification } from '@/lib/emailNotifications';
 
 interface ReviewPaymentProofDialogProps {
   open: boolean;
@@ -53,6 +54,18 @@ export function ReviewPaymentProofDialog({
 
       // The trigger will automatically update the income record to 'paid'
       
+      // Send email notification to payer
+      if (proof.payer_id) {
+        sendEmailNotification({
+          userId: proof.payer_id,
+          subject: 'Payment Proof Accepted',
+          title: 'Your Payment Has Been Verified',
+          message: `Your payment proof for "${proof.income_record?.description}" has been accepted. Thank you for your payment.`,
+          linkUrl: '/geoinsight-payments',
+          linkText: 'View Payments',
+        }).catch(err => console.error('Email notification failed:', err));
+      }
+      
       toast.success('Payment proof accepted and income record marked as paid');
       onUpdate();
       onOpenChange(false);
@@ -92,6 +105,18 @@ export function ReviewPaymentProofDialog({
         .eq('id', proof.income_record_id);
 
       if (incomeError) throw incomeError;
+
+      // Send email notification to payer
+      if (proof.payer_id) {
+        sendEmailNotification({
+          userId: proof.payer_id,
+          subject: 'Payment Proof Rejected',
+          title: 'Your Payment Proof Requires Attention',
+          message: `Your payment proof for "${proof.income_record?.description}" was not accepted. Reason: ${reviewNotes}. Please submit a new payment proof.`,
+          linkUrl: '/geoinsight-payments',
+          linkText: 'Submit New Proof',
+        }).catch(err => console.error('Email notification failed:', err));
+      }
 
       toast.success('Payment proof rejected');
       onUpdate();

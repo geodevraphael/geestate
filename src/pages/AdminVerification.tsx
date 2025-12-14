@@ -13,6 +13,7 @@ import { CheckCircle2, XCircle, Clock, Eye, MapPin, AlertCircle } from 'lucide-r
 import { format } from 'date-fns';
 import { logAuditAction } from '@/lib/auditLog';
 import { PolygonValidationPanel } from '@/components/PolygonValidationPanel';
+import { sendEmailNotification } from '@/lib/emailNotifications';
 
 interface ListingWithOwner {
   id: string;
@@ -124,6 +125,25 @@ export default function AdminVerification() {
           .from('listings')
           .update({ is_polygon_verified: true })
           .eq('id', listingId);
+      }
+
+      // Send email notification to listing owner
+      if (selectedListing?.owner_id) {
+        const emailSubject = status === 'verified' 
+          ? 'Your Listing Has Been Verified!' 
+          : 'Your Listing Verification Status Update';
+        const emailMessage = status === 'verified'
+          ? `Great news! Your property listing "${selectedListing.title}" has been verified and is now live on GeoInsight Tanzania.`
+          : `Your property listing "${selectedListing.title}" was not approved. ${verificationNotes ? `Reason: ${verificationNotes}` : 'Please contact support for more details.'}`;
+        
+        sendEmailNotification({
+          userId: selectedListing.owner_id,
+          subject: emailSubject,
+          title: emailSubject,
+          message: emailMessage,
+          linkUrl: `/listings/${listingId}`,
+          linkText: 'View Listing',
+        }).catch(err => console.error('Email notification failed:', err));
       }
 
       toast({

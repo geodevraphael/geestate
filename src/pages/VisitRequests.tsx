@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { VisitRequest } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { sendEmailNotification } from '@/lib/emailNotifications';
 
 export default function VisitRequests() {
   const { user } = useAuth();
@@ -47,6 +48,7 @@ export default function VisitRequests() {
   };
 
   const handleAccept = async (id: string) => {
+    const visit = visits.find(v => v.id === id);
     const { error } = await supabase
       .from('visit_requests')
       .update({ status: 'accepted' })
@@ -59,6 +61,17 @@ export default function VisitRequests() {
         variant: 'destructive',
       });
     } else {
+      // Send email to buyer
+      if (visit?.buyer_id) {
+        sendEmailNotification({
+          userId: visit.buyer_id,
+          subject: 'Visit Request Accepted',
+          title: 'Your Visit Request Has Been Accepted',
+          message: `Your visit request for "${(visit as any).listings?.title}" on ${format(new Date(visit.requested_date), 'MMMM dd, yyyy')} has been accepted by the seller.`,
+          linkUrl: '/visits',
+          linkText: 'View Visit Details',
+        }).catch(err => console.error('Email notification failed:', err));
+      }
       toast({
         title: 'Accepted',
         description: 'Visit request has been accepted',
@@ -68,6 +81,7 @@ export default function VisitRequests() {
   };
 
   const handleReject = async (id: string) => {
+    const visit = visits.find(v => v.id === id);
     const { error } = await supabase
       .from('visit_requests')
       .update({ status: 'rejected' })
@@ -80,6 +94,17 @@ export default function VisitRequests() {
         variant: 'destructive',
       });
     } else {
+      // Send email to buyer
+      if (visit?.buyer_id) {
+        sendEmailNotification({
+          userId: visit.buyer_id,
+          subject: 'Visit Request Update',
+          title: 'Your Visit Request Status',
+          message: `Your visit request for "${(visit as any).listings?.title}" on ${format(new Date(visit.requested_date), 'MMMM dd, yyyy')} was not accepted. Please try requesting a different date.`,
+          linkUrl: '/visits',
+          linkText: 'Request New Visit',
+        }).catch(err => console.error('Email notification failed:', err));
+      }
       toast({
         title: 'Rejected',
         description: 'Visit request has been rejected',
