@@ -113,7 +113,7 @@ export const LocationAwareWelcome: React.FC = () => {
     if (locationInfo?.latitude && locationInfo?.longitude) {
       params.set("lat", locationInfo.latitude.toFixed(6));
       params.set("lng", locationInfo.longitude.toFixed(6));
-      params.set("zoom", "18"); // Building-level zoom
+      params.set("zoom", "19"); // Close building-level zoom
       params.set("locate", "true"); // Trigger animated user location marker
     }
     return `/map?${params.toString()}`;
