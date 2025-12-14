@@ -298,56 +298,53 @@ export default function MapBrowse() {
     setStreets(data || []);
   };
 
-  // Render administrative boundaries
+  // Render administrative boundaries (completely transparent - only used for zoom behavior)
   const renderBoundaries = (boundaries: any[], level: 'region' | 'district' | 'ward') => {
     if (!mapInstance.current) return;
 
+    // Remove any existing boundary layer
     if (boundaryLayerRef.current) {
       mapInstance.current.removeLayer(boundaryLayerRef.current);
       boundaryLayerRef.current = null;
     }
 
-    const features: Feature[] = [];
     const allCoordinates: number[][] = [];
 
-    const createFeature = (coords: [number, number][], boundary: any, strokeColor: string, fillOpacity: string) => {
-      const transformed = coords.map(c => {
-        const proj = fromLonLat([c[0], c[1]]);
-        allCoordinates.push(proj as number[]);
-        return proj;
-      });
-      const polygon = new Polygon([transformed]);
-      const feature = new Feature({ geometry: polygon, boundary });
-      feature.setStyle(new Style({
-        fill: new Fill({ color: strokeColor + fillOpacity }),
-        stroke: new Stroke({ color: strokeColor, width: level === 'ward' ? 3 : 2, lineDash: level === 'district' ? [8, 4] : undefined }),
-      }));
-      return feature;
-    };
-
+    // Just calculate extent for zooming - no visible rendering
     boundaries.forEach(b => {
       if (!b.geometry) return;
       try {
         const geo = typeof b.geometry === 'string' ? JSON.parse(b.geometry) : b.geometry;
-        const color = level === 'ward' ? '#3b82f6' : '#8b5cf6';
-        const opacity = level === 'ward' ? '20' : '10';
         
-        if (geo.type === 'Polygon') features.push(createFeature(geo.coordinates[0], b, color, opacity));
-        else if (geo.type === 'MultiPolygon') {
-          geo.coordinates.forEach((pc: any) => { if (pc?.[0]) features.push(createFeature(pc[0], b, color, opacity)); });
+        const processCoords = (coords: [number, number][]) => {
+          coords.forEach(c => {
+            const proj = fromLonLat([c[0], c[1]]);
+            allCoordinates.push(proj as number[]);
+          });
+        };
+        
+        if (geo.type === 'Polygon' && geo.coordinates?.[0]) {
+          processCoords(geo.coordinates[0]);
+        } else if (geo.type === 'MultiPolygon') {
+          geo.coordinates.forEach((pc: any) => { 
+            if (pc?.[0]) processCoords(pc[0]); 
+          });
         }
-      } catch (e) { console.error('Boundary render error:', e); }
+      } catch (e) { console.error('Boundary processing error:', e); }
     });
 
-    if (features.length > 0) {
-      const source = new VectorSource({ features });
-      const layer = new VectorLayer({ source });
-      boundaryLayerRef.current = layer;
-      mapInstance.current.addLayer(layer);
+    // Zoom to the area without showing any visible boundaries
+    if (allCoordinates.length > 0 && mapInstance.current) {
+      const minX = Math.min(...allCoordinates.map(c => c[0]));
+      const maxX = Math.max(...allCoordinates.map(c => c[0]));
+      const minY = Math.min(...allCoordinates.map(c => c[1]));
+      const maxY = Math.max(...allCoordinates.map(c => c[1]));
       
-      if (allCoordinates.length > 0) {
-        mapInstance.current.getView().fit(source.getExtent(), { padding: [50, 50, 50, 50], duration: 800, maxZoom: 14 });
-      }
+      mapInstance.current.getView().fit([minX, minY, maxX, maxY], { 
+        padding: [50, 50, 50, 50], 
+        duration: 800, 
+        maxZoom: 14 
+      });
     }
   };
 
