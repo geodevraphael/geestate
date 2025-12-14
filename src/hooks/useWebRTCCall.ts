@@ -32,10 +32,15 @@ export function useWebRTCCall() {
   const localStream = useRef<MediaStream | null>(null);
   const remoteAudio = useRef<HTMLAudioElement | null>(null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pendingOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
   const ringtoneRef = useRef<AudioContext | null>(null);
   const ringtoneIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const remoteUserIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    remoteUserIdRef.current = remoteUserId;
+  }, [remoteUserId]);
 
   // Initialize remote audio element
   useEffect(() => {
@@ -48,8 +53,8 @@ export function useWebRTCCall() {
     };
   }, []);
 
-  // Play ringtone for incoming calls
-  const startRingtone = useCallback(() => {
+  // Helper functions (not hooks)
+  const startRingtone = () => {
     try {
       ringtoneRef.current = new AudioContext();
       
@@ -69,7 +74,6 @@ export function useWebRTCCall() {
         oscillator.start();
         oscillator.stop(ringtoneRef.current.currentTime + 0.2);
         
-        // Second beep
         setTimeout(() => {
           if (!ringtoneRef.current || ringtoneRef.current.state === 'closed') return;
           const osc2 = ringtoneRef.current.createOscillator();
@@ -89,105 +93,113 @@ export function useWebRTCCall() {
     } catch (error) {
       console.error('Error playing ringtone:', error);
     }
-  }, []);
+  };
 
-  const stopRingtone = useCallback(() => {
+  const stopRingtone = () => {
     if (ringtoneIntervalRef.current) {
       clearInterval(ringtoneIntervalRef.current);
       ringtoneIntervalRef.current = null;
     }
     if (ringtoneRef.current) {
-      ringtoneRef.current.close();
+      ringtoneRef.current.close().catch(() => {});
       ringtoneRef.current = null;
     }
+  };
+
+  const startCallTimer = () => {
+    setCallDuration(0);
+    callTimerRef.current = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+  };
+
+  const stopCallTimer = () => {
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+    }
+  };
+
+  const cleanup = useCallback(() => {
+    stopRingtone();
+    stopCallTimer();
+    toast.dismiss('incoming-call');
+    
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(track => track.stop());
+      localStream.current = null;
+    }
+
+    if (peerConnection.current) {
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
+
+    setCallStatus('idle');
+    setRemoteUserId(null);
+    setRemoteUserName('');
+    setCallDuration(0);
+    setIsMuted(false);
+    pendingOfferRef.current = null;
   }, []);
 
-  // Subscribe to call signals
-  useEffect(() => {
-    if (!user?.id) return;
+  const sendSignal = useCallback(async (targetUserId: string, signal: Omit<CallSignal, 'from' | 'fromName' | 'to'>) => {
+    if (!user?.id || !targetUserId) return;
 
-    console.log('Setting up call channel for user:', user.id);
+    console.log('Sending signal:', signal.type, 'to:', targetUserId);
     
-    const channel = supabase.channel(`calls-${user.id}`)
-      .on('broadcast', { event: 'call-signal' }, async ({ payload }) => {
-        const signal = payload as CallSignal;
-        if (signal.to !== user.id) return;
-
-        console.log('Received signal:', signal.type, 'from:', signal.from);
-
-        switch (signal.type) {
-          case 'offer':
-            handleIncomingCall(signal);
-            break;
-          case 'answer':
-            handleAnswer(signal);
-            break;
-          case 'ice-candidate':
-            handleIceCandidate(signal);
-            break;
-          case 'end-call':
-            endCall(false);
-            break;
-        }
-      })
-      .subscribe((status) => {
-        console.log('Call channel status:', status);
+    const targetChannel = supabase.channel(`calls-${targetUserId}-${Date.now()}`);
+    
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Channel subscription timeout'));
+        }, 5000);
+        
+        targetChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
       });
-
-    channelRef.current = channel;
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
-
-  const sendSignal = useCallback(async (signal: Omit<CallSignal, 'from' | 'fromName'>) => {
-    if (!user?.id || !signal.to) return;
-
-    console.log('Sending signal:', signal.type, 'to:', signal.to);
-    
-    const targetChannel = supabase.channel(`calls-${signal.to}`);
-    
-    // Wait for channel to be subscribed before sending
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Channel subscription timeout'));
-      }, 5000);
       
-      targetChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          clearTimeout(timeout);
-          resolve();
-        }
+      await targetChannel.send({
+        type: 'broadcast',
+        event: 'call-signal',
+        payload: {
+          ...signal,
+          to: targetUserId,
+          from: user.id,
+          fromName: profile?.full_name || 'Unknown',
+        },
       });
-    });
-    
-    const result = await targetChannel.send({
-      type: 'broadcast',
-      event: 'call-signal',
-      payload: {
-        ...signal,
-        from: user.id,
-        fromName: profile?.full_name || 'Unknown',
-      },
-    });
 
-    console.log('Signal sent result:', result);
-    
-    // Clean up channel after a short delay
-    setTimeout(() => {
-      supabase.removeChannel(targetChannel);
-    }, 1000);
+      console.log('Signal sent successfully');
+    } catch (error) {
+      console.error('Error sending signal:', error);
+    } finally {
+      setTimeout(() => {
+        supabase.removeChannel(targetChannel);
+      }, 500);
+    }
   }, [user?.id, profile?.full_name]);
 
-  const createPeerConnection = useCallback(() => {
+  const endCall = useCallback((sendEndSignal = true) => {
+    const targetId = remoteUserIdRef.current;
+    if (sendEndSignal && targetId) {
+      sendSignal(targetId, { type: 'end-call', payload: {} });
+    }
+    cleanup();
+  }, [sendSignal, cleanup]);
+
+  const createPeerConnection = useCallback((targetUserId: string) => {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
     pc.onicecandidate = (event) => {
-      if (event.candidate && remoteUserId) {
-        sendSignal({
+      if (event.candidate) {
+        sendSignal(targetUserId, {
           type: 'ice-candidate',
-          to: remoteUserId,
           payload: event.candidate,
         });
       }
@@ -207,27 +219,13 @@ export function useWebRTCCall() {
         stopRingtone();
         startCallTimer();
       } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        endCall(false);
+        cleanup();
       }
     };
 
     peerConnection.current = pc;
     return pc;
-  }, [remoteUserId, sendSignal, stopRingtone]);
-
-  const startCallTimer = useCallback(() => {
-    setCallDuration(0);
-    callTimerRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-  }, []);
-
-  const stopCallTimer = useCallback(() => {
-    if (callTimerRef.current) {
-      clearInterval(callTimerRef.current);
-      callTimerRef.current = null;
-    }
-  }, []);
+  }, [sendSignal, cleanup]);
 
   const startCall = useCallback(async (targetUserId: string, targetUserName: string) => {
     try {
@@ -235,7 +233,6 @@ export function useWebRTCCall() {
       setRemoteUserName(targetUserName);
       setCallStatus('calling');
 
-      // Get local audio stream
       localStream.current = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -244,20 +241,17 @@ export function useWebRTCCall() {
         }
       });
 
-      const pc = createPeerConnection();
+      const pc = createPeerConnection(targetUserId);
 
-      // Add local tracks
       localStream.current.getTracks().forEach(track => {
         pc.addTrack(track, localStream.current!);
       });
 
-      // Create and send offer
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      await sendSignal({
+      await sendSignal(targetUserId, {
         type: 'offer',
-        to: targetUserId,
         payload: offer,
       });
 
@@ -265,38 +259,13 @@ export function useWebRTCCall() {
     } catch (error) {
       console.error('Error starting call:', error);
       toast.error('Failed to start call. Please check microphone permissions.');
-      endCall(false);
+      cleanup();
     }
-  }, [createPeerConnection, sendSignal]);
-
-  const handleIncomingCall = useCallback((signal: CallSignal) => {
-    if (callStatus !== 'idle') {
-      // Already in a call, reject
-      sendSignal({ type: 'end-call', to: signal.from, payload: {} });
-      return;
-    }
-
-    console.log('Incoming call from:', signal.fromName, 'payload:', signal.payload);
-    
-    setRemoteUserId(signal.from);
-    setRemoteUserName(signal.fromName || 'Unknown');
-    setCallStatus('incoming');
-    
-    // Store the offer in ref (not window)
-    pendingOfferRef.current = signal.payload;
-    
-    // Start ringtone
-    startRingtone();
-    
-    // Show toast notification
-    toast.info(`Incoming call from ${signal.fromName || 'Unknown'}`, {
-      duration: 30000,
-      id: 'incoming-call',
-    });
-  }, [callStatus, sendSignal, startRingtone]);
+  }, [createPeerConnection, sendSignal, cleanup]);
 
   const acceptCall = useCallback(async () => {
-    if (!remoteUserId) {
+    const targetUserId = remoteUserIdRef.current;
+    if (!targetUserId) {
       console.error('No remote user ID');
       return;
     }
@@ -305,7 +274,7 @@ export function useWebRTCCall() {
     if (!offer || !offer.type || !offer.sdp) {
       console.error('No valid pending offer:', offer);
       toast.error('Call data not received properly. Please try again.');
-      endCall(false);
+      cleanup();
       return;
     }
 
@@ -313,7 +282,6 @@ export function useWebRTCCall() {
       stopRingtone();
       toast.dismiss('incoming-call');
       
-      // Get local audio stream
       localStream.current = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -322,24 +290,20 @@ export function useWebRTCCall() {
         }
       });
 
-      const pc = createPeerConnection();
+      const pc = createPeerConnection(targetUserId);
 
-      // Add local tracks
       localStream.current.getTracks().forEach(track => {
         pc.addTrack(track, localStream.current!);
       });
 
-      // Set remote description from stored offer
       console.log('Setting remote description with offer:', offer);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
-      // Create and send answer
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      await sendSignal({
+      await sendSignal(targetUserId, {
         type: 'answer',
-        to: remoteUserId,
         payload: answer,
       });
 
@@ -347,74 +311,20 @@ export function useWebRTCCall() {
     } catch (error) {
       console.error('Error accepting call:', error);
       toast.error('Failed to accept call');
-      endCall(false);
+      cleanup();
     }
-  }, [remoteUserId, createPeerConnection, sendSignal, stopRingtone]);
-
-  const handleAnswer = useCallback(async (signal: CallSignal) => {
-    if (!peerConnection.current) return;
-
-    try {
-      console.log('Setting remote description with answer:', signal.payload);
-      await peerConnection.current.setRemoteDescription(
-        new RTCSessionDescription(signal.payload)
-      );
-    } catch (error) {
-      console.error('Error handling answer:', error);
-    }
-  }, []);
-
-  const handleIceCandidate = useCallback(async (signal: CallSignal) => {
-    if (!peerConnection.current) return;
-
-    try {
-      await peerConnection.current.addIceCandidate(
-        new RTCIceCandidate(signal.payload)
-      );
-    } catch (error) {
-      console.error('Error adding ICE candidate:', error);
-    }
-  }, []);
+  }, [createPeerConnection, sendSignal, cleanup]);
 
   const rejectCall = useCallback(() => {
+    const targetId = remoteUserIdRef.current;
     stopRingtone();
     toast.dismiss('incoming-call');
     
-    if (remoteUserId) {
-      sendSignal({ type: 'end-call', to: remoteUserId, payload: {} });
+    if (targetId) {
+      sendSignal(targetId, { type: 'end-call', payload: {} });
     }
-    endCall(false);
-  }, [remoteUserId, sendSignal, stopRingtone]);
-
-  const endCall = useCallback((sendEndSignal = true) => {
-    stopRingtone();
-    toast.dismiss('incoming-call');
-    
-    if (sendEndSignal && remoteUserId) {
-      sendSignal({ type: 'end-call', to: remoteUserId, payload: {} });
-    }
-
-    // Stop local stream
-    if (localStream.current) {
-      localStream.current.getTracks().forEach(track => track.stop());
-      localStream.current = null;
-    }
-
-    // Close peer connection
-    if (peerConnection.current) {
-      peerConnection.current.close();
-      peerConnection.current = null;
-    }
-
-    // Reset state
-    stopCallTimer();
-    setCallStatus('idle');
-    setRemoteUserId(null);
-    setRemoteUserName('');
-    setCallDuration(0);
-    setIsMuted(false);
-    pendingOfferRef.current = null;
-  }, [remoteUserId, sendSignal, stopCallTimer, stopRingtone]);
+    cleanup();
+  }, [sendSignal, cleanup]);
 
   const toggleMute = useCallback(() => {
     if (localStream.current) {
@@ -433,11 +343,73 @@ export function useWebRTCCall() {
     }
   }, [isSpeakerOn]);
 
-  const formatDuration = useCallback((seconds: number) => {
+  const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }, []);
+  };
+
+  // Subscribe to call signals
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('Setting up call channel for user:', user.id);
+    
+    const channel = supabase.channel(`calls-${user.id}`)
+      .on('broadcast', { event: 'call-signal' }, async ({ payload }) => {
+        const signal = payload as CallSignal;
+        if (signal.to !== user.id) return;
+
+        console.log('Received signal:', signal.type, 'from:', signal.from);
+
+        switch (signal.type) {
+          case 'offer':
+            // Handle incoming call
+            setRemoteUserId(signal.from);
+            setRemoteUserName(signal.fromName || 'Unknown');
+            setCallStatus('incoming');
+            pendingOfferRef.current = signal.payload;
+            startRingtone();
+            toast.info(`Incoming call from ${signal.fromName || 'Unknown'}`, {
+              duration: 30000,
+              id: 'incoming-call',
+            });
+            break;
+          case 'answer':
+            if (peerConnection.current) {
+              try {
+                await peerConnection.current.setRemoteDescription(
+                  new RTCSessionDescription(signal.payload)
+                );
+              } catch (error) {
+                console.error('Error handling answer:', error);
+              }
+            }
+            break;
+          case 'ice-candidate':
+            if (peerConnection.current) {
+              try {
+                await peerConnection.current.addIceCandidate(
+                  new RTCIceCandidate(signal.payload)
+                );
+              } catch (error) {
+                console.error('Error adding ICE candidate:', error);
+              }
+            }
+            break;
+          case 'end-call':
+            cleanup();
+            break;
+        }
+      })
+      .subscribe((status) => {
+        console.log('Call channel status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, cleanup]);
 
   return {
     callStatus,
