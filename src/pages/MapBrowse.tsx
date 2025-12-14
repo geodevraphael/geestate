@@ -1210,19 +1210,21 @@ export default function MapBrowse() {
               </SheetContent>
             </Sheet>
 
-            {/* Simple Property Button */}
-            {sortedListings.length > 0 && (
-              <Button
-                onClick={() => setShowPropertyList(true)}
-                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 rounded-full shadow-xl px-6 h-12 gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <MapPin className="h-5 w-5" />
-                <span className="font-semibold">Properties</span>
-                <Badge variant="secondary" className="ml-1 bg-primary-foreground/20 text-primary-foreground">
-                  {sortedListings.length}
-                </Badge>
-              </Button>
-            )}
+            {/* Simple Property Button - wrapped in stable container */}
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              {sortedListings.length > 0 ? (
+                <Button
+                  onClick={() => setShowPropertyList(true)}
+                  className="pointer-events-auto rounded-full shadow-xl px-6 h-12 gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <MapPin className="h-5 w-5" />
+                  <span className="font-semibold">Properties</span>
+                  <Badge variant="secondary" className="ml-1 bg-primary-foreground/20 text-primary-foreground">
+                    {sortedListings.length}
+                  </Badge>
+                </Button>
+              ) : null}
+            </div>
 
             {/* Full Property List Drawer */}
             <Drawer open={showPropertyList} onOpenChange={setShowPropertyList}>
@@ -1298,82 +1300,84 @@ export default function MapBrowse() {
               </PopoverContent>
             </Popover>
 
-            {/* Search Radius Control - Mobile */}
-            {showRadiusControl && userLocation && (
-              <div className="fixed bottom-24 left-4 right-4 z-20 animate-fade-in">
-                <div className="bg-card/95 backdrop-blur-md border-2 border-primary/30 rounded-2xl shadow-2xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Radar className="h-5 w-5 text-primary animate-pulse" />
-                    <span className="font-semibold text-sm">Search Radius</span>
-                    <Badge variant="secondary" className="ml-auto">
-                      {searchRadius >= 1000 ? `${searchRadius / 1000} km` : `${searchRadius} m`}
-                    </Badge>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={() => {
-                        setShowRadiusControl(false);
-                        setRadiusFilterActive(false);
-                        // Remove user location marker
-                        if (userLocationLayerRef.current && mapInstance.current) {
-                          mapInstance.current.removeLayer(userLocationLayerRef.current);
-                          userLocationLayerRef.current = null;
-                        }
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex gap-2 flex-wrap mb-3">
-                    {[
-                      { value: 500, label: '500m' },
-                      { value: 1000, label: '1 km' },
-                      { value: 2000, label: '2 km' },
-                      { value: 5000, label: '5 km' },
-                      { value: 10000, label: '10 km' },
-                    ].map(opt => (
+            {/* Search Radius Control - Mobile - wrapped in stable container */}
+            <div className="fixed bottom-24 left-4 right-4 z-20 pointer-events-none">
+              {showRadiusControl && userLocation ? (
+                <div className="pointer-events-auto animate-fade-in">
+                  <div className="bg-card/95 backdrop-blur-md border-2 border-primary/30 rounded-2xl shadow-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Radar className="h-5 w-5 text-primary animate-pulse" />
+                      <span className="font-semibold text-sm">Search Radius</span>
+                      <Badge variant="secondary" className="ml-auto">
+                        {searchRadius >= 1000 ? `${searchRadius / 1000} km` : `${searchRadius} m`}
+                      </Badge>
                       <Button
-                        key={opt.value}
-                        size="sm"
-                        variant={searchRadius === opt.value ? 'default' : 'outline'}
-                        onClick={() => updateSearchRadius(opt.value)}
-                        className={cn(
-                          "flex-1 min-w-[60px]",
-                          searchRadius === opt.value && "bg-primary text-primary-foreground"
-                        )}
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => {
+                          setShowRadiusControl(false);
+                          setRadiusFilterActive(false);
+                          // Remove user location marker
+                          if (userLocationLayerRef.current && mapInstance.current) {
+                            mapInstance.current.removeLayer(userLocationLayerRef.current);
+                            userLocationLayerRef.current = null;
+                          }
+                        }}
                       >
-                        {opt.label}
+                        <X className="h-4 w-4" />
                       </Button>
-                    ))}
-                  </div>
-                  {/* Custom radius input */}
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      type="number"
-                      placeholder="Custom (meters)"
-                      value={customRadiusInput}
-                      onChange={(e) => setCustomRadiusInput(e.target.value)}
-                      className="flex-1 h-9"
-                      min={100}
-                      max={50000}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const value = parseInt(customRadiusInput);
-                        if (value >= 100 && value <= 50000) {
-                          updateSearchRadius(value);
-                        }
-                      }}
-                      disabled={!customRadiusInput || parseInt(customRadiusInput) < 100 || parseInt(customRadiusInput) > 50000}
-                    >
-                      Apply
-                    </Button>
+                    </div>
+                    <div className="flex gap-2 flex-wrap mb-3">
+                      {[
+                        { value: 500, label: '500m' },
+                        { value: 1000, label: '1 km' },
+                        { value: 2000, label: '2 km' },
+                        { value: 5000, label: '5 km' },
+                        { value: 10000, label: '10 km' },
+                      ].map(opt => (
+                        <Button
+                          key={opt.value}
+                          size="sm"
+                          variant={searchRadius === opt.value ? 'default' : 'outline'}
+                          onClick={() => updateSearchRadius(opt.value)}
+                          className={cn(
+                            "flex-1 min-w-[60px]",
+                            searchRadius === opt.value && "bg-primary text-primary-foreground"
+                          )}
+                        >
+                          {opt.label}
+                        </Button>
+                      ))}
+                    </div>
+                    {/* Custom radius input */}
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        placeholder="Custom (meters)"
+                        value={customRadiusInput}
+                        onChange={(e) => setCustomRadiusInput(e.target.value)}
+                        className="flex-1 h-9"
+                        min={100}
+                        max={50000}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const value = parseInt(customRadiusInput);
+                          if (value >= 100 && value <= 50000) {
+                            updateSearchRadius(value);
+                          }
+                        }}
+                        disabled={!customRadiusInput || parseInt(customRadiusInput) < 100 || parseInt(customRadiusInput) > 50000}
+                      >
+                        Apply
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : null}
+            </div>
           </>
         )}
 
