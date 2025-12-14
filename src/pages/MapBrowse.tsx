@@ -95,6 +95,7 @@ export default function MapBrowse() {
   const [sortBy, setSortBy] = useState('distance');
   const [searchRadius, setSearchRadius] = useState<number>(1000); // Default 1km in meters
   const [showRadiusControl, setShowRadiusControl] = useState(false);
+  const [radiusFilterActive, setRadiusFilterActive] = useState(false); // Tracks if radius filtering is active
   const [customRadiusInput, setCustomRadiusInput] = useState<string>('');
   
   // Map refs
@@ -149,8 +150,9 @@ export default function MapBrowse() {
     if (searchQuery) count++;
     if (priceRange[0] > 0 || priceRange[1] < maxPrice) count++;
     if (areaRange[0] > 0 || areaRange[1] < maxArea) count++;
+    if (radiusFilterActive) count++;
     return count;
-  }, [listingTypeFilter, propertyTypeFilter, dealerFilter, regionFilter, searchQuery, priceRange, areaRange, maxPrice, maxArea]);
+  }, [listingTypeFilter, propertyTypeFilter, dealerFilter, regionFilter, searchQuery, priceRange, areaRange, maxPrice, maxArea, radiusFilterActive]);
 
   // Reset filters
   const resetFilters = useCallback(() => {
@@ -164,6 +166,8 @@ export default function MapBrowse() {
     setSearchQuery('');
     setPriceRange([0, maxPrice]);
     setAreaRange([0, maxArea]);
+    setRadiusFilterActive(false);
+    setShowRadiusControl(false);
   }, [maxPrice, maxArea]);
 
   // Fetch data
@@ -531,6 +535,7 @@ export default function MapBrowse() {
         const { latitude, longitude } = pos.coords;
         setUserLocation({ lat: latitude, lng: longitude });
         setShowRadiusControl(true); // Show radius control when location is found
+        setRadiusFilterActive(true); // Activate radius filtering
         
         // Create animated marker with current search radius
         createUserLocationMarker(latitude, longitude, searchRadius);
@@ -643,8 +648,8 @@ export default function MapBrowse() {
       // Area
       if (l.polygon?.area_m2 && (l.polygon.area_m2 < areaRange[0] || l.polygon.area_m2 > areaRange[1])) return false;
       
-      // RADIUS FILTER: If user location is active and radius control is shown, filter by distance
-      if (showRadiusControl && userLocation && l.polygon?.centroid_lat && l.polygon?.centroid_lng) {
+      // RADIUS FILTER: If radius filtering is active, filter by distance
+      if (radiusFilterActive && userLocation && l.polygon?.centroid_lat && l.polygon?.centroid_lng) {
         const distance = calculateDistanceMeters(
           userLocation.lat, 
           userLocation.lng, 
@@ -655,7 +660,7 @@ export default function MapBrowse() {
       }
       
       // Location (only apply if not using radius filter)
-      if (!showRadiusControl) {
+      if (!radiusFilterActive) {
         if (spatialFilterMode === 'boundary' && activeWardGeometries.length > 0) {
           if (wardFilter !== 'all') {
             if (l.ward_id !== wardFilter && !isListingInWards(l, activeWardGeometries)) return false;
@@ -675,7 +680,7 @@ export default function MapBrowse() {
       
       return true;
     });
-  }, [listings, searchQuery, listingTypeFilter, propertyTypeFilter, dealerFilter, priceRange, areaRange, spatialFilterMode, activeWardGeometries, wardFilter, districtFilter, regionFilter, streetFilter, showRadiusControl, userLocation, searchRadius, calculateDistanceMeters]);
+  }, [listings, searchQuery, listingTypeFilter, propertyTypeFilter, dealerFilter, priceRange, areaRange, spatialFilterMode, activeWardGeometries, wardFilter, districtFilter, regionFilter, streetFilter, radiusFilterActive, userLocation, searchRadius, calculateDistanceMeters]);
 
   // Sorted listings
   const sortedListings = useMemo(() => {
@@ -1173,7 +1178,15 @@ export default function MapBrowse() {
                       size="icon"
                       variant="ghost"
                       className="h-6 w-6"
-                      onClick={() => setShowRadiusControl(false)}
+                      onClick={() => {
+                        setShowRadiusControl(false);
+                        setRadiusFilterActive(false);
+                        // Remove user location marker
+                        if (userLocationLayerRef.current && mapInstance.current) {
+                          mapInstance.current.removeLayer(userLocationLayerRef.current);
+                          userLocationLayerRef.current = null;
+                        }
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </Button>
