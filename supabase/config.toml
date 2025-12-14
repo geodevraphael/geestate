@@ -59,3 +59,9 @@ verify_jwt = false
 
 [functions.check-polygon-overlap]
 verify_jwt = true
+
+[functions.admin-reset-password]
+verify_jwt = true
+
+[functions.send-email-notification]
+verify_jwt = true
