@@ -583,9 +583,10 @@ export default function MapBrowse() {
               const intersectingFeatures = listingsSource.getFeaturesInExtent(sweepExtent);
               
               intersectingFeatures.forEach((feature) => {
-                const listingId = feature.get('listingId');
-                if (!listingId) return;
+                const listing = feature.get('listing');
+                if (!listing?.id) return;
                 
+                const listingId = listing.id;
                 const featureGeom = feature.getGeometry();
                 if (!featureGeom) return;
                 
@@ -609,27 +610,26 @@ export default function MapBrowse() {
                   // Add to highlighted set
                   radarHighlightedPlotsRef.current.add(listingId);
                   
-                  // Apply red highlight style
+                  // Apply vibrant red highlight style
                   feature.setStyle(new Style({
-                    fill: new Fill({ color: 'rgba(239, 68, 68, 0.7)' }), // Vibrant red
+                    fill: new Fill({ color: 'rgba(239, 68, 68, 0.75)' }), // Vibrant red
                     stroke: new Stroke({ 
-                      color: '#dc2626', 
-                      width: 4,
+                      color: '#ef4444', 
+                      width: 5,
                     }),
                     text: new Text({
-                      text: feature.get('title') || 'Plot',
-                      font: 'bold 13px sans-serif',
+                      text: listing.title || 'Plot',
+                      font: 'bold 14px sans-serif',
                       fill: new Fill({ color: '#fff' }),
-                      stroke: new Stroke({ color: '#dc2626', width: 3 }),
+                      stroke: new Stroke({ color: '#dc2626', width: 4 }),
                       overflow: true,
                     }),
                   }));
                   
-                  // Remove highlight after 800ms and return to blue
+                  // Remove highlight after 600ms and return to cyan
                   setTimeout(() => {
                     radarHighlightedPlotsRef.current.delete(listingId);
-                    const listing = feature.get('listing');
-                    if (listing && feature.getGeometry()) {
+                    if (feature.getGeometry()) {
                       feature.setStyle(new Style({
                         fill: new Fill({ color: 'rgba(6, 182, 212, 0.6)' }), // Cyan/discovered color
                         stroke: new Stroke({ 
@@ -638,7 +638,7 @@ export default function MapBrowse() {
                           lineDash: [6, 3],
                         }),
                         text: new Text({
-                          text: feature.get('title') || 'Plot',
+                          text: listing.title || 'Plot',
                           font: 'bold 12px sans-serif',
                           fill: new Fill({ color: '#fff' }),
                           stroke: new Stroke({ color: '#0891b2', width: 3 }),
@@ -646,7 +646,7 @@ export default function MapBrowse() {
                         }),
                       }));
                     }
-                  }, 800);
+                  }, 600);
                 }
               });
             }
