@@ -20,9 +20,9 @@ import TileLayer from 'ol/layer/Tile';
 import XYZ from 'ol/source/XYZ';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Polygon } from 'ol/geom';
+import { Polygon, Point, Circle as CircleGeom } from 'ol/geom';
 import Feature from 'ol/Feature';
-import { Style, Fill, Stroke, Text } from 'ol/style';
+import { Style, Fill, Stroke, Text, Circle as CircleStyle } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import Overlay from 'ol/Overlay';
 import { getCenter } from 'ol/extent';
@@ -56,6 +56,7 @@ export default function MapBrowse() {
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
   const zoomParam = searchParams.get('zoom');
+  const locateParam = searchParams.get('locate');
   
   // Data states
   const [listings, setListings] = useState<ListingWithPolygon[]>([]);
@@ -99,6 +100,8 @@ export default function MapBrowse() {
   const baseTileLayerRef = useRef<TileLayer<XYZ> | null>(null);
   const boundaryLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   const listingsLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+  const userLocationLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+  const userLocationAnimationRef = useRef<number | null>(null);
   const isMobile = useIsMobile();
 
   // Calculate max values for sliders
@@ -376,7 +379,113 @@ export default function MapBrowse() {
     }
   };
 
-  // Fly to user's current location with smooth animation
+  // Create animated user location marker with 1km buffer
+  const createUserLocationMarker = useCallback((lat: number, lng: number) => {
+    if (!mapInstance.current) return;
+
+    // Remove existing user location layer
+    if (userLocationLayerRef.current) {
+      mapInstance.current.removeLayer(userLocationLayerRef.current);
+      userLocationLayerRef.current = null;
+    }
+
+    // Cancel any existing animation
+    if (userLocationAnimationRef.current) {
+      cancelAnimationFrame(userLocationAnimationRef.current);
+      userLocationAnimationRef.current = null;
+    }
+
+    const center = fromLonLat([lng, lat]);
+    
+    // Create 1km buffer circle (1000 meters)
+    // In EPSG:3857, we need to account for projection distortion
+    const metersPerUnit = mapInstance.current.getView().getProjection().getMetersPerUnit() || 1;
+    const bufferRadius = 1000 / metersPerUnit;
+    
+    const bufferFeature = new Feature({
+      geometry: new CircleGeom(center, bufferRadius),
+      type: 'buffer',
+    });
+    
+    bufferFeature.setStyle(new Style({
+      fill: new Fill({ color: 'rgba(59, 130, 246, 0.1)' }), // Blue transparent fill
+      stroke: new Stroke({ 
+        color: 'rgba(59, 130, 246, 0.5)', 
+        width: 2,
+        lineDash: [8, 4],
+      }),
+    }));
+
+    // Create center point marker
+    const pointFeature = new Feature({
+      geometry: new Point(center),
+      type: 'userLocation',
+    });
+
+    // Animated pulse ring feature
+    const pulseFeature = new Feature({
+      geometry: new Point(center),
+      type: 'pulse',
+    });
+
+    // Static user location style (blue dot with white border)
+    pointFeature.setStyle(new Style({
+      image: new CircleStyle({
+        radius: 10,
+        fill: new Fill({ color: '#3b82f6' }), // Blue
+        stroke: new Stroke({ color: '#ffffff', width: 3 }),
+      }),
+    }));
+
+    const source = new VectorSource({
+      features: [bufferFeature, pulseFeature, pointFeature],
+    });
+
+    const layer = new VectorLayer({
+      source,
+      zIndex: 1000,
+    });
+
+    userLocationLayerRef.current = layer;
+    mapInstance.current.addLayer(layer);
+
+    // Animate the pulse ring
+    let pulseRadius = 10;
+    let growing = true;
+    const maxRadius = 35;
+    const minRadius = 10;
+    
+    const animatePulse = () => {
+      if (!userLocationLayerRef.current) return;
+      
+      if (growing) {
+        pulseRadius += 0.5;
+        if (pulseRadius >= maxRadius) growing = false;
+      } else {
+        pulseRadius -= 0.5;
+        if (pulseRadius <= minRadius) growing = true;
+      }
+      
+      const opacity = 1 - ((pulseRadius - minRadius) / (maxRadius - minRadius)) * 0.8;
+      
+      pulseFeature.setStyle(new Style({
+        image: new CircleStyle({
+          radius: pulseRadius,
+          fill: new Fill({ color: `rgba(59, 130, 246, ${opacity * 0.3})` }),
+          stroke: new Stroke({ 
+            color: `rgba(59, 130, 246, ${opacity})`, 
+            width: 2 
+          }),
+        }),
+      }));
+      
+      userLocationAnimationRef.current = requestAnimationFrame(animatePulse);
+    };
+    
+    animatePulse();
+  }, []);
+
+  // Fly to user's current location with smooth animation and show marker
   const flyToUserLocation = useCallback(() => {
     if (!navigator.geolocation) return;
     
@@ -385,14 +494,17 @@ export default function MapBrowse() {
         const { latitude, longitude } = pos.coords;
         setUserLocation({ lat: latitude, lng: longitude });
         
+        // Create animated marker with 1km buffer
+        createUserLocationMarker(latitude, longitude);
+        
         if (mapInstance.current) {
           const targetCenter = fromLonLat([longitude, latitude]);
           const currentZoom = mapInstance.current.getView().getZoom() || 6;
           
-          // Smooth fly-to animation
+          // Smooth fly-to animation - zoom to show 1km buffer
           mapInstance.current.getView().animate(
             { zoom: Math.min(currentZoom, 8), duration: 300 },
-            { center: targetCenter, zoom: 16, duration: 1000, easing: (t) => 1 - Math.pow(1 - t, 3) }
+            { center: targetCenter, zoom: 15, duration: 1000, easing: (t) => 1 - Math.pow(1 - t, 3) }
           );
         }
       },
@@ -401,7 +513,7 @@ export default function MapBrowse() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, []);
+  }, [createUserLocationMarker]);
 
   // Point in polygon check
   const isPointInPolygon = (point: [number, number], polygon: [number, number][]) => {
@@ -576,6 +688,9 @@ export default function MapBrowse() {
     
     if (isNaN(lat) || isNaN(lng)) return;
     
+    // Create animated marker with 1km buffer
+    createUserLocationMarker(lat, lng);
+    
     // Smooth fly-to animation with easing
     const targetCenter = fromLonLat([lng, lat]);
     
@@ -589,7 +704,27 @@ export default function MapBrowse() {
     
     // Set user location for distance calculations
     setUserLocation({ lat, lng: lng });
-  }, [latParam, lngParam, zoomParam]);
+  }, [latParam, lngParam, zoomParam, createUserLocationMarker]);
+
+  // Handle locate=true parameter (from LocationAwareWelcome)
+  useEffect(() => {
+    if (locateParam === 'true' && mapInstance.current) {
+      // Small delay to ensure map is ready
+      const timer = setTimeout(() => {
+        flyToUserLocation();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [locateParam, flyToUserLocation]);
+
+  // Cleanup animation on unmount
+  useEffect(() => {
+    return () => {
+      if (userLocationAnimationRef.current) {
+        cancelAnimationFrame(userLocationAnimationRef.current);
+      }
+    };
+  }, []);
 
   // Basemap switcher - using label-free versions
   useEffect(() => {

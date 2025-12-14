@@ -114,6 +114,7 @@ export const LocationAwareWelcome: React.FC = () => {
       params.set("lat", locationInfo.latitude.toFixed(6));
       params.set("lng", locationInfo.longitude.toFixed(6));
       params.set("zoom", "15");
+      params.set("locate", "true"); // Trigger animated user location marker
     }
     return `/map?${params.toString()}`;
   };
